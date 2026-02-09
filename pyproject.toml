@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groove"
+version = "0.1.0"
+description = "Accessible Jellyfin music client for the blind"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "Groove Developer"}
+]
+keywords = ["jellyfin", "music", "accessibility", "blind", "screen-reader"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio :: Players",
+]
+dependencies = [
+    "wxPython>=4.2.0",
+    "python-mpv>=1.0.0",
+    "jellyfin-apiclient-python>=1.9.0",
+]
+
+[project.scripts]
+groove = "groove.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
