@@ -141,15 +141,14 @@ class GrooveApp(wx.App):
 
         self._main_window.Show()
 
-        # Load tracks
-        self._main_window.load_tracks()
+        # Load library
+        self._main_window.load_library()
 
     def _on_change_server(self, event: wx.CommandEvent) -> None:
         """Handle change server request."""
         if self._show_login():
-            # Reload tracks with new server
             if self._main_window:
-                self._main_window.load_tracks()
+                self._main_window.load_library()
 
 
 def run() -> None:

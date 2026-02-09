@@ -26,21 +26,42 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 ## Architecture
 
-**Startup flow** (`app.py`): GrooveApp creates Database, JellyfinClient, Player → checks for stored token → if none, shows LoginDialog → creates MainWindow → loads tracks.
+**Startup flow** (`app.py`): GrooveApp creates Database, JellyfinClient, Player → checks for stored token → if none, shows LoginDialog → creates MainWindow → calls `load_library()`.
 
 **Data flow** (`main_window.py` → `database.py` → `client.py`):
-1. On startup, cached tracks from SQLite are shown **instantly**
-2. A background thread fetches fresh data from Jellyfin via `get_all_tracks_async()`
+1. On startup, cached library data from SQLite is shown **instantly** (tracks, artists, albums, playlists)
+2. A background thread fetches fresh data from Jellyfin via `get_library_async()` (tracks + playlists + playlist items in one operation)
 3. When the fetch completes, `wx.CallAfter()` marshals the callback to the GUI thread
-4. SQLite cache is updated; the virtual list refreshes in-place preserving focus
+4. SQLite cache is updated via `cache_library()` and `cache_playlists()`; the current view refreshes in-place preserving focus
 
 **Threading model**: All Jellyfin API calls run in a `ThreadPoolExecutor(max_workers=2)`. MPV runs its own event thread. Everything that touches wxPython UI goes through `wx.CallAfter()`. Database access is on the main thread only.
 
-**TrackListBox** (`wx.ListBox`): Uses a native Win32 LISTBOX control. Each item is a pre-formatted string ("Artist — Title  Duration"). This was chosen because NVDA/JAWS handle native LISTBOX perfectly without any custom IAccessible — unlike SysListView32 (ListCtrl) where NVDA may bypass `wx.Accessible` overrides. A parallel `list[dict]` maps indices to track data. Updates use `Freeze()`/`Thaw()` + `Set()` for batch population. Focus preservation across data refreshes is done by tracking the focused item's Jellyfin `Id`.
+**Library navigation** (`main_window.py`): A `wx.Choice` selector switches between five sections: Tracks, Playlists, Artists, Album Artists, Albums. Each section loads its top-level items from in-memory lists (populated from DB cache). Hierarchical drill-down uses a `_nav_stack` of `_NavState` dataclass snapshots. Enter drills into sub-items (e.g. Artist → Albums → Tracks), Backspace pops back restoring focus. The section selector stays unchanged during drill-down; only the list label updates contextually (e.g. "5 albums by My Chemical Romance").
 
-**List labels**: Each list has a visible `wx.StaticText` label showing the item count (e.g. "1100 tracks"). The same string is set as the ListBox accessible `Name` so screen readers announce the count when Tab-focusing the list. Updated by `_update_track_count()` on every filter/refresh.
+**LibraryListBox** (`ui/library_list.py`, extends `wx.ListBox`): Generic replacement for the old `TrackListBox`. Uses a native Win32 LISTBOX control. A pluggable formatter function (`set_formatter()`) controls how each dict is rendered as a display string. The `FORMATTERS` dict maps level types to their formatting functions. Focus preservation across refreshes is done by tracking the focused item's Jellyfin `Id`.
+
+**List labels**: The visible `wx.StaticText` label shows a contextual count (e.g. "1100 tracks", "5 albums by X", "12 tracks in The Black Parade"). The same string is set as the ListBox accessible `Name` so screen readers announce it on Tab-focus. Updated by `_update_list_label()` on every filter/refresh/navigation.
 
 **Streaming**: Uses `/Audio/{id}/stream?static=true` (direct passthrough, no transcoding). MPV handles all formats natively, so the server never needs to transcode. This is intentional — avoids format-allowlist issues.
+
+## Database Schema
+
+**Normalized library cache** — all entities are extracted from a single `get_all_tracks()` API response (plus a separate playlists fetch):
+
+| Table | Purpose |
+|-------|---------|
+| `servers` | Server credentials and connection info |
+| `tracks` | Cached audio tracks (with `artist_display` for multi-artist display) |
+| `artists` | Unique artists (from `ArtistItems`) |
+| `album_artists` | Unique album artists (from `AlbumArtists`) |
+| `albums` | Unique albums (with `artist_display`) |
+| `track_artists` | Many-to-many: track ↔ artist |
+| `album_album_artists` | Many-to-many: album ↔ album artist |
+| `playlists` | Cached playlists |
+| `playlist_tracks` | Playlist membership with position |
+| `playback_positions` | Future: audiobook position memory |
+
+**Schema migration**: `_init_schema()` uses `CREATE TABLE IF NOT EXISTS` for all tables, plus an `ALTER TABLE` migration to add `artist_display` to pre-existing `tracks` tables.
 
 ## Internationalization (i18n)
 
@@ -64,9 +85,10 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 
 ## Key Conventions
 
-- **Data format consistency**: The DB layer returns dicts with Jellyfin PascalCase keys (`Id`, `Name`, `AlbumArtist`, `RunTimeTicks`) via `_row_to_api_format()`. The UI always expects this format regardless of data source (cache vs API).
+- **Data format consistency**: The DB layer returns dicts with Jellyfin PascalCase keys (`Id`, `Name`, `AlbumArtist`, `ArtistDisplay`, `RunTimeTicks`) via converter methods (`_track_to_dict`, `_artist_to_dict`, `_album_to_dict`, `_playlist_to_dict`). The UI always expects this format regardless of data source (cache vs API).
+- **Multi-artist display**: Tracks store `ArtistDisplay` (all artists comma-joined) in addition to `AlbumArtist` (primary). Albums store `ArtistDisplay` for their album artist(s). Formatters use `ArtistDisplay` for rendering.
 - **Portable paths**: `utils/paths.py` detects frozen (PyInstaller) vs source execution. All persistent data lives in `data/` next to the executable. Nothing is stored in user profile folders.
-- **Search debounce**: 50ms `wx.Timer` prevents filtering on every keystroke.
+- **Search debounce**: 50ms `wx.Timer` prevents filtering on every keystroke. Search is contextual: filters by Name for artists/playlists, by Name+ArtistDisplay for albums, by Name+ArtistDisplay+AlbumArtist for tracks.
 - **MPV end-file race condition**: When starting a new track while one is playing, MPV fires `end-file` for the old track. The callback checks `player.is_loaded` to avoid resetting the UI for the new track.
 - **Window title**: Managed by `_update_title()` — shows "Track - Groove - Version" when playing/paused, "Groove - Version" when idle. `_current_track` stays set during pause.
 - **libmpv DLL**: Must be placed in `resources/libmpv/` before building. Accepts `mpv-2.dll`, `libmpv-2.dll`, or `mpv-1.dll`.
@@ -75,9 +97,10 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 
 | Key | Action |
 |-----|--------|
-| Tab | Move between search box and track list |
-| Up/Down | Navigate tracks |
-| Enter | Play selected track |
+| Tab | Move between section selector, search, and list |
+| Up/Down | Navigate items |
+| Enter | Play track / drill into item |
+| Backspace | Go back one navigation level |
 | Escape | Pause/Resume playback |
 | Ctrl+S | Stop playback |
 | Ctrl+Up/Down | Volume ±5% |
@@ -106,7 +129,7 @@ Follow these steps in order:
 6. **Refactor and review** — After the feature works, step back and assess:
    - Are any files becoming too large? Split if a module exceeds ~400 lines or handles unrelated concerns.
    - Can anything be simplified or deduplicated?
-   - Did the change touch a pattern used elsewhere that also needs updating (e.g. a new dict key that `_row_to_api_format()` should include)?
+   - Did the change touch a pattern used elsewhere that also needs updating (e.g. a new dict key that `_track_to_dict()` should include)?
    - Are there stale methods, unused imports, or dead code left behind?
    - Update `CLAUDE.md` if the change affects architecture, conventions, or shortcuts.
 
@@ -127,16 +150,22 @@ Follow these steps in order:
 - Cache-first loading (instant startup, background refresh)
 - PyInstaller build script and spec file
 
-### Stage 2: Library Navigation
+### Stage 2: Library Navigation — COMPLETED
 
 **Goal**: Full media library browsing with artists, albums, playlists.
 
-- Section selector (wx.Choice or wx.ListBox): Artists, Albums, Album Artists, Playlists, All Tracks
-- Tab order: Section selector → Search box → Item list
-- Hierarchical navigation: Artists → Albums → Tracks, Albums → Tracks, Playlists → Tracks
-- `Enter` to drill down, `Backspace` to go up
-- Cache artists/albums/tracks in SQLite with background refresh
-- Incremental search against local cache
+- Section selector (`wx.Choice`): Tracks, Playlists, Artists, Album Artists, Albums
+- Tab order: Section selector → Search box → Library list
+- Hierarchical navigation: Artists → Albums → Tracks, Album Artists → Albums → Tracks, Albums → Tracks, Playlists → Tracks
+- `Enter` to drill down, `Backspace` to go up with focus restoration
+- Normalized SQLite schema: artists, album_artists, albums, playlists, track_artists, album_album_artists, playlist_tracks tables
+- Library data extracted from single `get_all_tracks()` response; playlists fetched separately
+- Multi-artist support: `ArtistDisplay` field with comma-joined artist names
+- Contextual search: filters by appropriate fields per section/level
+- Contextual list labels: "N tracks in Album", "N albums by Artist", etc.
+- `LibraryListBox` with pluggable formatters replaces `TrackListBox`
+- In-memory library cache for instant section switching
+- Background refresh updates DB + in-memory data without disrupting sub-level browsing
 
 ### Stage 3: Enhanced Player & Context Menu
 

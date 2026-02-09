@@ -10,7 +10,7 @@ from groove import __app_name__, __version__
 
 
 class JellyfinClient:
-    """Wrapper around jellyfin-apiclient-python with threading support."""
+    """Wrapper around jellyfin-apiclient-python with threading."""
 
     def __init__(self):
         """Initialize the Jellyfin client."""
@@ -54,27 +54,15 @@ class JellyfinClient:
     def login(
         self, server_url: str, username: str, password: str
     ) -> dict | None:
-        """Authenticate with the Jellyfin server.
-
-        Args:
-            server_url: URL of the Jellyfin server.
-            username: Username to authenticate with.
-            password: Password for the user.
-
-        Returns:
-            Authentication result dict with user info and access token,
-            or None if authentication failed.
-        """
-        # Ensure URL doesn't have trailing slash
+        """Authenticate with the Jellyfin server."""
         server_url = server_url.rstrip("/")
         self._server_url = server_url
 
         try:
-            # Connect to server
             self._client.auth.connect_to_address(server_url)
-
-            # Attempt login
-            result = self._client.auth.login(server_url, username, password)
+            result = self._client.auth.login(
+                server_url, username, password,
+            )
 
             if result and "AccessToken" in result:
                 self._access_token = result["AccessToken"]
@@ -91,24 +79,13 @@ class JellyfinClient:
         access_token: str,
         device_id: str,
     ) -> bool:
-        """Authenticate using a stored access token.
-
-        Args:
-            server_url: URL of the Jellyfin server.
-            user_id: User ID from previous login.
-            access_token: Access token from previous login.
-            device_id: Device ID used for previous login.
-
-        Returns:
-            True if authentication succeeded, False otherwise.
-        """
+        """Authenticate using a stored access token."""
         server_url = server_url.rstrip("/")
         self._server_url = server_url
         self._user_id = user_id
         self._access_token = access_token
         self._device_id = device_id
 
-        # Update client config with stored device ID
         self._client.config.app(
             __app_name__,
             __version__,
@@ -130,18 +107,15 @@ class JellyfinClient:
                 discover=False,
             )
 
-            # Verify token is still valid by making a simple request
             user_info = self._client.jellyfin.get_user()
             return user_info is not None
         except Exception:
             return False
 
-    def get_all_tracks(self) -> list[dict]:
-        """Get all audio tracks from the library.
+    # --- Library fetching ---
 
-        Returns:
-            List of track dictionaries from Jellyfin.
-        """
+    def get_all_tracks(self) -> list[dict]:
+        """Get all audio tracks from the library."""
         if not self._user_id:
             return []
 
@@ -150,9 +124,51 @@ class JellyfinClient:
                 params={
                     "IncludeItemTypes": "Audio",
                     "Recursive": True,
-                    "Fields": "AudioInfo,ParentId",
+                    "Fields": (
+                        "AudioInfo,ParentId,"
+                        "ArtistItems,Artists,AlbumArtists"
+                    ),
                     "SortBy": "AlbumArtist,Album,SortName",
                     "SortOrder": "Ascending",
+                }
+            )
+            return result.get("Items", [])
+        except Exception:
+            return []
+
+    def get_playlists(self) -> list[dict]:
+        """Get all playlists from the library."""
+        if not self._user_id:
+            return []
+
+        try:
+            result = self._client.jellyfin.user_items(
+                params={
+                    "IncludeItemTypes": "Playlist",
+                    "Recursive": True,
+                    "SortBy": "SortName",
+                    "SortOrder": "Ascending",
+                }
+            )
+            return result.get("Items", [])
+        except Exception:
+            return []
+
+    def get_playlist_items(
+        self, playlist_id: str,
+    ) -> list[dict]:
+        """Get audio items in a playlist."""
+        if not self._user_id:
+            return []
+
+        try:
+            result = self._client.jellyfin.user_items(
+                params={
+                    "ParentId": playlist_id,
+                    "Fields": (
+                        "AudioInfo,ParentId,"
+                        "ArtistItems,Artists,AlbumArtists"
+                    ),
                 }
             )
             return result.get("Items", [])
@@ -162,14 +178,11 @@ class JellyfinClient:
     def get_all_tracks_async(
         self,
         callback: Callable[[list[dict]], None],
-        error_callback: Callable[[Exception], None] | None = None,
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
     ) -> None:
-        """Get all audio tracks asynchronously.
-
-        Args:
-            callback: Function to call with the results.
-            error_callback: Function to call if an error occurs.
-        """
+        """Get all audio tracks asynchronously."""
         def task():
             try:
                 result = self.get_all_tracks()
@@ -180,37 +193,44 @@ class JellyfinClient:
 
         self._executor.submit(task)
 
+    def get_library_async(
+        self,
+        callback: Callable[
+            [list[dict], list[dict], dict[str, list[dict]]],
+            None,
+        ],
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Fetch entire library asynchronously.
+
+        Fetches tracks, playlists, and playlist items in one
+        background operation.  The callback receives
+        (tracks, playlists, playlist_items_by_id).
+        """
+        def task():
+            try:
+                tracks = self.get_all_tracks()
+                playlists = self.get_playlists()
+                playlist_items: dict[str, list[dict]] = {}
+                for pl in playlists:
+                    pid = pl.get("Id")
+                    if pid:
+                        playlist_items[pid] = (
+                            self.get_playlist_items(pid)
+                        )
+                callback(tracks, playlists, playlist_items)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    # --- Streaming ---
+
     def get_stream_url(self, item_id: str) -> str:
-        """Get the streaming URL for an audio track.
-
-        Uses direct streaming (static=true) so Jellyfin sends the
-        original file as-is.  MPV handles every audio format natively,
-        so there is no need for server-side transcoding, and this
-        avoids format-allowlist issues (e.g. WAV not playing).
-
-        Args:
-            item_id: Jellyfin item ID of the track.
-
-        Returns:
-            URL for direct streaming without transcoding.
-        """
-        if not self._server_url or not self._access_token:
-            return ""
-
-        return (
-            f"{self._server_url}/Audio/{item_id}/stream"
-            f"?api_key={self._access_token}&static=true"
-        )
-
-    def get_direct_stream_url(self, item_id: str) -> str:
-        """Get a direct (non-transcoded) streaming URL.
-
-        Args:
-            item_id: Jellyfin item ID of the track.
-
-        Returns:
-            URL for direct streaming without transcoding.
-        """
+        """Get the direct streaming URL for an audio track."""
         if not self._server_url or not self._access_token:
             return ""
 
@@ -220,14 +240,7 @@ class JellyfinClient:
         )
 
     def search_tracks(self, query: str) -> list[dict]:
-        """Search for audio tracks by name.
-
-        Args:
-            query: Search query string.
-
-        Returns:
-            List of matching track dictionaries.
-        """
+        """Search for audio tracks by name."""
         if not self._user_id:
             return []
 
@@ -237,7 +250,10 @@ class JellyfinClient:
                     "IncludeItemTypes": "Audio",
                     "Recursive": True,
                     "SearchTerm": query,
-                    "Fields": "AudioInfo,ParentId",
+                    "Fields": (
+                        "AudioInfo,ParentId,"
+                        "ArtistItems,Artists,AlbumArtists"
+                    ),
                     "Limit": 100,
                 }
             )
