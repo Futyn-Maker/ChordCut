@@ -718,15 +718,87 @@ class MainWindow(wx.Frame):
             server.id, playlists, playlist_items,
         )
         self._load_library_from_db(server.id)
+        self._refresh_current_view(server.id)
 
-        # If at top level, refresh the display
+        # Translators: Library updated status.
+        self._update_status(_("Library updated"))
+
+    def _refresh_current_view(
+        self, server_id: int,
+    ) -> None:
+        """Re-query and refresh all navigation levels.
+
+        Updates stale nav stack entries so that going back
+        also shows fresh data.  Preserves focus by item Id.
+        """
         if not self._nav_stack:
             self._switch_to_section(
                 self._section_choice.GetSelection(),
             )
+            return
 
-        # Translators: Library updated status.
-        self._update_status(_("Library updated"))
+        lib_ids = self._selected_library_ids
+
+        # Refresh every nav stack entry bottom-up
+        for i, state in enumerate(self._nav_stack):
+            if i == 0:
+                # Bottom of stack: top-level section
+                idx = (
+                    self._section_choice.GetSelection()
+                )
+                state.all_items = (
+                    self._items_for_section(idx)
+                )
+            else:
+                prev = self._nav_stack[i - 1]
+                state.all_items = self._query_sub_items(
+                    server_id,
+                    prev.level_type,
+                    prev.selected_id,
+                    lib_ids,
+                )
+
+        # Refresh the deepest (current) level
+        parent = self._nav_stack[-1]
+        items = self._query_sub_items(
+            server_id,
+            parent.level_type,
+            parent.selected_id,
+            lib_ids,
+        )
+        self._display_level(
+            items,
+            self._current_level_type,
+            self._context_name,
+        )
+
+    def _query_sub_items(
+        self,
+        server_id: int,
+        parent_type: str,
+        parent_id: str | None,
+        library_ids: set[str] | None,
+    ) -> list[dict]:
+        """Query sub-items for a given parent level."""
+        if not parent_id:
+            return []
+        if parent_type == "artists":
+            return self._db.get_albums_by_artist(
+                server_id, parent_id, library_ids,
+            )
+        if parent_type == "album_artists":
+            return self._db.get_albums_by_album_artist(
+                server_id, parent_id, library_ids,
+            )
+        if parent_type == "albums":
+            return self._db.get_tracks_by_album(
+                server_id, parent_id, library_ids,
+            )
+        if parent_type == "playlists":
+            return self._db.get_playlist_tracks(
+                server_id, parent_id,
+            )
+        return []
 
     # ------------------------------------------------------------------
     # Section / navigation

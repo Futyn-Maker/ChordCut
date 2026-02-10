@@ -1,7 +1,10 @@
 """Threaded Jellyfin API client wrapper."""
 
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+)
 from typing import Callable
 
 from jellyfin_apiclient_python import JellyfinClient as BaseJellyfinClient
@@ -259,34 +262,34 @@ class JellyfinClient:
         The callback receives
         (libraries, tracks, playlists, playlist_items_by_id).
         Each track dict is tagged with "LibraryId".
+
+        Per-library track fetches and per-playlist item
+        fetches are parallelized for speed.
         """
         def task():
             try:
                 libraries = self.get_music_views()
 
-                # Fetch tracks per library and tag each
+                # Fetch tracks per library in parallel
                 all_tracks: list[dict] = []
                 if libraries:
-                    for lib in libraries:
-                        lib_id = lib["Id"]
-                        lib_tracks = (
-                            self.get_tracks_by_library(lib_id)
+                    all_tracks = (
+                        self._fetch_tracks_parallel(
+                            libraries,
                         )
-                        for t in lib_tracks:
-                            t["LibraryId"] = lib_id
-                        all_tracks.extend(lib_tracks)
+                    )
                 else:
                     # Fallback: no views found, fetch all
                     all_tracks = self.get_all_tracks()
 
+                # Fetch playlists, then items in parallel
                 playlists = self.get_playlists()
-                playlist_items: dict[str, list[dict]] = {}
-                for pl in playlists:
-                    pid = pl.get("Id")
-                    if pid:
-                        playlist_items[pid] = (
-                            self.get_playlist_items(pid)
-                        )
+                playlist_items = (
+                    self._fetch_playlist_items_parallel(
+                        playlists,
+                    )
+                )
+
                 callback(
                     libraries, all_tracks,
                     playlists, playlist_items,
@@ -296,6 +299,55 @@ class JellyfinClient:
                     error_callback(e)
 
         self._executor.submit(task)
+
+    def _fetch_tracks_parallel(
+        self, libraries: list[dict],
+    ) -> list[dict]:
+        """Fetch tracks from all libraries in parallel."""
+        all_tracks: list[dict] = []
+        with ThreadPoolExecutor(
+            max_workers=min(len(libraries), 4),
+        ) as pool:
+            futures = {
+                pool.submit(
+                    self.get_tracks_by_library,
+                    lib["Id"],
+                ): lib["Id"]
+                for lib in libraries
+            }
+            for future in as_completed(futures):
+                lib_id = futures[future]
+                lib_tracks = future.result()
+                for t in lib_tracks:
+                    t["LibraryId"] = lib_id
+                all_tracks.extend(lib_tracks)
+        return all_tracks
+
+    def _fetch_playlist_items_parallel(
+        self, playlists: list[dict],
+    ) -> dict[str, list[dict]]:
+        """Fetch items for all playlists in parallel."""
+        playlist_items: dict[str, list[dict]] = {}
+        pids: list[str] = [
+            pl["Id"] for pl in playlists
+            if pl.get("Id")
+        ]
+        if not pids:
+            return playlist_items
+
+        with ThreadPoolExecutor(
+            max_workers=min(len(pids), 4),
+        ) as pool:
+            futures = {
+                pool.submit(
+                    self.get_playlist_items, pid,
+                ): pid
+                for pid in pids
+            }
+            for future in as_completed(futures):
+                pid = futures[future]
+                playlist_items[pid] = future.result()
+        return playlist_items
 
     # --- Streaming ---
 

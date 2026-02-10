@@ -300,6 +300,7 @@ class Database:
             albums_seen: dict[str, tuple[str, str, str]] = {}
             track_artist_links: list[tuple[str, str]] = []
             album_aa_links: set[tuple[str, str]] = set()
+            track_rows: list[tuple] = []
 
             for track in tracks:
                 track_id = track.get("Id")
@@ -362,31 +363,32 @@ class Database:
                                 (album_id, aaid),
                             )
 
-                # Insert track
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO tracks (
-                        id, server_id, name, album_name,
-                        artist_name, artist_display,
-                        album_id, artist_id,
-                        duration_ticks, track_number,
-                        library_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        track_id,
-                        server_id,
-                        track.get("Name", "Unknown"),
-                        track.get("Album", ""),
-                        artist_name,
-                        artist_display,
-                        album_id,
-                        first_artist_id,
-                        track.get("RunTimeTicks"),
-                        track.get("IndexNumber"),
-                        library_id,
-                    ),
-                )
+                # Collect track row for bulk insert
+                track_rows.append((
+                    track_id,
+                    server_id,
+                    track.get("Name", "Unknown"),
+                    track.get("Album", ""),
+                    artist_name,
+                    artist_display,
+                    album_id,
+                    first_artist_id,
+                    track.get("RunTimeTicks"),
+                    track.get("IndexNumber"),
+                    library_id,
+                ))
+
+            # Bulk insert tracks
+            conn.executemany(
+                "INSERT OR REPLACE INTO tracks ("
+                "  id, server_id, name, album_name,"
+                "  artist_name, artist_display,"
+                "  album_id, artist_id,"
+                "  duration_ticks, track_number,"
+                "  library_id"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                track_rows,
+            )
 
             # Bulk insert artists
             conn.executemany(
