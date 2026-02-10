@@ -27,9 +27,15 @@ echo.
 REM Check/install dependencies
 echo Installing/updating dependencies...
 pip install --upgrade pip >nul 2>&1
-pip install --upgrade pyinstaller wxPython python-mpv jellyfin-apiclient-python
+pip install --upgrade -r requirements.txt
 if errorlevel 1 (
-    echo ERROR: Failed to install dependencies
+    echo ERROR: Failed to install dependencies from requirements.txt
+    pause
+    exit /b 1
+)
+pip install --upgrade pyinstaller
+if errorlevel 1 (
+    echo ERROR: Failed to install pyinstaller
     pause
     exit /b 1
 )
@@ -79,11 +85,6 @@ REM Create data folder
 echo.
 echo Creating data folder...
 if not exist "dist\Groove\data" mkdir "dist\Groove\data"
-
-REM Copy libmpv if not bundled
-if %LIBMPV_FOUND%==1 if exist "resources\libmpv\mpv-2.dll" copy /y "resources\libmpv\mpv-2.dll" "dist\Groove\" >nul
-if %LIBMPV_FOUND%==1 if exist "resources\libmpv\libmpv-2.dll" copy /y "resources\libmpv\libmpv-2.dll" "dist\Groove\" >nul
-if %LIBMPV_FOUND%==1 if exist "resources\libmpv\mpv-1.dll" copy /y "resources\libmpv\mpv-1.dll" "dist\Groove\" >nul
 
 echo.
 echo ============================================
