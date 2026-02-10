@@ -500,10 +500,10 @@ class MainWindow(wx.Frame):
             name=__app_name__, ver=__version__,
         )
         if self._current_track:
-            title = self._current_track.get(
-                "Name",
-                # Translators: Fallback track title.
-                _("Unknown"),
+            # Translators: Fallback track title.
+            title = (
+                self._current_track.get("Name")
+                or _("Untitled")
             )
             self.SetTitle(f"{title} - {base}")
         else:
@@ -877,25 +877,24 @@ class MainWindow(wx.Frame):
         self._current_track = track
         self._player.play(url)
 
-        title = track.get(
-            "Name",
-            # Translators: Fallback track title.
-            _("Unknown"),
+        # Translators: Fallback when a track has no title.
+        title = track.get("Name") or _("Untitled")
+        artist = (
+            track.get("ArtistDisplay")
+            or track.get("AlbumArtist")
+            or ""
         )
-        artist = track.get(
-            "ArtistDisplay",
-            track.get(
-                "AlbumArtist",
-                # Translators: Fallback artist.
-                _("Unknown Artist"),
-            ),
-        )
-        # Translators: Now-playing label.
-        self._now_playing_label.SetLabel(
-            _("Now playing: {title} - {artist}").format(
-                title=title, artist=artist,
-            )
-        )
+        if artist:
+            # Translators: Now-playing with artist.
+            np = _(
+                "Now playing: {title} - {artist}"
+            ).format(title=title, artist=artist)
+        else:
+            # Translators: Now-playing without artist.
+            np = _(
+                "Now playing: {title}"
+            ).format(title=title)
+        self._now_playing_label.SetLabel(np)
         # Translators: Status bar when playing.
         self._update_status(
             _("Playing: {title}").format(title=title)

@@ -20,8 +20,8 @@ def format_track(track: dict) -> str:
         "ArtistDisplay",
         track.get("AlbumArtist", ""),
     )
-    # Translators: Fallback track title when the track has no name.
-    name = track.get("Name", _("Unknown"))
+    # Translators: Fallback when a track has no title.
+    name = track.get("Name") or _("Untitled")
     ticks = track.get("RunTimeTicks", 0)
     dur = format_duration(ticks / 10_000_000) if ticks else ""
 
@@ -38,7 +38,8 @@ def format_track(track: dict) -> str:
 
 def format_artist(item: dict) -> str:
     """Format an artist / album artist for display."""
-    return item.get("Name", "")
+    # Translators: Fallback when an artist has no name.
+    return item.get("Name") or _("Untitled")
 
 
 def format_album(item: dict) -> str:
@@ -48,7 +49,8 @@ def format_album(item: dict) -> str:
     Falls back to just the album name when no artist.
     """
     artist = item.get("ArtistDisplay", "")
-    name = item.get("Name", "")
+    # Translators: Fallback when an album has no title.
+    name = item.get("Name") or _("Untitled")
     if artist:
         return f"{artist} \u2014 {name}"
     return name
@@ -56,7 +58,8 @@ def format_album(item: dict) -> str:
 
 def format_playlist(item: dict) -> str:
     """Format a playlist for display."""
-    return item.get("Name", "")
+    # Translators: Fallback when a playlist has no name.
+    return item.get("Name") or _("Untitled")
 
 
 # Formatter lookup by level type
