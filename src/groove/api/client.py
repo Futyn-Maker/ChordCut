@@ -114,6 +114,52 @@ class JellyfinClient:
 
     # --- Library fetching ---
 
+    def get_music_views(self) -> list[dict]:
+        """Get music library views from the server.
+
+        Returns a list of dicts with Id and Name for each
+        music library (CollectionType == "music").
+        """
+        if not self._user_id:
+            return []
+
+        try:
+            url = f"Users/{self._user_id}/Views"
+            result = self._client.jellyfin._get(url)
+            views = result.get("Items", [])
+            return [
+                {"Id": v["Id"], "Name": v.get("Name", "")}
+                for v in views
+                if v.get("CollectionType") == "music"
+            ]
+        except Exception:
+            return []
+
+    def get_tracks_by_library(
+        self, library_id: str,
+    ) -> list[dict]:
+        """Get all audio tracks in a specific library."""
+        if not self._user_id:
+            return []
+
+        try:
+            result = self._client.jellyfin.user_items(
+                params={
+                    "ParentId": library_id,
+                    "IncludeItemTypes": "Audio",
+                    "Recursive": True,
+                    "Fields": (
+                        "AudioInfo,ParentId,"
+                        "ArtistItems,Artists,AlbumArtists"
+                    ),
+                    "SortBy": "AlbumArtist,Album,SortName",
+                    "SortOrder": "Ascending",
+                }
+            )
+            return result.get("Items", [])
+        except Exception:
+            return []
+
     def get_all_tracks(self) -> list[dict]:
         """Get all audio tracks from the library."""
         if not self._user_id:
@@ -196,7 +242,10 @@ class JellyfinClient:
     def get_library_async(
         self,
         callback: Callable[
-            [list[dict], list[dict], dict[str, list[dict]]],
+            [
+                list[dict], list[dict],
+                list[dict], dict[str, list[dict]],
+            ],
             None,
         ],
         error_callback: (
@@ -205,13 +254,31 @@ class JellyfinClient:
     ) -> None:
         """Fetch entire library asynchronously.
 
-        Fetches tracks, playlists, and playlist items in one
-        background operation.  The callback receives
-        (tracks, playlists, playlist_items_by_id).
+        Fetches music views, tracks per library, playlists,
+        and playlist items in one background operation.
+        The callback receives
+        (libraries, tracks, playlists, playlist_items_by_id).
+        Each track dict is tagged with "LibraryId".
         """
         def task():
             try:
-                tracks = self.get_all_tracks()
+                libraries = self.get_music_views()
+
+                # Fetch tracks per library and tag each
+                all_tracks: list[dict] = []
+                if libraries:
+                    for lib in libraries:
+                        lib_id = lib["Id"]
+                        lib_tracks = (
+                            self.get_tracks_by_library(lib_id)
+                        )
+                        for t in lib_tracks:
+                            t["LibraryId"] = lib_id
+                        all_tracks.extend(lib_tracks)
+                else:
+                    # Fallback: no views found, fetch all
+                    all_tracks = self.get_all_tracks()
+
                 playlists = self.get_playlists()
                 playlist_items: dict[str, list[dict]] = {}
                 for pl in playlists:
@@ -220,7 +287,10 @@ class JellyfinClient:
                         playlist_items[pid] = (
                             self.get_playlist_items(pid)
                         )
-                callback(tracks, playlists, playlist_items)
+                callback(
+                    libraries, all_tracks,
+                    playlists, playlist_items,
+                )
             except Exception as e:
                 if error_callback:
                     error_callback(e)

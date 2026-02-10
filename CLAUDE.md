@@ -30,9 +30,9 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Data flow** (`main_window.py` → `database.py` → `client.py`):
 1. On startup, cached library data from SQLite is shown **instantly** (tracks, artists, albums, playlists)
-2. A background thread fetches fresh data from Jellyfin via `get_library_async()` (tracks + playlists + playlist items in one operation)
+2. A background thread fetches fresh data from Jellyfin via `get_library_async()` (music views + tracks per library + playlists + playlist items in one operation)
 3. When the fetch completes, `wx.CallAfter()` marshals the callback to the GUI thread
-4. SQLite cache is updated via `cache_library()` and `cache_playlists()`; the current view refreshes in-place preserving focus
+4. SQLite cache is updated via `cache_libraries()`, `cache_library()` and `cache_playlists()`; the current view refreshes in-place preserving focus
 
 **Threading model**: All Jellyfin API calls run in a `ThreadPoolExecutor(max_workers=2)`. MPV runs its own event thread. Everything that touches wxPython UI goes through `wx.CallAfter()`. Database access is on the main thread only.
 
@@ -41,6 +41,8 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 **LibraryListBox** (`ui/library_list.py`, extends `wx.ListBox`): Generic replacement for the old `TrackListBox`. Uses a native Win32 LISTBOX control. A pluggable formatter function (`set_formatter()`) controls how each dict is rendered as a display string. The `FORMATTERS` dict maps level types to their formatting functions. Focus preservation across refreshes is done by tracking the focused item's Jellyfin `Id`.
 
 **List labels**: The visible `wx.StaticText` label shows a contextual count (e.g. "1100 tracks", "5 albums by X", "12 tracks in The Black Parade"). The same string is set as the ListBox accessible `Name` so screen readers announce it on Tab-focus. Updated by `_update_list_label()` on every filter/refresh/navigation.
+
+**Music library selection** (`main_window.py`): A server can have multiple music libraries (e.g. "Music", "Soundtracks"). The View → Libraries submenu shows checkable items for each library. All are checked by default. Unchecking a library hides its tracks, albums, artists, and album artists from all views. Playlists are unaffected (cross-library). Library views are fetched via `/Users/{userId}/Views` filtered by `CollectionType=music`, and tracks are fetched per-library using `ParentId={libraryId}` to tag each track with its `LibraryId`.
 
 **Streaming**: Uses `/Audio/{id}/stream?static=true` (direct passthrough, no transcoding). MPV handles all formats natively, so the server never needs to transcode. This is intentional — avoids format-allowlist issues.
 
@@ -51,17 +53,20 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 | Table | Purpose |
 |-------|---------|
 | `servers` | Server credentials and connection info |
-| `tracks` | Cached audio tracks (with `artist_display` for multi-artist display) |
+| `libraries` | Music library views from the server |
+| `tracks` | Cached audio tracks (with `artist_display`, `library_id`) |
 | `artists` | Unique artists (from `ArtistItems`) |
 | `album_artists` | Unique album artists (from `AlbumArtists`) |
-| `albums` | Unique albums (with `artist_display`) |
+| `albums` | Unique albums (with `artist_display`, `library_id`) |
 | `track_artists` | Many-to-many: track ↔ artist |
 | `album_album_artists` | Many-to-many: album ↔ album artist |
 | `playlists` | Cached playlists |
 | `playlist_tracks` | Playlist membership with position |
 | `playback_positions` | Future: audiobook position memory |
 
-**Schema migration**: `_init_schema()` uses `CREATE TABLE IF NOT EXISTS` for all tables, plus an `ALTER TABLE` migration to add `artist_display` to pre-existing `tracks` tables.
+**Library filtering**: Tracks and albums store `library_id` linking them to a music library. Query methods accept an optional `library_ids: set[str]` parameter — when provided, results are filtered to only include items from the selected libraries. Artists and album artists are filtered transitively through their tracks/albums. Playlists are cross-library and never filtered.
+
+**Schema migration**: `_init_schema()` uses `CREATE TABLE IF NOT EXISTS` for all tables. No backward-compatible migrations are maintained — the DB is deleted on schema changes during development.
 
 ## Internationalization (i18n)
 
@@ -166,6 +171,8 @@ Follow these steps in order:
 - `LibraryListBox` with pluggable formatters replaces `TrackListBox`
 - In-memory library cache for instant section switching
 - Background refresh updates DB + in-memory data without disrupting sub-level browsing
+- Multi-library support: per-library track fetching, Libraries submenu with checkable filters, library_id on tracks/albums
+- Playlists shown regardless of library selection (cross-library entity)
 
 ### Stage 3: Enhanced Player & Context Menu
 

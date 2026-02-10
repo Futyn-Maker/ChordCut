@@ -91,6 +91,11 @@ class MainWindow(wx.Frame):
         self._lib_album_artists: list[dict] = []
         self._lib_albums: list[dict] = []
 
+        # Music libraries (for filtering)
+        self._libraries: list[dict] = []
+        self._selected_library_ids: set[str] | None = None
+        self._library_menu_ids: dict[int, str] = {}
+
         # Search debounce timer
         self._search_timer = wx.Timer(self)
 
@@ -202,6 +207,13 @@ class MainWindow(wx.Frame):
             _("&Refresh Library\tF5"),
             # Translators: Help text for Refresh Library.
             _("Reload library from server"),
+        )
+        view_menu.AppendSeparator()
+        self._libraries_menu = wx.Menu()
+        view_menu.AppendSubMenu(
+            self._libraries_menu,
+            # Translators: Libraries submenu label.
+            _("&Libraries"),
         )
         # Translators: View menu label.
         menubar.Append(view_menu, _("&View"))
@@ -614,10 +626,12 @@ class MainWindow(wx.Frame):
             )
 
         # Background refresh
-        def on_loaded(tracks, playlists, pl_items):
+        def on_loaded(
+            libraries, tracks, playlists, pl_items,
+        ):
             wx.CallAfter(
                 self._on_library_loaded,
-                tracks, playlists, pl_items,
+                libraries, tracks, playlists, pl_items,
             )
 
         def on_error(e):
@@ -633,17 +647,31 @@ class MainWindow(wx.Frame):
 
     def _load_library_from_db(self, server_id: int) -> None:
         """Populate in-memory lists from the DB cache."""
+        # Load libraries if not yet loaded
+        if not self._libraries:
+            self._libraries = (
+                self._db.get_libraries(server_id)
+            )
+            if self._libraries:
+                self._selected_library_ids = {
+                    lib["Id"] for lib in self._libraries
+                }
+                self._rebuild_libraries_menu()
+
+        lib_ids = self._selected_library_ids
         self._lib_tracks = (
-            self._db.get_all_tracks(server_id)
+            self._db.get_all_tracks(server_id, lib_ids)
         )
         self._lib_artists = (
-            self._db.get_all_artists(server_id)
+            self._db.get_all_artists(server_id, lib_ids)
         )
         self._lib_album_artists = (
-            self._db.get_all_album_artists(server_id)
+            self._db.get_all_album_artists(
+                server_id, lib_ids,
+            )
         )
         self._lib_albums = (
-            self._db.get_all_albums(server_id)
+            self._db.get_all_albums(server_id, lib_ids)
         )
         self._lib_playlists = (
             self._db.get_all_playlists(server_id)
@@ -651,6 +679,7 @@ class MainWindow(wx.Frame):
 
     def _on_library_loaded(
         self,
+        libraries: list[dict],
         tracks: list[dict],
         playlists: list[dict],
         playlist_items: dict[str, list[dict]],
@@ -659,6 +688,30 @@ class MainWindow(wx.Frame):
         server = self._db.get_active_server()
         if not server or not server.id:
             return
+
+        # Cache libraries and rebuild menu
+        if libraries:
+            self._db.cache_libraries(
+                server.id, libraries,
+            )
+            new_ids = {lib["Id"] for lib in libraries}
+
+            if self._selected_library_ids is not None:
+                # Keep current selection, but remove any
+                # libraries that no longer exist
+                kept = (
+                    self._selected_library_ids & new_ids
+                )
+                if kept:
+                    self._selected_library_ids = kept
+                else:
+                    # All selected libs disappeared — reset
+                    self._selected_library_ids = new_ids
+            else:
+                self._selected_library_ids = new_ids
+
+            self._libraries = libraries
+            self._rebuild_libraries_menu()
 
         self._db.cache_library(server.id, tracks)
         self._db.cache_playlists(
@@ -778,23 +831,25 @@ class MainWindow(wx.Frame):
         new_type: str = ""
         new_ctx: str | None = None
 
+        lib_ids = self._selected_library_ids
+
         if lt == "artists":
             new_items = self._db.get_albums_by_artist(
-                server.id, item_id,
+                server.id, item_id, lib_ids,
             )
             new_type = "albums"
             new_ctx = item_name
         elif lt == "album_artists":
             new_items = (
                 self._db.get_albums_by_album_artist(
-                    server.id, item_id,
+                    server.id, item_id, lib_ids,
                 )
             )
             new_type = "albums"
             new_ctx = item_name
         elif lt == "albums":
             new_items = self._db.get_tracks_by_album(
-                server.id, item_id,
+                server.id, item_id, lib_ids,
             )
             new_type = "tracks"
             new_ctx = item_name
@@ -837,6 +892,71 @@ class MainWindow(wx.Frame):
             self._list.set_selection_by_id(
                 state.selected_id,
             )
+
+    # ------------------------------------------------------------------
+    # Library selection
+    # ------------------------------------------------------------------
+
+    def _rebuild_libraries_menu(self) -> None:
+        """Rebuild the Libraries submenu from current data."""
+        # Remove old items and unbind events
+        for item in list(
+            self._libraries_menu.GetMenuItems()
+        ):
+            self.Unbind(
+                wx.EVT_MENU, id=item.GetId(),
+            )
+            self._libraries_menu.Delete(item)
+        self._library_menu_ids.clear()
+
+        for lib in self._libraries:
+            lib_id = lib["Id"]
+            item = self._libraries_menu.AppendCheckItem(
+                wx.ID_ANY, lib.get("Name", lib_id),
+            )
+            if (
+                self._selected_library_ids is not None
+                and lib_id in self._selected_library_ids
+            ):
+                item.Check(True)
+            self._library_menu_ids[item.GetId()] = lib_id
+            self.Bind(
+                wx.EVT_MENU,
+                self._on_library_toggle,
+                item,
+            )
+
+    def _on_library_toggle(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Handle a library check/uncheck toggle."""
+        lib_id = self._library_menu_ids.get(
+            event.GetId(),
+        )
+        if not lib_id or self._selected_library_ids is None:
+            return
+
+        item = self._libraries_menu.FindItemById(
+            event.GetId(),
+        )
+        if item and item.IsChecked():
+            self._selected_library_ids.add(lib_id)
+        else:
+            self._selected_library_ids.discard(lib_id)
+
+        # Reload from DB with new selection
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+
+        self._load_library_from_db(server.id)
+
+        # Reset to top level (sub-level items may be gone)
+        self._nav_stack.clear()
+        self._search_text.ChangeValue("")
+        self._switch_to_section(
+            self._section_choice.GetSelection(),
+        )
 
     # ------------------------------------------------------------------
     # Search debounce
