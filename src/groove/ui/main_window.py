@@ -728,18 +728,26 @@ class MainWindow(wx.Frame):
     ) -> None:
         """Re-query and refresh all navigation levels.
 
+        Preserves search text, focus position, and nav stack.
         Updates stale nav stack entries so that going back
-        also shows fresh data.  Preserves focus by item Id.
+        also shows fresh data.
         """
+        lib_ids = self._selected_library_ids
+
         if not self._nav_stack:
-            self._switch_to_section(
-                self._section_choice.GetSelection(),
+            # Top level: refresh without clearing search
+            idx = (
+                self._section_choice.GetSelection()
+            )
+            section = SECTIONS[idx]
+            items = self._items_for_section(idx)
+            self._display_level(
+                items, section, None,
             )
             return
 
-        lib_ids = self._selected_library_ids
-
-        # Refresh every nav stack entry bottom-up
+        # Refresh every nav stack entry bottom-up,
+        # checking that each drilled-into item still exists.
         for i, state in enumerate(self._nav_stack):
             if i == 0:
                 # Bottom of stack: top-level section
@@ -758,7 +766,25 @@ class MainWindow(wx.Frame):
                     lib_ids,
                 )
 
-        # Refresh the deepest (current) level
+            # If the parent item we drilled into is gone,
+            # the navigation path is broken — reset.
+            if state.selected_id and not any(
+                it.get("Id") == state.selected_id
+                for it in state.all_items
+            ):
+                self._nav_stack.clear()
+                self._search_text.ChangeValue("")
+                idx = (
+                    self._section_choice.GetSelection()
+                )
+                section = SECTIONS[idx]
+                items = self._items_for_section(idx)
+                self._display_level(
+                    items, section, None,
+                )
+                return
+
+        # All ancestors valid — refresh current level
         parent = self._nav_stack[-1]
         items = self._query_sub_items(
             server_id,
@@ -1016,19 +1042,13 @@ class MainWindow(wx.Frame):
         else:
             self._selected_library_ids.discard(lib_id)
 
-        # Reload from DB with new selection
+        # Reload from DB with new selection and refresh
         server = self._db.get_active_server()
         if not server or not server.id:
             return
 
         self._load_library_from_db(server.id)
-
-        # Reset to top level (sub-level items may be gone)
-        self._nav_stack.clear()
-        self._search_text.ChangeValue("")
-        self._switch_to_section(
-            self._section_choice.GetSelection(),
-        )
+        self._refresh_current_view(server.id)
 
     # ------------------------------------------------------------------
     # Search debounce
