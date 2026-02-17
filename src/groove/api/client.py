@@ -383,6 +383,66 @@ class JellyfinClient:
         except Exception:
             return []
 
+    # --- Lyrics ---
+
+    def get_lyrics(self, item_id: str) -> dict | None:
+        """Get lyrics for an audio track.
+
+        Returns dict with ``Lyrics`` key containing a list
+        of ``{Start, Text}`` cues, or *None*.
+        """
+        if not self._user_id:
+            return None
+        try:
+            url = "Audio/{id}/Lyrics".format(id=item_id)
+            result = self._client.jellyfin._get(url)
+            return result
+        except Exception:
+            return None
+
+    def get_lyrics_async(
+        self,
+        item_id: str,
+        callback: Callable[[dict | None], None],
+    ) -> None:
+        """Fetch lyrics asynchronously."""
+        def task() -> None:
+            result = self.get_lyrics(item_id)
+            callback(result)
+        self._executor.submit(task)
+
+    # --- Item details ---
+
+    def get_item_details(
+        self, item_id: str,
+    ) -> dict | None:
+        """Get full item details including MediaSources."""
+        if not self._user_id:
+            return None
+        try:
+            result = self._client.jellyfin.user_items(
+                handler="/{id}".format(id=item_id),
+                params={
+                    "Fields": (
+                        "MediaSources,DateCreated,Path"
+                    ),
+                },
+            )
+            return result
+        except Exception:
+            return None
+
+    def get_item_details_async(
+        self,
+        item_id: str,
+        callback: Callable[[dict | None], None],
+    ) -> None:
+        """Fetch item details asynchronously."""
+        def task() -> None:
+            result = self.get_item_details(item_id)
+            callback(result)
+        self._executor.submit(task)
+
     def shutdown(self) -> None:
         """Shutdown the client and thread pool."""
         self._executor.shutdown(wait=False)

@@ -46,6 +46,14 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Streaming**: Uses `/Audio/{id}/stream?static=true` (direct passthrough, no transcoding). MPV handles all formats natively, so the server never needs to transcode. This is intentional — avoids format-allowlist issues.
 
+**Playback queue** (`main_window.py`): Built when a track is played via Enter. The queue is a snapshot of `_filtered_items` at time of play. A `_QueueOrigin` dataclass records where the queue was created (section, nav depth, context). Auto-focus on the next track works only when the user is in the same section/level. Queue is pruned on library refresh/library toggle (tracks removed from library are dropped). Stop (`Ctrl+Alt+Q`) destroys the queue. Repeat loops the current track without blocking next/prev navigation. Shuffle reorders the queue (not the list display); disabling shuffle restores the original order.
+
+**Context menu** (`ui/context_menu.py`): Dynamic menu built per item type. Tracks get: Play, Go to Artist/Album, View Lyrics, Synced Lyrics, Download, Copy Link, Properties. Albums get: Open, Go to Artist, Copy Link, Properties. Artists/Playlists get: Open, Copy Link, Properties. Sub-levels add a "Go Back" item.
+
+**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread).
+
+**Lyrics API**: `GET /Audio/{itemId}/Lyrics` returns `{Lyrics: [{Start: ticks, Text: str}]}`. Available from Jellyfin 10.9+. Fetched async; no caching.
+
 ## Database Schema
 
 **Normalized library cache** — all entities are extracted from a single `get_all_tracks()` API response (plus a separate playlists fetch):
@@ -65,6 +73,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 | `playback_positions` | Future: audiobook position memory |
 
 **Library filtering**: Tracks and albums store `library_id` linking them to a music library. Query methods accept an optional `library_ids: set[str]` parameter — when provided, results are filtered to only include items from the selected libraries. Artists and album artists are filtered transitively through their tracks/albums. Playlists are cross-library and never filtered.
+
 
 **Schema migration**: `_init_schema()` uses `CREATE TABLE IF NOT EXISTS` for all tables. No backward-compatible migrations are maintained — the DB is deleted on schema changes during development.
 
@@ -107,15 +116,23 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 | Enter | Play track / drill into item |
 | Backspace | Go back one navigation level |
 | Escape | Pause/Resume playback |
-| Ctrl+S | Stop playback |
+| Ctrl+Alt+Q | Stop playback (destroys queue) |
+| Shift+Right | Next track in queue |
+| Shift+Left | Previous track in queue |
+| Ctrl+Alt+X | Restart current track |
+| Ctrl+Alt+R | Toggle repeat mode |
+| Ctrl+Alt+S | Toggle shuffle mode |
 | Ctrl+Up/Down | Volume ±5% |
 | Ctrl+Right/Left | Seek ±10 seconds |
+| Alt+Enter | Properties dialog |
+| Ctrl+C | Copy Jellyfin link |
+| Ctrl+Shift+C | Copy stream link (tracks only) |
+| Ctrl+Shift+Enter | Download track |
 | F5 | Refresh library from server |
 | F1 | Show keyboard shortcuts dialog |
-| Ctrl+Shift+S | Change server |
 | Alt+F4 | Exit |
 
-Accelerators are defined in `MainWindow._setup_accelerators()`. Menu bar mnemonics provide the same actions via Alt key.
+Accelerators are defined in `MainWindow._setup_accelerators()`. Menu bar mnemonics provide the same actions via Alt key. Context menu activated with Applications key, Shift+F10, or right-click.
 
 ## Adding a New Feature
 
@@ -174,15 +191,25 @@ Follow these steps in order:
 - Multi-library support: per-library track fetching, Libraries submenu with checkable filters, library_id on tracks/albums
 - Playlists shown regardless of library selection (cross-library entity)
 
-### Stage 3: Enhanced Player & Context Menu
+### Stage 3: Enhanced Player & Context Menu — COMPLETED
 
 **Goal**: Full playback features and track actions.
 
-- Play queue with next/previous track
-- Play album from selected track
-- Shuffle/repeat modes
-- Context menu: track properties, lyrics (from Jellyfin metadata), download to PC, copy stream URL
-- Extended menu bar: Next, Previous in Playback menu
+- Playback queue: created on Enter, auto-advances, auto-focuses if in same section
+- Queue updates on library refresh/toggle; destroyed on Stop
+- Repeat mode (Ctrl+Alt+R): loops current track, next/prev still works
+- Shuffle mode (Ctrl+Alt+S): shuffles queue, not list display; unshuffle restores order
+- Next/Previous track (Shift+Right/Left)
+- Restart track (Ctrl+Alt+X)
+- OS toast notifications for repeat/shuffle toggle (screen-reader accessible)
+- Context menu on all library items (Applications key / right-click / Shift+F10)
+- Properties dialog: track (with bitrate/format/size from API), artist (album/track counts), album (track count/duration), playlist (track count/duration)
+- Copy Jellyfin web link (Ctrl+C) for all item types
+- Download track (Ctrl+Shift+Enter) to `music/` folder with progress bar
+- Plain lyrics dialog (read-only text with Copy)
+- Synced lyrics dialog (ListBox with timestamps, Enter to seek)
+- Go to Artist / Go to Album navigation from context menu
+- New files: `ui/context_menu.py`, `ui/dialogs/properties_dialog.py`, `ui/dialogs/lyrics_dialog.py`, `ui/dialogs/download_dialog.py`
 
 ### Stage 4: Global Search
 

@@ -1,8 +1,10 @@
 """Main application window for Groove."""
 
+import random
 from dataclasses import dataclass
 
 import wx
+import wx.adv
 
 from groove import __app_name__, __version__
 from groove.api import JellyfinClient
@@ -51,6 +53,16 @@ class _NavState:
     selected_id: str | None
 
 
+@dataclass
+class _QueueOrigin:
+    """Remembers where a playback queue was created."""
+
+    section_idx: int
+    nav_depth: int
+    level_type: str
+    context_name: str | None
+
+
 class MainWindow(wx.Frame):
     """Main window with library navigation and playback."""
 
@@ -76,6 +88,21 @@ class MainWindow(wx.Frame):
 
         # Current playback
         self._current_track: dict | None = None
+
+        # Playback queue
+        self._queue: list[dict] = []
+        self._queue_index: int = -1
+        self._queue_origin: _QueueOrigin | None = None
+        self._original_queue: list[dict] = []
+
+        # Playback modes
+        self._shuffle_enabled: bool = False
+        self._repeat_enabled: bool = False
+
+        # Lyrics cache: track_id -> dict | "none"
+        self._lyrics_cache: dict[str, dict | str] = {}
+        # True while synced lyrics dialog is open
+        self._synced_lyrics_active: bool = False
 
         # Navigation state
         self._nav_stack: list[_NavState] = []
@@ -128,7 +155,7 @@ class MainWindow(wx.Frame):
         self._menu_change_server = file_menu.Append(
             wx.ID_ANY,
             # Translators: Menu item to switch server.
-            _("Change &Server...\tCtrl+Shift+S"),
+            _("Change &Server..."),
             # Translators: Help text for Change Server.
             _("Connect to a different server"),
         )
@@ -162,7 +189,7 @@ class MainWindow(wx.Frame):
         self._menu_stop = playback_menu.Append(
             wx.ID_ANY,
             # Translators: Menu item to stop.
-            _("&Stop\tCtrl+S"),
+            _("&Stop\tCtrl+Alt+Q"),
             # Translators: Help text for Stop.
             _("Stop playback"),
         )
@@ -195,6 +222,43 @@ class MainWindow(wx.Frame):
             _("Seek &Backward\tCtrl+Left"),
             # Translators: Help text for Seek Backward.
             _("Seek backward 10 seconds"),
+        )
+        playback_menu.AppendSeparator()
+        self._menu_next = playback_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item for next track.
+            _("&Next Track\tShift+Right"),
+            # Translators: Help text for Next Track.
+            _("Play next track in queue"),
+        )
+        self._menu_prev = playback_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item for previous track.
+            _("Pre&vious Track\tShift+Left"),
+            # Translators: Help text for Previous Track.
+            _("Play previous track in queue"),
+        )
+        self._menu_restart = playback_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item to restart current track.
+            _("R&estart Track\tCtrl+Alt+X"),
+            # Translators: Help text for Restart Track.
+            _("Replay current track from beginning"),
+        )
+        playback_menu.AppendSeparator()
+        self._menu_repeat = playback_menu.AppendCheckItem(
+            wx.ID_ANY,
+            # Translators: Menu item for repeat mode.
+            _("&Repeat\tCtrl+Alt+R"),
+            # Translators: Help text for Repeat.
+            _("Toggle repeat mode"),
+        )
+        self._menu_shuffle = playback_menu.AppendCheckItem(
+            wx.ID_ANY,
+            # Translators: Menu item for shuffle mode.
+            _("S&huffle\tCtrl+Alt+S"),
+            # Translators: Help text for Shuffle.
+            _("Toggle shuffle mode"),
         )
         # Translators: Playback menu label.
         menubar.Append(playback_menu, _("&Playback"))
@@ -413,6 +477,26 @@ class MainWindow(wx.Frame):
             wx.EVT_MENU, self._on_about,
             self._menu_about,
         )
+        self.Bind(
+            wx.EVT_MENU, self._on_next_track,
+            self._menu_next,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_prev_track,
+            self._menu_prev,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_restart_track,
+            self._menu_restart,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_toggle_repeat,
+            self._menu_repeat,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_toggle_shuffle,
+            self._menu_shuffle,
+        )
 
         # Section selector
         self._section_choice.Bind(
@@ -432,6 +516,9 @@ class MainWindow(wx.Frame):
         self._list.Bind(
             wx.EVT_LISTBOX_DCLICK, self._on_list_activate,
         )
+        self._list.Bind(
+            wx.EVT_CONTEXT_MENU, self._on_context_menu,
+        )
 
         # Frame-level key hook — fires before accelerators
         # and before the native control swallows Enter.
@@ -442,6 +529,29 @@ class MainWindow(wx.Frame):
 
     def _setup_accelerators(self) -> None:
         """Set up keyboard accelerators."""
+        # IDs for accelerator-only actions (no menu item)
+        self._id_properties = wx.NewIdRef()
+        self._id_copy_link = wx.NewIdRef()
+        self._id_copy_stream = wx.NewIdRef()
+        self._id_download = wx.NewIdRef()
+
+        self.Bind(
+            wx.EVT_MENU, self._on_properties_accel,
+            id=self._id_properties,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_copy_link_accel,
+            id=self._id_copy_link,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_copy_stream_accel,
+            id=self._id_copy_stream,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_download_accel,
+            id=self._id_download,
+        )
+
         accel = wx.AcceleratorTable([
             (
                 wx.ACCEL_NORMAL, wx.WXK_ESCAPE,
@@ -462,6 +572,34 @@ class MainWindow(wx.Frame):
             (
                 wx.ACCEL_CTRL, wx.WXK_LEFT,
                 self._menu_seek_bwd.GetId(),
+            ),
+            # Shift+Left/Right handled in _on_char_hook
+            # to avoid conflict with search box selection
+            (
+                wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("X"),
+                self._menu_restart.GetId(),
+            ),
+            (
+                wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("R"),
+                self._menu_repeat.GetId(),
+            ),
+            (
+                wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("S"),
+                self._menu_shuffle.GetId(),
+            ),
+            (
+                wx.ACCEL_ALT, wx.WXK_RETURN,
+                self._id_properties,
+            ),
+            # Ctrl+C for copy link handled in _on_char_hook
+            (
+                wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord("C"),
+                self._id_copy_stream,
+            ),
+            (
+                wx.ACCEL_CTRL | wx.ACCEL_SHIFT,
+                wx.WXK_RETURN,
+                self._id_download,
             ),
         ])
         self.SetAcceleratorTable(accel)
@@ -719,6 +857,7 @@ class MainWindow(wx.Frame):
         )
         self._load_library_from_db(server.id)
         self._refresh_current_view(server.id)
+        self._update_queue_after_refresh()
 
         # Translators: Library updated status.
         self._update_status(_("Library updated"))
@@ -1049,6 +1188,7 @@ class MainWindow(wx.Frame):
 
         self._load_library_from_db(server.id)
         self._refresh_current_view(server.id)
+        self._update_queue_after_refresh()
 
     # ------------------------------------------------------------------
     # Search debounce
@@ -1076,8 +1216,40 @@ class MainWindow(wx.Frame):
     # Playback
     # ------------------------------------------------------------------
 
+    def _play_track_from_list(
+        self, track: dict,
+    ) -> None:
+        """User pressed Enter/dbl-click: build queue and play."""
+        self._queue = list(self._filtered_items)
+        self._original_queue = list(
+            self._filtered_items,
+        )
+
+        track_id = track.get("Id")
+        self._queue_index = next(
+            (
+                i for i, t in enumerate(self._queue)
+                if t.get("Id") == track_id
+            ),
+            0,
+        )
+
+        self._queue_origin = _QueueOrigin(
+            section_idx=(
+                self._section_choice.GetSelection()
+            ),
+            nav_depth=len(self._nav_stack),
+            level_type=self._current_level_type,
+            context_name=self._context_name,
+        )
+
+        if self._shuffle_enabled:
+            self._shuffle_queue_around_current()
+
+        self._play_track(track)
+
     def _play_track(self, track: dict) -> None:
-        """Play a track."""
+        """Play a track (internal, no queue creation)."""
         track_id = track.get("Id") or track.get("id")
         if not track_id:
             return
@@ -1115,10 +1287,42 @@ class MainWindow(wx.Frame):
         self._update_title()
 
     def _on_track_end(self) -> None:
-        """Handle track end (with race-condition guard)."""
+        """Handle track end: repeat, advance queue, or stop."""
         if self._player.is_loaded:
             return
 
+        # Synced lyrics open: reload same track paused
+        if (
+            self._synced_lyrics_active
+            and self._current_track
+        ):
+            tid = self._current_track.get("Id")
+            if tid:
+                url = self._client.get_stream_url(tid)
+                if url:
+                    self._player.play(url)
+                    self._player.pause()
+                    return
+
+        if self._repeat_enabled and self._current_track:
+            tid = self._current_track.get("Id")
+            if tid:
+                url = self._client.get_stream_url(tid)
+                if url:
+                    self._player.play(url)
+                    return
+
+        if (
+            self._queue
+            and self._queue_index < len(self._queue) - 1
+        ):
+            self._queue_index += 1
+            next_track = self._queue[self._queue_index]
+            self._play_track(next_track)
+            self._auto_focus_queue_track(next_track)
+            return
+
+        self._clear_queue()
         self._current_track = None
         # Translators: Not playing label.
         self._now_playing_label.SetLabel(
@@ -1127,6 +1331,134 @@ class MainWindow(wx.Frame):
         # Translators: Playback finished status.
         self._update_status(_("Playback finished"))
         self._update_title()
+
+    # ------------------------------------------------------------------
+    # Queue helpers
+    # ------------------------------------------------------------------
+
+    def _clear_queue(self) -> None:
+        """Reset playback queue state."""
+        self._queue.clear()
+        self._original_queue.clear()
+        self._queue_index = -1
+        self._queue_origin = None
+
+    def _auto_focus_queue_track(
+        self, track: dict,
+    ) -> None:
+        """Focus playing track if in the queue origin."""
+        origin = self._queue_origin
+        if not origin:
+            return
+
+        cur_section = (
+            self._section_choice.GetSelection()
+        )
+        cur_depth = len(self._nav_stack)
+
+        if (
+            cur_section == origin.section_idx
+            and cur_depth == origin.nav_depth
+            and self._current_level_type
+            == origin.level_type
+            and self._context_name
+            == origin.context_name
+        ):
+            track_id = track.get("Id")
+            if track_id:
+                self._list.set_selection_by_id(track_id)
+
+    def _update_queue_after_refresh(self) -> None:
+        """Prune queue after library refresh."""
+        if not self._queue:
+            return
+
+        valid_ids = {
+            t.get("Id") for t in self._lib_tracks
+        }
+
+        current_id = None
+        if 0 <= self._queue_index < len(self._queue):
+            current_id = self._queue[
+                self._queue_index
+            ].get("Id")
+
+        self._queue = [
+            t for t in self._queue
+            if t.get("Id") in valid_ids
+        ]
+        self._original_queue = [
+            t for t in self._original_queue
+            if t.get("Id") in valid_ids
+        ]
+
+        if not self._queue:
+            self._clear_queue()
+            return
+
+        if current_id:
+            new_idx = next(
+                (
+                    i for i, t in enumerate(self._queue)
+                    if t.get("Id") == current_id
+                ),
+                None,
+            )
+            if new_idx is not None:
+                self._queue_index = new_idx
+            else:
+                self._queue_index = min(
+                    self._queue_index,
+                    len(self._queue) - 1,
+                )
+
+    def _shuffle_queue_around_current(self) -> None:
+        """Shuffle queue keeping current track in place."""
+        if not self._queue or self._queue_index < 0:
+            return
+        after = self._queue[self._queue_index + 1:]
+        random.shuffle(after)
+        self._queue = (
+            self._queue[: self._queue_index + 1] + after
+        )
+
+    def _unshuffle_queue(self) -> None:
+        """Restore original queue order."""
+        if not self._original_queue:
+            return
+        current_id = None
+        if 0 <= self._queue_index < len(self._queue):
+            current_id = self._queue[
+                self._queue_index
+            ].get("Id")
+        self._queue = list(self._original_queue)
+        if current_id:
+            self._queue_index = next(
+                (
+                    i for i, t in enumerate(self._queue)
+                    if t.get("Id") == current_id
+                ),
+                0,
+            )
+
+    # ------------------------------------------------------------------
+    # Toggle notifications
+    # ------------------------------------------------------------------
+
+    def _notify_toggle(self, message: str) -> None:
+        """Show accessible notification for toggles."""
+        self._update_status(message)
+        try:
+            notif = wx.adv.NotificationMessage(
+                __app_name__, message,
+            )
+            notif.Show(
+                timeout=(
+                    wx.adv.NotificationMessage.Timeout_Auto
+                ),
+            )
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -1144,14 +1476,14 @@ class MainWindow(wx.Frame):
         if focused is self._list:
             if code in (
                 wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
-            ):
+            ) and not event.AltDown():
                 item = self._list.get_selected_item()
                 if item:
                     if (
                         self._current_level_type
                         == "tracks"
                     ):
-                        self._play_track(item)
+                        self._play_track_from_list(item)
                     else:
                         self._drill_down(item)
                 return
@@ -1160,6 +1492,32 @@ class MainWindow(wx.Frame):
                     self._go_back()
                     return
 
+        # Shift+Arrow: next/prev track (unless in search)
+        if (
+            event.ShiftDown()
+            and not event.ControlDown()
+            and not event.AltDown()
+        ):
+            if code == wx.WXK_RIGHT:
+                if focused is not self._search_text:
+                    self._on_next_track(None)
+                    return
+            elif code == wx.WXK_LEFT:
+                if focused is not self._search_text:
+                    self._on_prev_track(None)
+                    return
+
+        # Ctrl+C: copy link (unless in search box)
+        if (
+            event.ControlDown()
+            and not event.ShiftDown()
+            and not event.AltDown()
+            and code == ord("C")
+            and focused is not self._search_text
+        ):
+            self._on_copy_link_accel(None)
+            return
+
         event.Skip()
 
     def _on_list_activate(self, event: wx.CommandEvent):
@@ -1167,14 +1525,14 @@ class MainWindow(wx.Frame):
         if not item:
             return
         if self._current_level_type == "tracks":
-            self._play_track(item)
+            self._play_track_from_list(item)
         else:
             self._drill_down(item)
 
     def _on_play(self, event: wx.CommandEvent):
         item = self._list.get_selected_item()
         if item and self._current_level_type == "tracks":
-            self._play_track(item)
+            self._play_track_from_list(item)
         elif (
             self._current_track
             and not self._player.is_playing
@@ -1193,6 +1551,7 @@ class MainWindow(wx.Frame):
     def _on_stop(self, event: wx.CommandEvent):
         self._player.stop()
         self._current_track = None
+        self._clear_queue()
         # Translators: Not playing label.
         self._now_playing_label.SetLabel(
             _("Not playing")
@@ -1215,6 +1574,55 @@ class MainWindow(wx.Frame):
     def _on_seek_backward(self, event: wx.CommandEvent):
         self._player.seek(-10)
 
+    def _on_next_track(self, event: wx.CommandEvent):
+        if (
+            not self._queue
+            or self._queue_index >= len(self._queue) - 1
+        ):
+            return
+        self._queue_index += 1
+        track = self._queue[self._queue_index]
+        self._play_track(track)
+        self._auto_focus_queue_track(track)
+
+    def _on_prev_track(self, event: wx.CommandEvent):
+        if not self._queue or self._queue_index <= 0:
+            return
+        self._queue_index -= 1
+        track = self._queue[self._queue_index]
+        self._play_track(track)
+        self._auto_focus_queue_track(track)
+
+    def _on_restart_track(self, event: wx.CommandEvent):
+        if self._current_track:
+            self._play_track(self._current_track)
+
+    def _on_toggle_repeat(self, event: wx.CommandEvent):
+        self._repeat_enabled = (
+            self._menu_repeat.IsChecked()
+        )
+        if self._repeat_enabled:
+            # Translators: Repeat mode on notification.
+            self._notify_toggle(_("Repeat on"))
+        else:
+            # Translators: Repeat mode off notification.
+            self._notify_toggle(_("Repeat off"))
+
+    def _on_toggle_shuffle(self, event: wx.CommandEvent):
+        self._shuffle_enabled = (
+            self._menu_shuffle.IsChecked()
+        )
+        if self._shuffle_enabled:
+            if self._queue:
+                self._shuffle_queue_around_current()
+            # Translators: Shuffle mode on notification.
+            self._notify_toggle(_("Shuffle on"))
+        else:
+            if self._queue and self._original_queue:
+                self._unshuffle_queue()
+            # Translators: Shuffle mode off notification.
+            self._notify_toggle(_("Shuffle off"))
+
     def _on_refresh(self, event: wx.CommandEvent):
         self.load_library()
 
@@ -1231,21 +1639,31 @@ class MainWindow(wx.Frame):
         shortcuts = _(
             "Keyboard Shortcuts:\n\n"
             "Navigation:\n"
-            "  Tab          - Move between controls\n"
-            "  Up/Down      - Navigate items\n"
-            "  Enter        - Play track / open item\n"
-            "  Backspace    - Go back one level\n\n"
+            "  Tab            - Move between controls\n"
+            "  Up/Down        - Navigate items\n"
+            "  Enter          - Play track / open item\n"
+            "  Backspace      - Go back one level\n\n"
             "Playback:\n"
-            "  Escape       - Pause/Resume\n"
-            "  Ctrl+S       - Stop\n"
-            "  Ctrl+Up      - Volume up\n"
-            "  Ctrl+Down    - Volume down\n"
-            "  Ctrl+Right   - Seek forward 10s\n"
-            "  Ctrl+Left    - Seek backward 10s\n\n"
+            "  Escape         - Pause/Resume\n"
+            "  Ctrl+Alt+Q     - Stop\n"
+            "  Shift+Right    - Next track\n"
+            "  Shift+Left     - Previous track\n"
+            "  Ctrl+Alt+X     - Restart track\n"
+            "  Ctrl+Alt+R     - Toggle repeat\n"
+            "  Ctrl+Alt+S     - Toggle shuffle\n"
+            "  Ctrl+Up        - Volume up\n"
+            "  Ctrl+Down      - Volume down\n"
+            "  Ctrl+Right     - Seek forward 10s\n"
+            "  Ctrl+Left      - Seek backward 10s\n\n"
+            "Context:\n"
+            "  Alt+Enter        - Properties\n"
+            "  Ctrl+C           - Copy link\n"
+            "  Ctrl+Shift+C     - Copy stream link\n"
+            "  Ctrl+Shift+Enter - Download track\n\n"
             "Other:\n"
-            "  F5           - Refresh library\n"
-            "  F1           - Show this help\n"
-            "  Alt+F4       - Exit"
+            "  F5             - Refresh library\n"
+            "  F1             - Show this help\n"
+            "  Alt+F4         - Exit"
         )
         wx.MessageBox(
             shortcuts,
@@ -1275,6 +1693,564 @@ class MainWindow(wx.Frame):
             wx.OK | wx.ICON_INFORMATION,
             self,
         )
+
+    # ------------------------------------------------------------------
+    # Context menu & actions
+    # ------------------------------------------------------------------
+
+    def _on_context_menu(
+        self, event: wx.ContextMenuEvent,
+    ) -> None:
+        """Show context menu for the selected item."""
+        item = self._list.get_selected_item()
+        if not item:
+            return
+
+        from groove.ui.context_menu import (
+            build_context_menu,
+            ID_PLAY, ID_OPEN, ID_GO_BACK,
+            ID_GO_TO_ARTIST, ID_GO_TO_ALBUM,
+            ID_GO_TO_ALBUM_ARTIST,
+            ID_VIEW_LYRICS, ID_SYNCED_LYRICS,
+            ID_DOWNLOAD, ID_COPY_LINK, ID_COPY_STREAM,
+            ID_PROPERTIES,
+        )
+
+        menu = build_context_menu(
+            self._current_level_type,
+            item,
+            len(self._nav_stack),
+        )
+
+        handler_map = {
+            ID_PLAY: lambda e: (
+                self._play_track_from_list(item)
+            ),
+            ID_OPEN: lambda e: self._drill_down(item),
+            ID_GO_BACK: lambda e: self._go_back(),
+            ID_GO_TO_ARTIST: lambda e: (
+                self._go_to_artist(item)
+            ),
+            ID_GO_TO_ALBUM_ARTIST: lambda e: (
+                self._go_to_album_artist(item)
+            ),
+            ID_GO_TO_ALBUM: lambda e: (
+                self._go_to_album(item)
+            ),
+            ID_VIEW_LYRICS: lambda e: (
+                self._show_lyrics(item, synced=False)
+            ),
+            ID_SYNCED_LYRICS: lambda e: (
+                self._show_lyrics(item, synced=True)
+            ),
+            ID_DOWNLOAD: lambda e: (
+                self._download_track(item)
+            ),
+            ID_COPY_LINK: lambda e: (
+                self._copy_link(item)
+            ),
+            ID_COPY_STREAM: lambda e: (
+                self._copy_stream_link(item)
+            ),
+            ID_PROPERTIES: lambda e: (
+                self._show_properties(item)
+            ),
+        }
+
+        for mid, handler in handler_map.items():
+            self.Bind(wx.EVT_MENU, handler, id=mid)
+
+        self._list.PopupMenu(menu)
+        menu.Destroy()
+
+    def _on_properties_accel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        item = self._list.get_selected_item()
+        if item:
+            self._show_properties(item)
+
+    def _on_copy_link_accel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        item = self._list.get_selected_item()
+        if item:
+            self._copy_link(item)
+
+    def _on_copy_stream_accel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        item = self._list.get_selected_item()
+        if item and self._current_level_type == "tracks":
+            self._copy_stream_link(item)
+
+    def _on_download_accel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        item = self._list.get_selected_item()
+        if item and self._current_level_type == "tracks":
+            self._download_track(item)
+
+    def _copy_link(self, item: dict) -> None:
+        """Copy the Jellyfin web URL to clipboard."""
+        item_id = item.get("Id")
+        if not item_id or not self._client.server_url:
+            return
+
+        url = (
+            "{server}/web/index.html"
+            "#!/details?id={id}"
+        ).format(
+            server=self._client.server_url,
+            id=item_id,
+        )
+
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(
+                wx.TextDataObject(url),
+            )
+            wx.TheClipboard.Close()
+            # Translators: After copying link.
+            self._notify_toggle(
+                _("Link copied to clipboard")
+            )
+
+    def _copy_stream_link(self, item: dict) -> None:
+        """Copy the direct stream URL to clipboard."""
+        if self._current_level_type != "tracks":
+            return
+        track_id = item.get("Id")
+        if not track_id:
+            return
+        url = self._client.get_stream_url(track_id)
+        if not url:
+            return
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(
+                wx.TextDataObject(url),
+            )
+            wx.TheClipboard.Close()
+            # Translators: After copying stream link.
+            self._notify_toggle(
+                _("Stream link copied to clipboard")
+            )
+
+    def _show_properties(self, item: dict) -> None:
+        """Show properties dialog for an item."""
+        lt = self._current_level_type
+
+        if lt == "tracks":
+            self._show_track_properties(item)
+            return
+
+        from groove.ui.dialogs.properties_dialog import (
+            PropertiesDialog,
+            build_artist_properties,
+            build_album_properties,
+            build_playlist_properties,
+        )
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+        lib_ids = self._selected_library_ids
+
+        if lt in ("artists", "album_artists"):
+            stats = self._db.get_artist_stats(
+                server.id, item.get("Id", ""),
+                lt, lib_ids,
+            )
+            props = build_artist_properties(item, stats)
+            # Translators: Artist properties dialog title.
+            title = _("Artist Properties")
+        elif lt == "albums":
+            stats = self._db.get_album_stats(
+                server.id, item.get("Id", ""), lib_ids,
+            )
+            props = build_album_properties(item, stats)
+            # Translators: Album properties dialog title.
+            title = _("Album Properties")
+        elif lt == "playlists":
+            stats = self._db.get_playlist_stats(
+                server.id, item.get("Id", ""),
+            )
+            props = build_playlist_properties(
+                item, stats,
+            )
+            # Translators: Playlist properties title.
+            title = _("Playlist Properties")
+        else:
+            return
+
+        dlg = PropertiesDialog(self, title, props)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _show_track_properties(
+        self, item: dict,
+    ) -> None:
+        """Fetch details then show track properties."""
+        track_id = item.get("Id")
+        if not track_id:
+            return
+        # Translators: Fetching details status.
+        self._update_status(_("Fetching details..."))
+
+        def on_details(details):
+            wx.CallAfter(
+                self._on_track_details_received,
+                item, details,
+            )
+
+        self._client.get_item_details_async(
+            track_id, on_details,
+        )
+
+    def _on_track_details_received(
+        self, track: dict, details: dict | None,
+    ) -> None:
+        from groove.ui.dialogs.properties_dialog import (
+            PropertiesDialog,
+            build_track_properties,
+        )
+
+        props = build_track_properties(
+            track, details,
+        )
+        # Translators: Track properties dialog title.
+        title = _("Track Properties")
+        dlg = PropertiesDialog(self, title, props)
+        dlg.ShowModal()
+        dlg.Destroy()
+        # Translators: Ready status.
+        self._update_status(_("Ready"))
+
+    def _show_lyrics(
+        self, item: dict, synced: bool = False,
+    ) -> None:
+        """Fetch and show lyrics for a track."""
+        track_id = item.get("Id")
+        if not track_id:
+            return
+
+        # Check cache first
+        cached = self._lyrics_cache.get(track_id)
+        if cached == "none":
+            wx.MessageBox(
+                # Translators: No lyrics available message.
+                _("No lyrics available for this track."),
+                # Translators: Lyrics dialog title.
+                _("Lyrics"),
+                wx.OK | wx.ICON_INFORMATION,
+                self,
+            )
+            return
+        if isinstance(cached, dict):
+            self._on_lyrics_received(
+                cached, item, synced,
+            )
+            return
+
+        # Translators: Fetching lyrics status.
+        self._update_status(_("Fetching lyrics..."))
+
+        def on_lyrics(result):
+            wx.CallAfter(
+                self._on_lyrics_received,
+                result, item, synced,
+            )
+
+        self._client.get_lyrics_async(
+            track_id, on_lyrics,
+        )
+
+    def _on_lyrics_received(
+        self,
+        result: dict | None,
+        track: dict,
+        synced: bool,
+    ) -> None:
+        track_id = track.get("Id", "")
+
+        if not result or not result.get("Lyrics"):
+            self._lyrics_cache[track_id] = "none"
+            wx.MessageBox(
+                # Translators: No lyrics available message.
+                _("No lyrics available for this track."),
+                # Translators: Lyrics dialog title.
+                _("Lyrics"),
+                wx.OK | wx.ICON_INFORMATION,
+                self,
+            )
+            return
+
+        # Cache the result
+        self._lyrics_cache[track_id] = result
+
+        lyrics = result["Lyrics"]
+        name = track.get("Name") or _("Untitled")
+
+        has_timing = any(
+            cue.get("Start") is not None
+            and cue["Start"] > 0
+            for cue in lyrics
+        )
+
+        from groove.ui.dialogs.lyrics_dialog import (
+            PlainLyricsDialog,
+            SyncedLyricsDialog,
+        )
+
+        if synced:
+            if not has_timing:
+                wx.MessageBox(
+                    # Translators: No synced lyrics message.
+                    _(
+                        "Synced lyrics are not available "
+                        "for this track."
+                    ),
+                    # Translators: Synced lyrics title.
+                    _("Synced Lyrics"),
+                    wx.OK | wx.ICON_INFORMATION,
+                    self,
+                )
+                return
+
+            # Load the track (paused) so seek works
+            self._load_track_for_lyrics(track)
+
+            def play_from_cb(ticks: int) -> None:
+                """Seek to timestamp and resume."""
+                pos = ticks / 10_000_000
+                self._player.seek(
+                    pos, relative=False,
+                )
+                if not self._player.is_playing:
+                    self._player.resume()
+
+            def pause_cb() -> None:
+                self._player.toggle_pause()
+
+            def seek_cb(seconds: float) -> None:
+                self._player.seek(seconds)
+
+            def vol_up_cb() -> None:
+                self._player.volume_up()
+
+            def vol_down_cb() -> None:
+                self._player.volume_down()
+
+            # Translators: Synced lyrics dialog title.
+            dlg = SyncedLyricsDialog(
+                self,
+                _("Lyrics - {title}").format(
+                    title=name,
+                ),
+                lyrics,
+                play_from_cb,
+                pause_cb,
+                seek_cb,
+                vol_up_cb,
+                vol_down_cb,
+            )
+        else:
+            text = "\n".join(
+                cue.get("Text", "") for cue in lyrics
+            )
+            # Translators: Plain lyrics dialog title.
+            dlg = PlainLyricsDialog(
+                self,
+                _("Lyrics - {title}").format(
+                    title=name,
+                ),
+                text,
+            )
+
+        if synced:
+            self._synced_lyrics_active = True
+        dlg.ShowModal()
+        if synced:
+            self._synced_lyrics_active = False
+        dlg.Destroy()
+        # Translators: Ready status.
+        self._update_status(_("Ready"))
+
+    def _load_track_for_lyrics(
+        self, track: dict,
+    ) -> None:
+        """Load a track paused at beginning for lyrics.
+
+        Builds the queue from the current list (same as
+        pressing Enter) so next/prev work after dialog
+        closes. If the track is already loaded, only the
+        queue is rebuilt.
+        """
+        tid = track.get("Id")
+        if not tid:
+            return
+
+        # Build queue like _play_track_from_list
+        self._queue = list(self._filtered_items)
+        self._original_queue = list(
+            self._filtered_items,
+        )
+        self._queue_index = next(
+            (
+                i for i, t in enumerate(self._queue)
+                if t.get("Id") == tid
+            ),
+            0,
+        )
+        self._queue_origin = _QueueOrigin(
+            section_idx=(
+                self._section_choice.GetSelection()
+            ),
+            nav_depth=len(self._nav_stack),
+            level_type=self._current_level_type,
+            context_name=self._context_name,
+        )
+        if self._shuffle_enabled:
+            self._shuffle_queue_around_current()
+
+        current_id = None
+        if self._current_track:
+            current_id = self._current_track.get("Id")
+
+        if current_id == tid and self._player.is_loaded:
+            return
+
+        url = self._client.get_stream_url(tid)
+        if not url:
+            return
+
+        self._current_track = track
+        self._player.play(url)
+        self._player.pause()
+        title = track.get("Name") or _("Untitled")
+        # Translators: Status bar when playing.
+        self._update_status(
+            _("Playing: {title}").format(title=title)
+        )
+        self._update_title()
+
+    def _download_track(self, item: dict) -> None:
+        """Download a track to the music folder."""
+        if self._current_level_type != "tracks":
+            return
+        track_id = item.get("Id")
+        if not track_id:
+            return
+        url = self._client.get_stream_url(track_id)
+        if not url:
+            return
+
+        name = item.get("Name", "track")
+        artist = item.get("ArtistDisplay", "")
+        if artist:
+            filename = "{artist} - {name}".format(
+                artist=artist, name=name,
+            )
+        else:
+            filename = name
+        # Sanitize
+        bad = r'\/:*?"<>|'
+        filename = "".join(
+            c for c in filename if c not in bad
+        )
+        filename = filename.strip() or "track"
+
+        from groove.ui.dialogs.download_dialog import (
+            DownloadDialog,
+        )
+
+        dlg = DownloadDialog(
+            self,
+            # Translators: Download dialog title.
+            _("Download: {title}").format(title=name),
+            url,
+            filename,
+        )
+        result = dlg.ShowModal()
+        dlg.Destroy()
+
+        if result == wx.ID_OK:
+            # Translators: Download complete notification.
+            self._notify_toggle(_("Download complete"))
+
+    def _go_to_artist(self, item: dict) -> None:
+        """Navigate to the (regular) artist."""
+        artist_display = item.get("ArtistDisplay", "")
+
+        target = None
+        for a in self._lib_artists:
+            if a.get("Name") == artist_display:
+                target = a
+                break
+
+        if not target:
+            # Translators: Artist not found status.
+            self._update_status(
+                _("Artist not found")
+            )
+            return
+
+        section_idx = SECTIONS.index("artists")
+        self._section_choice.SetSelection(section_idx)
+        self._switch_to_section(section_idx)
+        self._drill_down(target)
+
+    def _go_to_album_artist(self, item: dict) -> None:
+        """Navigate to the album artist."""
+        album_artist = (
+            item.get("AlbumArtist", "")
+            or item.get("ArtistDisplay", "")
+        )
+
+        target = None
+        for a in self._lib_album_artists:
+            if a.get("Name") == album_artist:
+                target = a
+                break
+
+        if not target:
+            # Translators: Album artist not found status.
+            self._update_status(
+                _("Album artist not found")
+            )
+            return
+
+        section_idx = SECTIONS.index("album_artists")
+        self._section_choice.SetSelection(section_idx)
+        self._switch_to_section(section_idx)
+        self._drill_down(target)
+
+    def _go_to_album(self, item: dict) -> None:
+        """Navigate to the album of a track."""
+        album_id = item.get("AlbumId")
+        if not album_id:
+            # Translators: Album not found status.
+            self._update_status(
+                _("Album not found")
+            )
+            return
+
+        target = None
+        for a in self._lib_albums:
+            if a.get("Id") == album_id:
+                target = a
+                break
+
+        if not target:
+            # Translators: Album not found status.
+            self._update_status(
+                _("Album not found")
+            )
+            return
+
+        section_idx = SECTIONS.index("albums")
+        self._section_choice.SetSelection(section_idx)
+        self._switch_to_section(section_idx)
+        self._drill_down(target)
 
     def _on_exit(self, event: wx.CommandEvent):
         self.Close()

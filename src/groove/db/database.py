@@ -785,3 +785,150 @@ class Database:
                 (server_id, f"%{query}%"),
             ).fetchall()
             return [self._track_to_dict(r) for r in rows]
+
+    # --- Stats for properties ---
+
+    def get_artist_stats(
+        self,
+        server_id: int,
+        artist_id: str,
+        artist_type: str = "artists",
+        library_ids: set[str] | None = None,
+    ) -> dict:
+        """Get album and track counts for an artist.
+
+        Returns ``{album_count, track_count}``.
+        """
+        a_lib_sql, a_lib_params = self._lib_filter(
+            library_ids, "a.library_id",
+        )
+        t_lib_sql, t_lib_params = self._lib_filter(
+            library_ids, "t.library_id",
+        )
+        with self.connection() as conn:
+            if artist_type == "album_artists":
+                album_count = conn.execute(
+                    f"""
+                    SELECT COUNT(DISTINCT a.id)
+                    FROM albums a
+                    JOIN album_album_artists aaa
+                        ON aaa.album_id = a.id
+                        AND aaa.server_id = a.server_id
+                    WHERE a.server_id = ?
+                        AND aaa.album_artist_id = ?
+                        {a_lib_sql}
+                    """,
+                    (
+                        server_id, artist_id,
+                        *a_lib_params,
+                    ),
+                ).fetchone()[0]
+                track_count = conn.execute(
+                    f"""
+                    SELECT COUNT(DISTINCT t.id)
+                    FROM tracks t
+                    JOIN albums al
+                        ON al.id = t.album_id
+                        AND al.server_id = t.server_id
+                    JOIN album_album_artists aaa
+                        ON aaa.album_id = al.id
+                        AND aaa.server_id = al.server_id
+                    WHERE t.server_id = ?
+                        AND aaa.album_artist_id = ?
+                        {t_lib_sql}
+                    """,
+                    (
+                        server_id, artist_id,
+                        *t_lib_params,
+                    ),
+                ).fetchone()[0]
+            else:
+                album_count = conn.execute(
+                    f"""
+                    SELECT COUNT(DISTINCT t.album_id)
+                    FROM tracks t
+                    JOIN track_artists ta
+                        ON ta.track_id = t.id
+                        AND ta.server_id = t.server_id
+                    WHERE t.server_id = ?
+                        AND ta.artist_id = ?
+                        {t_lib_sql}
+                    """,
+                    (
+                        server_id, artist_id,
+                        *t_lib_params,
+                    ),
+                ).fetchone()[0]
+                track_count = conn.execute(
+                    f"""
+                    SELECT COUNT(t.id) FROM tracks t
+                    JOIN track_artists ta
+                        ON ta.track_id = t.id
+                        AND ta.server_id = t.server_id
+                    WHERE t.server_id = ?
+                        AND ta.artist_id = ?
+                        {t_lib_sql}
+                    """,
+                    (
+                        server_id, artist_id,
+                        *t_lib_params,
+                    ),
+                ).fetchone()[0]
+
+            return {
+                "album_count": album_count,
+                "track_count": track_count,
+            }
+
+    def get_album_stats(
+        self,
+        server_id: int,
+        album_id: str,
+        library_ids: set[str] | None = None,
+    ) -> dict:
+        """Get track count and total duration for an album.
+
+        Returns ``{track_count, total_duration_ticks}``.
+        """
+        lib_sql, lib_params = self._lib_filter(library_ids)
+        with self.connection() as conn:
+            row = conn.execute(
+                f"""
+                SELECT COUNT(id),
+                       COALESCE(SUM(duration_ticks), 0)
+                FROM tracks
+                WHERE server_id = ?
+                    AND album_id = ?{lib_sql}
+                """,
+                (server_id, album_id, *lib_params),
+            ).fetchone()
+            return {
+                "track_count": row[0],
+                "total_duration_ticks": row[1],
+            }
+
+    def get_playlist_stats(
+        self, server_id: int, playlist_id: str,
+    ) -> dict:
+        """Get track count and total duration for a playlist.
+
+        Returns ``{track_count, total_duration_ticks}``.
+        """
+        with self.connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(t.id),
+                       COALESCE(SUM(t.duration_ticks), 0)
+                FROM tracks t
+                JOIN playlist_tracks pt
+                    ON pt.track_id = t.id
+                    AND pt.server_id = t.server_id
+                WHERE pt.playlist_id = ?
+                    AND t.server_id = ?
+                """,
+                (playlist_id, server_id),
+            ).fetchone()
+            return {
+                "track_count": row[0],
+                "total_duration_ticks": row[1],
+            }
