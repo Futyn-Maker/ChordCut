@@ -46,6 +46,8 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Streaming**: Uses `/Audio/{id}/stream?static=true` (direct passthrough, no transcoding). MPV handles all formats natively, so the server never needs to transcode. This is intentional — avoids format-allowlist issues.
 
+**Audio device selection** (`main_window.py`): A `wx.Choice` selector after the library list (last in tab order). Populated from MPV's `audio-device-list` property. First item is "Default (device name)" (`auto`), followed by all output devices, and "No device" (`null`) last. Changing the selection sets MPV's `audio-device` property, which switches output seamlessly without interrupting playback.
+
 **Playback queue** (`main_window.py`): Built when a track is played via Enter. The queue is a snapshot of `_filtered_items` at time of play. A `_QueueOrigin` dataclass records where the queue was created (section, nav depth, context). Auto-focus on the next track works only when the user is in the same section/level. Queue is pruned on library refresh/library toggle (tracks removed from library are dropped). Stop (`Ctrl+Alt+Q`) destroys the queue. Repeat loops the current track without blocking next/prev navigation. Shuffle reorders the queue (not the list display); disabling shuffle restores the original order.
 
 **Context menu** (`ui/context_menu.py`): Dynamic menu built per item type. Tracks get: Play, Go to Artist/Album, View Lyrics, Synced Lyrics, Download, Copy Link, Properties. Albums get: Open, Go to Artist, Copy Link, Properties. Artists/Playlists get: Open, Copy Link, Properties. Sub-levels add a "Go Back" item.
@@ -177,7 +179,7 @@ Follow these steps in order:
 **Goal**: Full media library browsing with artists, albums, playlists.
 
 - Section selector (`wx.Choice`): Tracks, Playlists, Artists, Album Artists, Albums
-- Tab order: Section selector → Search box → Library list
+- Tab order: Section selector → Search box → Library list → Output device selector
 - Hierarchical navigation: Artists → Albums → Tracks, Album Artists → Albums → Tracks, Albums → Tracks, Playlists → Tracks
 - `Enter` to drill down, `Backspace` to go up with focus restoration
 - Normalized SQLite schema: artists, album_artists, albums, playlists, track_artists, album_album_artists, playlist_tracks tables
@@ -209,6 +211,7 @@ Follow these steps in order:
 - Plain lyrics dialog (read-only text with Copy)
 - Synced lyrics dialog (ListBox with timestamps, Enter to seek)
 - Go to Artist / Go to Album navigation from context menu
+- Audio device selector (`wx.Choice`): lists all output devices, "Default (device name)" first, "No device" last. Switches MPV `audio-device` seamlessly without interrupting playback. Last in tab order, visible in all sections.
 - New files: `ui/context_menu.py`, `ui/dialogs/properties_dialog.py`, `ui/dialogs/lyrics_dialog.py`, `ui/dialogs/download_dialog.py`
 
 ### Stage 4: Global Search

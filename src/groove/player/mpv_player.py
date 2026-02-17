@@ -201,6 +201,50 @@ class Player:
         """
         self._on_error = callback
 
+    def get_audio_devices(self) -> list[dict]:
+        """Get available audio output devices.
+
+        Returns only WASAPI devices (the native Windows
+        backend).  Other backends like OpenAL wrap WASAPI
+        internally and would create duplicate entries.
+
+        Returns:
+            List of dicts with 'name' and 'description'.
+        """
+        try:
+            devices = self._mpv.audio_device_list
+            if devices:
+                return [
+                    d for d in devices
+                    if d.get("name", "").startswith(
+                        "wasapi/",
+                    )
+                ]
+        except Exception:
+            pass
+        return []
+
+    def get_audio_device(self) -> str:
+        """Get current audio device name."""
+        try:
+            return self._mpv.audio_device or "auto"
+        except Exception:
+            return "auto"
+
+    def set_audio_device(self, name: str) -> None:
+        """Set the audio output device.
+
+        Switches seamlessly without interrupting playback.
+
+        Args:
+            name: Device name from audio_device_list,
+                  'auto' for default, or 'null' for none.
+        """
+        try:
+            self._mpv.audio_device = name
+        except Exception:
+            pass
+
     def shutdown(self) -> None:
         """Shutdown the player and release resources."""
         try:

@@ -350,6 +350,20 @@ class MainWindow(wx.Frame):
         # Library list
         self._list = LibraryListBox(self._panel)
 
+        # Audio device selector (tab order: last)
+        self._device_label = wx.StaticText(
+            self._panel,
+            # Translators: Label for audio device selector.
+            label=_("&Output device:"),
+        )
+        self._device_choice = wx.Choice(
+            self._panel,
+            # Translators: Accessible name for device selector.
+            name=_("Output device"),
+        )
+        self._device_names: list[str] = []
+        self._populate_audio_devices()
+
         # Now-playing label
         self._now_playing_label = wx.StaticText(
             self._panel,
@@ -415,6 +429,24 @@ class MainWindow(wx.Frame):
                 | wx.LEFT | wx.RIGHT | wx.BOTTOM
             ),
             border=5,
+        )
+
+        # Audio device row
+        dev_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        dev_sizer.Add(
+            self._device_label,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+            border=5,
+        )
+        dev_sizer.Add(
+            self._device_choice,
+            proportion=0,
+            flag=wx.ALIGN_CENTER_VERTICAL,
+        )
+        main_sizer.Add(
+            dev_sizer,
+            flag=wx.EXPAND | wx.LEFT | wx.RIGHT,
+            border=10,
         )
 
         # Now playing
@@ -510,6 +542,11 @@ class MainWindow(wx.Frame):
         self.Bind(
             wx.EVT_TIMER, self._on_search_timer,
             self._search_timer,
+        )
+
+        # Audio device selector
+        self._device_choice.Bind(
+            wx.EVT_CHOICE, self._on_device_change,
         )
 
         # List (double-click only; Enter/Backspace via CHAR_HOOK)
@@ -1189,6 +1226,59 @@ class MainWindow(wx.Frame):
         self._load_library_from_db(server.id)
         self._refresh_current_view(server.id)
         self._update_queue_after_refresh()
+
+    # ------------------------------------------------------------------
+    # Audio device selection
+    # ------------------------------------------------------------------
+
+    def _populate_audio_devices(self) -> None:
+        """Fill the device selector with available devices."""
+        devices = self._player.get_audio_devices()
+
+        choices: list[str] = []
+        self._device_names = []
+
+        # First item: Default (with name of first device)
+        if devices:
+            default_desc = devices[0].get(
+                "description", "",
+            )
+            # Translators: Default audio device with name.
+            choices.append(
+                _("Default ({name})").format(
+                    name=default_desc,
+                )
+            )
+        else:
+            # Translators: Default audio device.
+            choices.append(_("Default"))
+        self._device_names.append("auto")
+
+        # All available devices
+        for dev in devices:
+            desc = dev.get("description", "")
+            name = dev.get("name", "")
+            choices.append(desc or name)
+            self._device_names.append(name)
+
+        # Last item: no device (mute)
+        # Translators: No audio device (mute output).
+        choices.append(_("No device"))
+        self._device_names.append("null")
+
+        self._device_choice.Set(choices)
+        self._device_choice.SetSelection(0)
+
+    def _on_device_change(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Handle audio device selection change."""
+        idx = self._device_choice.GetSelection()
+        if idx == wx.NOT_FOUND:
+            return
+        if idx < len(self._device_names):
+            device_name = self._device_names[idx]
+            self._player.set_audio_device(device_name)
 
     # ------------------------------------------------------------------
     # Search debounce
