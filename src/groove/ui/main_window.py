@@ -2349,4 +2349,8 @@ class MainWindow(wx.Frame):
         self._search_timer.Stop()
         self._player.shutdown()
         self._client.shutdown()
+        # Flush clipboard so data survives after exit.
+        # OleFlushClipboard() copies owned data into the
+        # OS clipboard manager, freeing it from this process.
+        wx.TheClipboard.Flush()
         event.Skip()
