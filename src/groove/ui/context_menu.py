@@ -62,7 +62,7 @@ def build_context_menu(
         # Translators: Context menu: download track.
         menu.Append(
             ID_DOWNLOAD,
-            _("&Download\tCtrl+Alt+Enter"),
+            _("&Download\tCtrl+Shift+Enter"),
         )
     else:
         # Non-track items: artists, albums, playlists
@@ -85,7 +85,7 @@ def build_context_menu(
     menu.AppendSeparator()
     # Translators: Context menu: copy link.
     menu.Append(
-        ID_COPY_LINK, _("&Copy Link\tCtrl+Alt+C"),
+        ID_COPY_LINK, _("&Copy Link\tCtrl+C"),
     )
     if level_type == "tracks":
         # Translators: Context menu: copy stream link.
