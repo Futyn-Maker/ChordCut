@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS libraries (
     id TEXT NOT NULL,
     server_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     duration_ticks INTEGER,
     track_number INTEGER,
     library_id TEXT,
+    date_created TEXT,
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
@@ -63,6 +65,7 @@ CREATE INDEX IF NOT EXISTS idx_tracks_name ON tracks(name COLLATE NOCASE);
 CREATE INDEX IF NOT EXISTS idx_tracks_server ON tracks(server_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album_id);
 CREATE INDEX IF NOT EXISTS idx_tracks_library ON tracks(library_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_date ON tracks(date_created);
 
 -- Artists (from track ArtistItems)
 CREATE TABLE IF NOT EXISTS artists (
@@ -242,24 +245,48 @@ class Database:
     def cache_libraries(
         self, server_id: int, libraries: list[dict],
     ) -> None:
-        """Cache the list of music libraries for a server."""
+        """Cache the list of music libraries for a server.
+
+        Existing ``enabled`` states are preserved: known libraries
+        keep their current enabled flag; newly discovered libraries
+        default to enabled (1).
+        """
         with self.connection() as conn:
+            # Remember which libraries the user has disabled.
+            rows = conn.execute(
+                "SELECT id, enabled FROM libraries"
+                " WHERE server_id = ?",
+                (server_id,),
+            ).fetchall()
+            enabled_states = {
+                r["id"]: r["enabled"] for r in rows
+            }
+
             conn.execute(
                 "DELETE FROM libraries WHERE server_id = ?",
                 (server_id,),
             )
             conn.executemany(
-                "INSERT OR IGNORE INTO libraries"
-                " (id, server_id, name) VALUES (?, ?, ?)",
+                "INSERT INTO libraries"
+                " (id, server_id, name, enabled)"
+                " VALUES (?, ?, ?, ?)",
                 [
-                    (lib["Id"], server_id, lib.get("Name", ""))
+                    (
+                        lib["Id"],
+                        server_id,
+                        lib.get("Name", ""),
+                        enabled_states.get(lib["Id"], 1),
+                    )
                     for lib in libraries
                     if lib.get("Id")
                 ],
             )
 
     def get_libraries(self, server_id: int) -> list[dict]:
-        """Get cached music libraries for a server."""
+        """Get cached music libraries for a server.
+
+        Returns dicts with ``Id``, ``Name``, and ``Enabled`` keys.
+        """
         with self.connection() as conn:
             rows = conn.execute(
                 """
@@ -270,9 +297,27 @@ class Database:
                 (server_id,),
             ).fetchall()
             return [
-                {"Id": r["id"], "Name": r["name"]}
+                {
+                    "Id": r["id"],
+                    "Name": r["name"],
+                    "Enabled": bool(r["enabled"]),
+                }
                 for r in rows
             ]
+
+    def set_library_enabled(
+        self,
+        server_id: int,
+        library_id: str,
+        enabled: bool,
+    ) -> None:
+        """Persist the enabled state of a music library."""
+        with self.connection() as conn:
+            conn.execute(
+                "UPDATE libraries SET enabled = ?"
+                " WHERE server_id = ? AND id = ?",
+                (int(enabled), server_id, library_id),
+            )
 
     def cache_library(
         self, server_id: int, tracks: list[dict],
@@ -376,6 +421,7 @@ class Database:
                     track.get("RunTimeTicks"),
                     track.get("IndexNumber"),
                     library_id,
+                    track.get("DateCreated"),
                 ))
 
             # Bulk insert tracks
@@ -385,8 +431,8 @@ class Database:
                 "  artist_name, artist_display,"
                 "  album_id, artist_id,"
                 "  duration_ticks, track_number,"
-                "  library_id"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "  library_id, date_created"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 track_rows,
             )
 
@@ -509,6 +555,7 @@ class Database:
             "RunTimeTicks": row["duration_ticks"],
             "IndexNumber": row["track_number"],
             "LibraryId": row["library_id"] or "",
+            "DateCreated": row["date_created"] or "",
         }
 
     @staticmethod
@@ -553,22 +600,44 @@ class Database:
 
     # --- Query methods ---
 
+    _TRACK_SORT_SQL: dict[str, str] = {
+        "alpha_asc": (
+            "artist_name COLLATE NOCASE,"
+            " album_name COLLATE NOCASE,"
+            " track_number"
+        ),
+        "alpha_desc": (
+            "artist_name COLLATE NOCASE DESC,"
+            " album_name COLLATE NOCASE DESC,"
+            " track_number DESC"
+        ),
+        "date_desc": (
+            "date_created DESC,"
+            " name COLLATE NOCASE"
+        ),
+        "date_asc": (
+            "date_created ASC,"
+            " name COLLATE NOCASE"
+        ),
+    }
+
     def get_all_tracks(
         self,
         server_id: int,
         library_ids: set[str] | None = None,
+        sort: str = "alpha_asc",
     ) -> list[dict]:
         """Get all cached tracks for a server."""
         lib_sql, lib_params = self._lib_filter(library_ids)
+        order = self._TRACK_SORT_SQL.get(
+            sort, self._TRACK_SORT_SQL["alpha_asc"],
+        )
         with self.connection() as conn:
             rows = conn.execute(
                 f"""
                 SELECT * FROM tracks
                 WHERE server_id = ?{lib_sql}
-                ORDER BY
-                    artist_name COLLATE NOCASE,
-                    album_name COLLATE NOCASE,
-                    track_number
+                ORDER BY {order}
                 """,
                 (server_id, *lib_params),
             ).fetchall()

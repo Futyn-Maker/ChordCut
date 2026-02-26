@@ -26,7 +26,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 ## Architecture
 
-**Startup flow** (`app.py`): GrooveApp creates Database, JellyfinClient, Player → checks for stored token → if none, shows LoginDialog → creates MainWindow → calls `load_library()`.
+**Startup flow** (`app.py`): GrooveApp creates Settings, Database, JellyfinClient, Player → checks for stored token → if none, shows LoginDialog → creates MainWindow (receives Settings) → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
 
 **Data flow** (`main_window.py` → `database.py` → `client.py`):
 1. On startup, cached library data from SQLite is shown **instantly** (tracks, artists, albums, playlists)
@@ -42,7 +42,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **List labels**: The visible `wx.StaticText` label shows a contextual count (e.g. "1100 tracks", "5 albums by X", "12 tracks in The Black Parade"). The same string is set as the ListBox accessible `Name` so screen readers announce it on Tab-focus. Updated by `_update_list_label()` on every filter/refresh/navigation.
 
-**Music library selection** (`main_window.py`): A server can have multiple music libraries (e.g. "Music", "Soundtracks"). The View → Libraries submenu shows checkable items for each library. All are checked by default. Unchecking a library hides its tracks, albums, artists, and album artists from all views. Playlists are unaffected (cross-library). Library views are fetched via `/Users/{userId}/Views` filtered by `CollectionType=music`, and tracks are fetched per-library using `ParentId={libraryId}` to tag each track with its `LibraryId`.
+**Music library selection** (`main_window.py`): A server can have multiple music libraries (e.g. "Music", "Soundtracks"). The View → Libraries submenu shows checkable items for each library. All are checked by default. Unchecking a library hides its tracks, albums, artists, and album artists from all views. Playlists are unaffected (cross-library). The enabled/disabled state is persisted in the `libraries.enabled` DB column via `set_library_enabled()`, so the selection survives restarts. Library views are fetched via `/Users/{userId}/Views` filtered by `CollectionType=music`, and tracks are fetched per-library using `ParentId={libraryId}` to tag each track with its `LibraryId`.
 
 **Streaming**: Uses `/Audio/{id}/stream?static=true` (direct passthrough, no transcoding). MPV handles all formats natively, so the server never needs to transcode. This is intentional — avoids format-allowlist issues.
 
@@ -52,7 +52,11 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Context menu** (`ui/context_menu.py`): Dynamic menu built per item type. Tracks get: Play, Go to Artist/Album, View Lyrics, Synced Lyrics, Download, Copy Link, Properties. Albums get: Open, Go to Artist, Copy Link, Properties. Artists/Playlists get: Open, Copy Link, Properties. Sub-levels add a "Go Back" item.
 
-**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread).
+**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes).
+
+**Settings** (`settings.py`): User preferences are stored in `settings.json` next to the executable (not in `data/` alongside the DB). `Settings` loads on startup and is passed to `MainWindow`. On exit, `_on_close` saves current volume and device if the corresponding "remember" checkboxes are enabled. Volume/seek steps are read on every use so changes take effect immediately. Download dir is read on each download. Persisted keys: `download_dir`, `volume_step`, `seek_step`, `remember_volume`, `remember_device`, `volume`, `device`, `track_sort`. Defaults: volume 80, steps 5, track_sort `date_desc`.
+
+**Track sorting** (`main_window.py`): The View → Sorting submenu controls how the top-level Tracks section is ordered. Four radio options: Alphabetical A–Z (`alpha_asc`), Alphabetical Z–A (`alpha_desc`), By date added newest first (`date_desc`, default), By date added oldest first (`date_asc`). The setting is persisted in `settings.json` via `track_sort` and passed to `Database.get_all_tracks(sort=...)` which uses different `ORDER BY` clauses. Only the top-level Tracks section is affected — album tracks always sort by track number, playlist tracks by playlist position, and artists/albums stay alphabetical. The `DateCreated` timestamp from Jellyfin is stored in the `tracks.date_created` DB column.
 
 **Lyrics API**: `GET /Audio/{itemId}/Lyrics` returns `{Lyrics: [{Start: ticks, Text: str}]}`. Available from Jellyfin 10.9+. Fetched async; no caching.
 
@@ -63,8 +67,8 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 | Table | Purpose |
 |-------|---------|
 | `servers` | Server credentials and connection info |
-| `libraries` | Music library views from the server |
-| `tracks` | Cached audio tracks (with `artist_display`, `library_id`) |
+| `libraries` | Music library views from the server (with `enabled` flag) |
+| `tracks` | Cached audio tracks (with `artist_display`, `library_id`, `date_created`) |
 | `artists` | Unique artists (from `ArtistItems`) |
 | `album_artists` | Unique album artists (from `AlbumArtists`) |
 | `albums` | Unique albums (with `artist_display`, `library_id`) |
@@ -103,7 +107,7 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 
 - **Data format consistency**: The DB layer returns dicts with Jellyfin PascalCase keys (`Id`, `Name`, `AlbumArtist`, `ArtistDisplay`, `RunTimeTicks`) via converter methods (`_track_to_dict`, `_artist_to_dict`, `_album_to_dict`, `_playlist_to_dict`). The UI always expects this format regardless of data source (cache vs API).
 - **Multi-artist display**: Tracks store `ArtistDisplay` (all artists comma-joined) in addition to `AlbumArtist` (primary). Albums store `ArtistDisplay` for their album artist(s). Formatters use `ArtistDisplay` for rendering.
-- **Portable paths**: `utils/paths.py` detects frozen (PyInstaller) vs source execution. All persistent data lives in `data/` next to the executable. Nothing is stored in user profile folders.
+- **Portable paths**: `utils/paths.py` detects frozen (PyInstaller) vs source execution. Database and cache live in `data/` next to the executable. `settings.json` lives directly next to the executable (via `get_settings_path()`). Nothing is stored in user profile folders.
 - **Search debounce**: 50ms `wx.Timer` prevents filtering on every keystroke. Search is contextual: filters by Name for artists/playlists, by Name+ArtistDisplay for albums, by Name+ArtistDisplay+AlbumArtist for tracks.
 - **MPV end-file race condition**: When starting a new track while one is playing, MPV fires `end-file` for the old track. The callback checks `player.is_loaded` to avoid resetting the UI for the new track.
 - **Window title**: Managed by `_update_title()` — shows "Track - Groove - Version" when playing/paused, "Groove - Version" when idle. `_current_track` stays set during pause.
@@ -124,13 +128,14 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 | Ctrl+Alt+X | Restart current track |
 | Ctrl+Alt+R | Toggle repeat mode |
 | Ctrl+Alt+S | Toggle shuffle mode |
-| Ctrl+Up/Down | Volume ±5% |
-| Ctrl+Right/Left | Seek ±10 seconds |
+| Ctrl+Up/Down | Volume ± (configurable step, default 5%) |
+| Ctrl+Right/Left | Seek ± (configurable step, default 5 seconds) |
 | Alt+Enter | Properties dialog |
 | Ctrl+C | Copy Jellyfin link |
 | Ctrl+Shift+C | Copy stream link (tracks only) |
 | Ctrl+Shift+Enter | Download track |
 | F5 | Refresh library from server |
+| F8 | Settings dialog |
 | F1 | Show keyboard shortcuts dialog |
 | Alt+F4 | Exit |
 
@@ -214,13 +219,18 @@ Follow these steps in order:
 - Audio device selector (`wx.Choice`): lists all output devices, "Default (device name)" first, "No device" last. Switches MPV `audio-device` seamlessly without interrupting playback. Last in tab order, visible in all sections.
 - New files: `ui/context_menu.py`, `ui/dialogs/properties_dialog.py`, `ui/dialogs/lyrics_dialog.py`, `ui/dialogs/download_dialog.py`
 
-### Stage 4: Global Search
+### Stage 4: Settings & Persistence — COMPLETED
 
-**Goal**: Search across all content types simultaneously.
+**Goal**: User-configurable settings with persistent state across restarts.
 
-- Search box that queries artists, albums, and tracks
-- Results grouped by type in the list view
-- Keyboard shortcut to focus global search (Ctrl+F)
+- Settings dialog (F8 / File → Settings): download folder (`wx.DirPickerCtrl`), volume step, seek step, remember-volume and remember-device checkboxes
+- Settings stored in `settings.json` next to the executable (separate from DB)
+- `Settings` class (`settings.py`) with typed properties; loaded at startup, saved on demand
+- Volume restored to saved level on launch (default 75); device restored if saved
+- Volume and device saved on exit when the corresponding checkbox is checked
+- Library enabled/disabled state persisted in `libraries.enabled` DB column; survives restarts and server refreshes
+- Download folder is configurable; `DownloadDialog` accepts a `download_dir` parameter
+- Volume and seek steps applied dynamically (no restart needed)
 
 ### Stage 5: Audiobooks
 

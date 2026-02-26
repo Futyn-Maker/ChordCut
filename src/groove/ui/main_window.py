@@ -12,6 +12,7 @@ from groove.db import Database
 from groove.i18n import _, ngettext
 from groove.player import Player
 from groove.player.mpv_player import format_duration
+from groove.settings import Settings
 from groove.ui.library_list import (
     FORMATTERS,
     LibraryListBox,
@@ -73,6 +74,7 @@ class MainWindow(wx.Frame):
         db: Database,
         client: JellyfinClient,
         player: Player,
+        settings: Settings,
     ):
         super().__init__(
             None,
@@ -85,6 +87,7 @@ class MainWindow(wx.Frame):
         self._db = db
         self._client = client
         self._player = player
+        self._settings = settings
 
         # Current playback
         self._current_track: dict | None = None
@@ -140,6 +143,9 @@ class MainWindow(wx.Frame):
         # Translators: Initial status bar message.
         self._update_status(_("Ready"))
 
+        # Restore saved volume and audio device
+        self._apply_startup_settings()
+
         self.CenterOnScreen()
 
     # ------------------------------------------------------------------
@@ -158,6 +164,14 @@ class MainWindow(wx.Frame):
             _("Change &Server..."),
             # Translators: Help text for Change Server.
             _("Connect to a different server"),
+        )
+        file_menu.AppendSeparator()
+        self._menu_settings = file_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item to open settings.
+            _("Se&ttings...\tF8"),
+            # Translators: Help text for Settings.
+            _("Configure application settings"),
         )
         file_menu.AppendSeparator()
         self._menu_exit = file_menu.Append(
@@ -271,6 +285,39 @@ class MainWindow(wx.Frame):
             _("&Refresh Library\tF5"),
             # Translators: Help text for Refresh Library.
             _("Reload library from server"),
+        )
+        view_menu.AppendSeparator()
+        self._sort_menu = wx.Menu()
+        self._sort_menu_ids: dict[int, str] = {}
+        sort_items = [
+            # Translators: Sort option: alphabetical A-Z.
+            ("alpha_asc", _("Alphabetical A\u2013Z")),
+            # Translators: Sort option: alphabetical Z-A.
+            ("alpha_desc", _("Alphabetical Z\u2013A")),
+            # Translators: Sort option: newest first.
+            ("date_desc",
+             _("By date added (newest first)")),
+            # Translators: Sort option: oldest first.
+            ("date_asc",
+             _("By date added (oldest first)")),
+        ]
+        current_sort = self._settings.track_sort
+        for sort_key, label in sort_items:
+            item = self._sort_menu.AppendRadioItem(
+                wx.ID_ANY, label,
+            )
+            self._sort_menu_ids[item.GetId()] = sort_key
+            if sort_key == current_sort:
+                item.Check(True)
+            self.Bind(
+                wx.EVT_MENU,
+                self._on_sort_change,
+                item,
+            )
+        view_menu.AppendSubMenu(
+            self._sort_menu,
+            # Translators: Sorting submenu label.
+            _("&Sorting"),
         )
         view_menu.AppendSeparator()
         self._libraries_menu = wx.Menu()
@@ -469,6 +516,10 @@ class MainWindow(wx.Frame):
             self._menu_change_server,
         )
         self.Bind(
+            wx.EVT_MENU, self._on_settings,
+            self._menu_settings,
+        )
+        self.Bind(
             wx.EVT_MENU, self._on_exit, self._menu_exit,
         )
         self.Bind(
@@ -591,6 +642,10 @@ class MainWindow(wx.Frame):
 
         accel = wx.AcceleratorTable([
             (
+                wx.ACCEL_NORMAL, wx.WXK_F8,
+                self._menu_settings.GetId(),
+            ),
+            (
                 wx.ACCEL_NORMAL, wx.WXK_ESCAPE,
                 self._menu_pause.GetId(),
             ),
@@ -655,6 +710,40 @@ class MainWindow(wx.Frame):
         self._player.set_on_position_change(on_pos)
         self._player.set_on_duration_change(on_dur)
         self._player.set_on_end_file(on_end)
+
+    def _apply_startup_settings(self) -> None:
+        """Restore saved volume and audio device from settings."""
+        if self._settings.remember_volume:
+            self._player.volume = self._settings.volume
+        else:
+            self._player.volume = 80
+        self._update_volume_display()
+
+        if self._settings.remember_device:
+            saved = self._settings.device
+            if saved and saved != "auto":
+                self._player.set_audio_device(saved)
+                try:
+                    idx = self._device_names.index(saved)
+                    self._device_choice.SetSelection(idx)
+                except ValueError:
+                    # Device no longer available; stay on default.
+                    pass
+
+    # ------------------------------------------------------------------
+    # Settings dialog
+    # ------------------------------------------------------------------
+
+    def _on_settings(
+        self, _event: wx.CommandEvent,
+    ) -> None:
+        """Open the settings dialog."""
+        from groove.ui.dialogs.settings_dialog import (
+            SettingsDialog,
+        )
+        dlg = SettingsDialog(self, self._settings)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     # ------------------------------------------------------------------
     # Status helpers
@@ -828,14 +917,17 @@ class MainWindow(wx.Frame):
                 self._db.get_libraries(server_id)
             )
             if self._libraries:
+                # Restore persisted enabled/disabled state
                 self._selected_library_ids = {
                     lib["Id"] for lib in self._libraries
+                    if lib.get("Enabled", True)
                 }
                 self._rebuild_libraries_menu()
 
         lib_ids = self._selected_library_ids
-        self._lib_tracks = (
-            self._db.get_all_tracks(server_id, lib_ids)
+        self._lib_tracks = self._db.get_all_tracks(
+            server_id, lib_ids,
+            sort=self._settings.track_sort,
         )
         self._lib_artists = (
             self._db.get_all_artists(server_id, lib_ids)
@@ -869,23 +961,14 @@ class MainWindow(wx.Frame):
             self._db.cache_libraries(
                 server.id, libraries,
             )
-            new_ids = {lib["Id"] for lib in libraries}
-
-            if self._selected_library_ids is not None:
-                # Keep current selection, but remove any
-                # libraries that no longer exist
-                kept = (
-                    self._selected_library_ids & new_ids
-                )
-                if kept:
-                    self._selected_library_ids = kept
-                else:
-                    # All selected libs disappeared — reset
-                    self._selected_library_ids = new_ids
-            else:
-                self._selected_library_ids = new_ids
-
-            self._libraries = libraries
+            # Read back from DB: cache_libraries preserves
+            # existing enabled states; new libs default to 1.
+            db_libs = self._db.get_libraries(server.id)
+            self._selected_library_ids = {
+                lib["Id"] for lib in db_libs
+                if lib.get("Enabled", True)
+            }
+            self._libraries = db_libs
             self._rebuild_libraries_menu()
 
         self._db.cache_library(server.id, tracks)
@@ -1168,6 +1251,43 @@ class MainWindow(wx.Frame):
             )
 
     # ------------------------------------------------------------------
+    # Sorting
+    # ------------------------------------------------------------------
+
+    def _on_sort_change(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Handle a sort radio-item selection."""
+        sort_key = self._sort_menu_ids.get(
+            event.GetId(),
+        )
+        if not sort_key:
+            return
+
+        self._settings.track_sort = sort_key
+        self._settings.save()
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+
+        lib_ids = self._selected_library_ids
+        self._lib_tracks = self._db.get_all_tracks(
+            server.id, lib_ids,
+            sort=self._settings.track_sort,
+        )
+
+        # Refresh display if viewing top-level Tracks
+        idx = self._section_choice.GetSelection()
+        if (
+            SECTIONS[idx] == "tracks"
+            and not self._nav_stack
+        ):
+            self._display_level(
+                self._lib_tracks, "tracks", None,
+            )
+
+    # ------------------------------------------------------------------
     # Library selection
     # ------------------------------------------------------------------
 
@@ -1218,11 +1338,16 @@ class MainWindow(wx.Frame):
         else:
             self._selected_library_ids.discard(lib_id)
 
-        # Reload from DB with new selection and refresh
+        # Persist the new state and reload
         server = self._db.get_active_server()
         if not server or not server.id:
             return
 
+        self._db.set_library_enabled(
+            server.id,
+            lib_id,
+            lib_id in self._selected_library_ids,
+        )
         self._load_library_from_db(server.id)
         self._refresh_current_view(server.id)
         self._update_queue_after_refresh()
@@ -1651,18 +1776,18 @@ class MainWindow(wx.Frame):
         self._update_title()
 
     def _on_volume_up(self, event: wx.CommandEvent):
-        self._player.volume_up()
+        self._player.volume_up(self._settings.volume_step)
         self._update_volume_display()
 
     def _on_volume_down(self, event: wx.CommandEvent):
-        self._player.volume_down()
+        self._player.volume_down(self._settings.volume_step)
         self._update_volume_display()
 
     def _on_seek_forward(self, event: wx.CommandEvent):
-        self._player.seek(10)
+        self._player.seek(self._settings.seek_step)
 
     def _on_seek_backward(self, event: wx.CommandEvent):
-        self._player.seek(-10)
+        self._player.seek(-self._settings.seek_step)
 
     def _on_next_track(self, event: wx.CommandEvent):
         if (
@@ -1743,8 +1868,8 @@ class MainWindow(wx.Frame):
             "  Ctrl+Alt+S     - Toggle shuffle\n"
             "  Ctrl+Up        - Volume up\n"
             "  Ctrl+Down      - Volume down\n"
-            "  Ctrl+Right     - Seek forward 10s\n"
-            "  Ctrl+Left      - Seek backward 10s\n\n"
+            "  Ctrl+Right     - Seek forward\n"
+            "  Ctrl+Left      - Seek backward\n\n"
             "Context:\n"
             "  Alt+Enter        - Properties\n"
             "  Ctrl+C           - Copy link\n"
@@ -1752,6 +1877,7 @@ class MainWindow(wx.Frame):
             "  Ctrl+Shift+Enter - Download track\n\n"
             "Other:\n"
             "  F5             - Refresh library\n"
+            "  F8             - Settings\n"
             "  F1             - Show this help\n"
             "  Alt+F4         - Exit"
         )
@@ -2259,6 +2385,7 @@ class MainWindow(wx.Frame):
             _("Download: {title}").format(title=name),
             url,
             filename,
+            download_dir=self._settings.download_dir,
         )
         result = dlg.ShowModal()
         dlg.Destroy()
@@ -2347,6 +2474,18 @@ class MainWindow(wx.Frame):
 
     def _on_close(self, event: wx.CloseEvent):
         self._search_timer.Stop()
+
+        # Persist volume and device if configured to do so.
+        if self._settings.remember_volume:
+            self._settings.volume = self._player.volume
+        if self._settings.remember_device:
+            idx = self._device_choice.GetSelection()
+            if 0 <= idx < len(self._device_names):
+                self._settings.device = (
+                    self._device_names[idx]
+                )
+        self._settings.save()
+
         self._player.shutdown()
         self._client.shutdown()
         # Flush clipboard so data survives after exit.

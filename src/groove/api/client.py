@@ -153,7 +153,8 @@ class JellyfinClient:
                     "Recursive": True,
                     "Fields": (
                         "AudioInfo,ParentId,"
-                        "ArtistItems,Artists,AlbumArtists"
+                        "ArtistItems,Artists,"
+                        "AlbumArtists,DateCreated"
                     ),
                     "SortBy": "AlbumArtist,Album,SortName",
                     "SortOrder": "Ascending",
@@ -175,7 +176,8 @@ class JellyfinClient:
                     "Recursive": True,
                     "Fields": (
                         "AudioInfo,ParentId,"
-                        "ArtistItems,Artists,AlbumArtists"
+                        "ArtistItems,Artists,"
+                        "AlbumArtists,DateCreated"
                     ),
                     "SortBy": "AlbumArtist,Album,SortName",
                     "SortOrder": "Ascending",
@@ -216,7 +218,8 @@ class JellyfinClient:
                     "ParentId": playlist_id,
                     "Fields": (
                         "AudioInfo,ParentId,"
-                        "ArtistItems,Artists,AlbumArtists"
+                        "ArtistItems,Artists,"
+                        "AlbumArtists,DateCreated"
                     ),
                 }
             )
@@ -374,7 +377,8 @@ class JellyfinClient:
                     "SearchTerm": query,
                     "Fields": (
                         "AudioInfo,ParentId,"
-                        "ArtistItems,Artists,AlbumArtists"
+                        "ArtistItems,Artists,"
+                        "AlbumArtists,DateCreated"
                     ),
                     "Limit": 100,
                 }

@@ -7,14 +7,15 @@ from pathlib import Path
 def get_app_dir() -> Path:
     """Get the application's root directory.
 
-    When running as a frozen executable (PyInstaller), returns the directory
-    containing the executable. When running from source, returns the project root.
+    When running as a frozen executable (PyInstaller), returns the
+    directory containing the executable. When running from source,
+    returns the project root.
     """
     if getattr(sys, 'frozen', False):
         # Running as compiled executable
         return Path(sys.executable).parent
     else:
-        # Running from source - go up from utils/ to groove/ to src/ to project root
+        # Running from source: utils/ → groove/ → src/ → project root
         return Path(__file__).parent.parent.parent.parent
 
 
@@ -32,3 +33,12 @@ def get_data_dir() -> Path:
 def get_db_path() -> Path:
     """Get the full path to the SQLite database file."""
     return get_data_dir() / "groove.db"
+
+
+def get_settings_path() -> Path:
+    """Get the full path to the settings JSON file.
+
+    Settings live in the application root (next to the executable
+    or project root in dev mode), separate from the database.
+    """
+    return get_app_dir() / "settings.json"

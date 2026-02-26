@@ -7,6 +7,7 @@ from groove.db import Database
 from groove.db.database import ServerCredentials
 from groove.i18n import _
 from groove.player import Player
+from groove.settings import Settings
 from groove.ui import LoginDialog, MainWindow
 
 
@@ -18,6 +19,7 @@ class GrooveApp(wx.App):
         self._db: Database | None = None
         self._client: JellyfinClient | None = None
         self._player: Player | None = None
+        self._settings: Settings | None = None
         self._main_window: MainWindow | None = None
 
         super().__init__(redirect=False)
@@ -29,6 +31,7 @@ class GrooveApp(wx.App):
             True if initialization succeeded.
         """
         # Initialize core components
+        self._settings = Settings()
         self._db = Database()
         self._client = JellyfinClient()
         self._player = Player()
@@ -130,6 +133,7 @@ class GrooveApp(wx.App):
             self._db,
             self._client,
             self._player,
+            self._settings,
         )
 
         # Bind change server event

@@ -19,6 +19,7 @@ class DownloadDialog(wx.Dialog):
         title: str,
         url: str,
         filename: str,
+        download_dir: Path | None = None,
     ):
         super().__init__(
             parent,
@@ -60,6 +61,7 @@ class DownloadDialog(wx.Dialog):
 
         self._url = url
         self._filename = filename
+        self._download_dir = download_dir
         self._cancelled = False
         self._thread: threading.Thread | None = None
 
@@ -72,8 +74,12 @@ class DownloadDialog(wx.Dialog):
         self._start_download()
 
     def _start_download(self) -> None:
-        music_dir = get_app_dir() / "music"
-        music_dir.mkdir(exist_ok=True)
+        music_dir = (
+            self._download_dir
+            if self._download_dir is not None
+            else get_app_dir() / "music"
+        )
+        music_dir.mkdir(parents=True, exist_ok=True)
 
         self._thread = threading.Thread(
             target=self._download_thread,
