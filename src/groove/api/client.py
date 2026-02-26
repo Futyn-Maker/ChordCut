@@ -208,20 +208,28 @@ class JellyfinClient:
     def get_playlist_items(
         self, playlist_id: str,
     ) -> list[dict]:
-        """Get audio items in a playlist."""
+        """Get audio items in a playlist.
+
+        Uses the dedicated Playlists endpoint so that
+        ``PlaylistItemId`` is included in each item.
+        """
         if not self._user_id:
             return []
 
         try:
-            result = self._client.jellyfin.user_items(
+            url = "Playlists/{pid}/Items".format(
+                pid=playlist_id,
+            )
+            result = self._client.jellyfin._get(
+                url,
                 params={
-                    "ParentId": playlist_id,
+                    "userId": self._user_id,
                     "Fields": (
                         "AudioInfo,ParentId,"
                         "ArtistItems,Artists,"
                         "AlbumArtists,DateCreated"
                     ),
-                }
+                },
             )
             return result.get("Items", [])
         except Exception:
@@ -351,6 +359,280 @@ class JellyfinClient:
                 pid = futures[future]
                 playlist_items[pid] = future.result()
         return playlist_items
+
+    # --- Playlist CRUD ---
+
+    def create_playlist(self, name: str) -> str | None:
+        """Create a new empty playlist.
+
+        Returns the new playlist ID, or *None* on failure.
+        """
+        if not self._user_id:
+            return None
+        try:
+            result = self._client.jellyfin._post(
+                "Playlists",
+                json={
+                    "Name": name,
+                    "UserId": self._user_id,
+                    "MediaType": "Audio",
+                },
+            )
+            return result.get("Id") if result else None
+        except Exception:
+            return None
+
+    def create_playlist_async(
+        self,
+        name: str,
+        callback: Callable[[str | None], None],
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Create a playlist asynchronously."""
+        def task() -> None:
+            try:
+                result = self.create_playlist(name)
+                callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    def rename_playlist(
+        self, playlist_id: str, new_name: str,
+    ) -> bool:
+        """Rename a playlist.
+
+        Fetches the full item, changes the name, and
+        POSTs it back (Jellyfin requires the full body).
+        """
+        if not self._user_id:
+            return False
+        try:
+            item = self._client.jellyfin.user_items(
+                handler="/{id}".format(id=playlist_id),
+            )
+            if not item:
+                return False
+            item["Name"] = new_name
+            self._client.jellyfin._post(
+                "Items/{id}".format(id=playlist_id),
+                json=item,
+            )
+            return True
+        except Exception:
+            return False
+
+    def rename_playlist_async(
+        self,
+        playlist_id: str,
+        new_name: str,
+        callback: Callable[[bool], None],
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Rename a playlist asynchronously."""
+        def task() -> None:
+            try:
+                result = self.rename_playlist(
+                    playlist_id, new_name,
+                )
+                callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    def delete_playlist(
+        self, playlist_id: str,
+    ) -> bool:
+        """Delete a playlist."""
+        try:
+            self._client.jellyfin._delete(
+                "Items/{id}".format(id=playlist_id),
+            )
+            return True
+        except Exception:
+            return False
+
+    def delete_playlist_async(
+        self,
+        playlist_id: str,
+        callback: Callable[[bool], None] | None = None,
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Delete a playlist asynchronously."""
+        def task() -> None:
+            try:
+                result = self.delete_playlist(
+                    playlist_id,
+                )
+                if callback:
+                    callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    # --- Playlist item mutations ---
+
+    def add_to_playlist(
+        self, playlist_id: str, track_id: str,
+    ) -> bool:
+        """Add a track to the top of a playlist.
+
+        Appends the track (server puts it at the end),
+        then moves it to index 0.
+        """
+        if not self._user_id:
+            return False
+        try:
+            url = "Playlists/{pid}/Items".format(
+                pid=playlist_id,
+            )
+            self._client.jellyfin._post(
+                url,
+                params={
+                    "ids": track_id,
+                    "userId": self._user_id,
+                },
+            )
+            # Move to top: find PlaylistItemId first
+            items = self.get_playlist_items(playlist_id)
+            pid = None
+            for it in items:
+                if it.get("Id") == track_id:
+                    pid = it.get("PlaylistItemId")
+                    break
+            if pid:
+                move_url = (
+                    "Playlists/{plid}/Items/{pid}"
+                    "/Move/{idx}"
+                ).format(
+                    plid=playlist_id, pid=pid, idx=0,
+                )
+                self._client.jellyfin._post(move_url)
+            return True
+        except Exception:
+            return False
+
+    def add_to_playlist_async(
+        self,
+        playlist_id: str,
+        track_id: str,
+        callback: Callable[[bool], None],
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Add a track to a playlist asynchronously."""
+        def task() -> None:
+            try:
+                result = self.add_to_playlist(
+                    playlist_id, track_id,
+                )
+                callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    def remove_from_playlist(
+        self,
+        playlist_id: str,
+        playlist_item_id: str,
+    ) -> bool:
+        """Remove a track from a playlist."""
+        try:
+            url = "Playlists/{pid}/Items".format(
+                pid=playlist_id,
+            )
+            self._client.jellyfin._delete(
+                url,
+                params={"entryIds": playlist_item_id},
+            )
+            return True
+        except Exception:
+            return False
+
+    def remove_from_playlist_async(
+        self,
+        playlist_id: str,
+        playlist_item_id: str,
+        callback: Callable[[bool], None] | None = None,
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Remove a track from a playlist async."""
+        def task() -> None:
+            try:
+                result = self.remove_from_playlist(
+                    playlist_id, playlist_item_id,
+                )
+                if callback:
+                    callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    def move_playlist_item(
+        self,
+        playlist_id: str,
+        playlist_item_id: str,
+        new_index: int,
+    ) -> bool:
+        """Move a playlist item to a new position."""
+        try:
+            url = (
+                "Playlists/{plid}/Items/{pid}"
+                "/Move/{idx}"
+            ).format(
+                plid=playlist_id,
+                pid=playlist_item_id,
+                idx=new_index,
+            )
+            self._client.jellyfin._post(url)
+            return True
+        except Exception:
+            return False
+
+    def move_playlist_item_async(
+        self,
+        playlist_id: str,
+        playlist_item_id: str,
+        new_index: int,
+        callback: Callable[[bool], None] | None = None,
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Move a playlist item asynchronously."""
+        def task() -> None:
+            try:
+                result = self.move_playlist_item(
+                    playlist_id,
+                    playlist_item_id,
+                    new_index,
+                )
+                if callback:
+                    callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
 
     # --- Streaming ---
 

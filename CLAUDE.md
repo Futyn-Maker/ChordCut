@@ -50,7 +50,11 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Playback queue** (`main_window.py`): Built when a track is played via Enter. The queue is a snapshot of `_filtered_items` at time of play. A `_QueueOrigin` dataclass records where the queue was created (section, nav depth, context). Auto-focus on the next track works only when the user is in the same section/level. Queue is pruned on library refresh/library toggle (tracks removed from library are dropped). Stop (`Ctrl+Alt+Q`) destroys the queue. Repeat loops the current track without blocking next/prev navigation. Shuffle reorders the queue (not the list display); disabling shuffle restores the original order.
 
-**Context menu** (`ui/context_menu.py`): Dynamic menu built per item type. Tracks get: Play, Go to Artist/Album, View Lyrics, Synced Lyrics, Download, Copy Link, Properties. Albums get: Open, Go to Artist, Copy Link, Properties. Artists/Playlists get: Open, Copy Link, Properties. Sub-levels add a "Go Back" item.
+**Context menu** (`ui/context_menu.py`): Dynamic menu built per item type. Tracks get: Play, Go to Artist/Album, Add to Playlist (submenu), View Lyrics, Synced Lyrics, Download, Copy Link, Properties. When viewing playlist tracks, also: Remove from Playlist, Move Up, Move Down. Albums get: Open, Go to Artist, Copy Link, Properties. Artists get: Open, Copy Link, Properties. Playlists get: Open, Rename, Delete, Copy Link, Properties. Sub-levels add a "Go Back" item.
+
+**Playlist CRUD** (`main_window.py`): Create (Ctrl+N or File → New Playlist, text entry dialog, async `POST /Playlists`), Rename (F2 or context menu, text entry dialog with old name pre-filled, async `POST /Items/{id}` with full item body), Delete (Delete key or context menu, confirmation dialog, async `DELETE /Items/{id}`). All three update DB and in-memory `_lib_playlists` immediately, then fire async API calls.
+
+**Playlist management** (`main_window.py`): Three operations on playlist tracks via context menu and keyboard. "Add to Playlist" submenu appears on all tracks — lists all playlists, disables those already containing the track; adds to the top (API add + move to index 0). "Remove from Playlist" (Delete key) appears only inside playlist tracks — shows confirmation, updates UI instantly, then fires async API request. "Move Up/Down" (Alt+Up/Down) reorders tracks within a playlist — swaps in `_all_items` immediately, updates DB positions, fires async `Move/{newIndex}` API call. All three use `PlaylistItemId` (stored in `playlist_tracks.playlist_item_id` DB column) for API calls. The `_current_playlist_id()` helper detects when we're inside a playlist by checking `_nav_stack[-1].level_type == "playlists"`.
 
 **Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes).
 
@@ -75,7 +79,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 | `track_artists` | Many-to-many: track ↔ artist |
 | `album_album_artists` | Many-to-many: album ↔ album artist |
 | `playlists` | Cached playlists |
-| `playlist_tracks` | Playlist membership with position |
+| `playlist_tracks` | Playlist membership with position and `playlist_item_id` |
 | `playback_positions` | Future: audiobook position memory |
 
 **Library filtering**: Tracks and albums store `library_id` linking them to a music library. Query methods accept an optional `library_ids: set[str]` parameter — when provided, results are filtered to only include items from the selected libraries. Artists and album artists are filtered transitively through their tracks/albums. Playlists are cross-library and never filtered.
@@ -134,6 +138,11 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 | Ctrl+C | Copy Jellyfin link |
 | Ctrl+Shift+C | Copy stream link (tracks only) |
 | Ctrl+Shift+Enter | Download track |
+| Ctrl+N | Create new playlist |
+| F2 | Rename playlist (in playlists section) |
+| Delete | Remove track from playlist / delete playlist |
+| Alt+Up | Move track up in playlist (in playlist tracks only) |
+| Alt+Down | Move track down in playlist (in playlist tracks only) |
 | F5 | Refresh library from server |
 | F8 | Settings dialog |
 | F1 | Show keyboard shortcuts dialog |

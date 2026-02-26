@@ -130,9 +130,10 @@ CREATE TABLE IF NOT EXISTS playlists (
 CREATE TABLE IF NOT EXISTS playlist_tracks (
     playlist_id TEXT NOT NULL,
     track_id TEXT NOT NULL,
+    playlist_item_id TEXT NOT NULL,
     position INTEGER NOT NULL,
     server_id INTEGER NOT NULL,
-    PRIMARY KEY (playlist_id, track_id),
+    PRIMARY KEY (playlist_id, playlist_item_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
@@ -524,12 +525,17 @@ class Database:
                 items = playlist_tracks.get(pl_id, [])
                 conn.executemany(
                     "INSERT OR IGNORE INTO playlist_tracks"
-                    " (playlist_id, track_id, position,"
+                    " (playlist_id, track_id,"
+                    " playlist_item_id, position,"
                     " server_id)"
-                    " VALUES (?, ?, ?, ?)",
+                    " VALUES (?, ?, ?, ?, ?)",
                     [
                         (
                             pl_id, item.get("Id"),
+                            item.get(
+                                "PlaylistItemId",
+                                item.get("Id"),
+                            ),
                             i, server_id,
                         )
                         for i, item in enumerate(items)
@@ -831,15 +837,25 @@ class Database:
         with self.connection() as conn:
             rows = conn.execute(
                 """
-                SELECT t.* FROM tracks t
-                JOIN playlist_tracks pt ON pt.track_id = t.id
+                SELECT t.*, pt.playlist_item_id
+                FROM tracks t
+                JOIN playlist_tracks pt
+                    ON pt.track_id = t.id
                     AND pt.server_id = t.server_id
-                WHERE pt.playlist_id = ? AND t.server_id = ?
+                WHERE pt.playlist_id = ?
+                    AND t.server_id = ?
                 ORDER BY pt.position
                 """,
                 (playlist_id, server_id),
             ).fetchall()
-            return [self._track_to_dict(r) for r in rows]
+            result = []
+            for r in rows:
+                d = self._track_to_dict(r)
+                d["PlaylistItemId"] = (
+                    r["playlist_item_id"]
+                )
+                result.append(d)
+            return result
 
     def search_tracks(self, server_id: int, query: str) -> list[dict]:
         """Search cached tracks by name."""
@@ -1001,3 +1017,188 @@ class Database:
                 "track_count": row[0],
                 "total_duration_ticks": row[1],
             }
+
+    # --- Playlist mutations ---
+
+    # --- Playlist CRUD ---
+
+    def create_playlist(
+        self,
+        server_id: int,
+        playlist_id: str,
+        name: str,
+    ) -> None:
+        """Insert a new playlist into the cache."""
+        with self.connection() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO playlists"
+                " (id, server_id, name)"
+                " VALUES (?, ?, ?)",
+                (playlist_id, server_id, name),
+            )
+
+    def rename_playlist(
+        self,
+        server_id: int,
+        playlist_id: str,
+        new_name: str,
+    ) -> None:
+        """Rename a cached playlist."""
+        with self.connection() as conn:
+            conn.execute(
+                "UPDATE playlists SET name = ?"
+                " WHERE id = ? AND server_id = ?",
+                (new_name, playlist_id, server_id),
+            )
+
+    def delete_playlist(
+        self,
+        server_id: int,
+        playlist_id: str,
+    ) -> None:
+        """Delete a playlist and its track associations."""
+        with self.connection() as conn:
+            conn.execute(
+                "DELETE FROM playlist_tracks"
+                " WHERE playlist_id = ?"
+                " AND server_id = ?",
+                (playlist_id, server_id),
+            )
+            conn.execute(
+                "DELETE FROM playlists"
+                " WHERE id = ? AND server_id = ?",
+                (playlist_id, server_id),
+            )
+
+    # --- Playlist item mutations ---
+
+    def get_playlist_track_ids(
+        self, server_id: int, playlist_id: str,
+    ) -> set[str]:
+        """Get track IDs present in a playlist."""
+        with self.connection() as conn:
+            rows = conn.execute(
+                "SELECT track_id FROM playlist_tracks"
+                " WHERE playlist_id = ?"
+                " AND server_id = ?",
+                (playlist_id, server_id),
+            ).fetchall()
+            return {r["track_id"] for r in rows}
+
+    def add_playlist_track(
+        self,
+        server_id: int,
+        playlist_id: str,
+        track_id: str,
+        playlist_item_id: str,
+    ) -> None:
+        """Insert a track at position 0, shifting others."""
+        with self.connection() as conn:
+            conn.execute(
+                "UPDATE playlist_tracks"
+                " SET position = position + 1"
+                " WHERE playlist_id = ?"
+                " AND server_id = ?",
+                (playlist_id, server_id),
+            )
+            conn.execute(
+                "INSERT OR IGNORE INTO playlist_tracks"
+                " (playlist_id, track_id,"
+                " playlist_item_id, position,"
+                " server_id)"
+                " VALUES (?, ?, ?, 0, ?)",
+                (
+                    playlist_id, track_id,
+                    playlist_item_id, server_id,
+                ),
+            )
+
+    def remove_playlist_track(
+        self,
+        server_id: int,
+        playlist_id: str,
+        playlist_item_id: str,
+    ) -> None:
+        """Remove a track and recompact positions."""
+        with self.connection() as conn:
+            row = conn.execute(
+                "SELECT position FROM playlist_tracks"
+                " WHERE playlist_id = ?"
+                " AND playlist_item_id = ?"
+                " AND server_id = ?",
+                (
+                    playlist_id, playlist_item_id,
+                    server_id,
+                ),
+            ).fetchone()
+            if not row:
+                return
+            pos = row["position"]
+            conn.execute(
+                "DELETE FROM playlist_tracks"
+                " WHERE playlist_id = ?"
+                " AND playlist_item_id = ?"
+                " AND server_id = ?",
+                (
+                    playlist_id, playlist_item_id,
+                    server_id,
+                ),
+            )
+            conn.execute(
+                "UPDATE playlist_tracks"
+                " SET position = position - 1"
+                " WHERE playlist_id = ?"
+                " AND server_id = ?"
+                " AND position > ?",
+                (playlist_id, server_id, pos),
+            )
+
+    def move_playlist_track(
+        self,
+        server_id: int,
+        playlist_id: str,
+        playlist_item_id: str,
+        old_index: int,
+        new_index: int,
+    ) -> None:
+        """Move a track from old_index to new_index."""
+        if old_index == new_index:
+            return
+        with self.connection() as conn:
+            if old_index < new_index:
+                conn.execute(
+                    "UPDATE playlist_tracks"
+                    " SET position = position - 1"
+                    " WHERE playlist_id = ?"
+                    " AND server_id = ?"
+                    " AND position > ?"
+                    " AND position <= ?",
+                    (
+                        playlist_id, server_id,
+                        old_index, new_index,
+                    ),
+                )
+            else:
+                conn.execute(
+                    "UPDATE playlist_tracks"
+                    " SET position = position + 1"
+                    " WHERE playlist_id = ?"
+                    " AND server_id = ?"
+                    " AND position >= ?"
+                    " AND position < ?",
+                    (
+                        playlist_id, server_id,
+                        new_index, old_index,
+                    ),
+                )
+            conn.execute(
+                "UPDATE playlist_tracks"
+                " SET position = ?"
+                " WHERE playlist_id = ?"
+                " AND playlist_item_id = ?"
+                " AND server_id = ?",
+                (
+                    new_index, playlist_id,
+                    playlist_item_id, server_id,
+                ),
+            )

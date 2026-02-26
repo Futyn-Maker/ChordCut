@@ -158,6 +158,14 @@ class MainWindow(wx.Frame):
 
         # File menu
         file_menu = wx.Menu()
+        self._menu_new_playlist = file_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item to create playlist.
+            _("&New Playlist...\tCtrl+N"),
+            # Translators: Help text for New Playlist.
+            _("Create a new playlist"),
+        )
+        file_menu.AppendSeparator()
         self._menu_change_server = file_menu.Append(
             wx.ID_ANY,
             # Translators: Menu item to switch server.
@@ -512,6 +520,10 @@ class MainWindow(wx.Frame):
         """Bind event handlers."""
         # Menu events
         self.Bind(
+            wx.EVT_MENU, self._on_new_playlist,
+            self._menu_new_playlist,
+        )
+        self.Bind(
             wx.EVT_MENU, self._on_change_server,
             self._menu_change_server,
         )
@@ -692,6 +704,10 @@ class MainWindow(wx.Frame):
                 wx.ACCEL_CTRL | wx.ACCEL_SHIFT,
                 wx.WXK_RETURN,
                 self._id_download,
+            ),
+            (
+                wx.ACCEL_CTRL, ord("N"),
+                self._menu_new_playlist.GetId(),
             ),
         ])
         self.SetAcceleratorTable(accel)
@@ -1706,6 +1722,65 @@ class MainWindow(wx.Frame):
                 if self._nav_stack:
                     self._go_back()
                     return
+            # Delete: remove from playlist / delete playlist
+            if code == wx.WXK_DELETE:
+                if self._current_playlist_id():
+                    item = (
+                        self._list.get_selected_item()
+                    )
+                    if item:
+                        self._remove_from_playlist(item)
+                    return
+                if (
+                    self._current_level_type
+                    == "playlists"
+                ):
+                    item = (
+                        self._list.get_selected_item()
+                    )
+                    if item:
+                        self._delete_playlist(item)
+                    return
+            # F2: rename playlist
+            if code == wx.WXK_F2:
+                if (
+                    self._current_level_type
+                    == "playlists"
+                ):
+                    item = (
+                        self._list.get_selected_item()
+                    )
+                    if item:
+                        self._rename_playlist(item)
+                    return
+            # Alt+Up/Down: reorder in playlist
+            if (
+                event.AltDown()
+                and not event.ControlDown()
+                and not event.ShiftDown()
+            ):
+                if code == wx.WXK_UP:
+                    if self._current_playlist_id():
+                        item = (
+                            self._list
+                            .get_selected_item()
+                        )
+                        if item:
+                            self._move_playlist_item(
+                                item, -1,
+                            )
+                        return
+                elif code == wx.WXK_DOWN:
+                    if self._current_playlist_id():
+                        item = (
+                            self._list
+                            .get_selected_item()
+                        )
+                        if item:
+                            self._move_playlist_item(
+                                item, 1,
+                            )
+                        return
 
         # Shift+Arrow: next/prev track (unless in search)
         if (
@@ -1875,6 +1950,12 @@ class MainWindow(wx.Frame):
             "  Ctrl+C           - Copy link\n"
             "  Ctrl+Shift+C     - Copy stream link\n"
             "  Ctrl+Shift+Enter - Download track\n\n"
+            "Playlists:\n"
+            "  Ctrl+N         - New playlist\n"
+            "  F2             - Rename playlist\n"
+            "  Delete         - Delete playlist / "
+            "remove track\n"
+            "  Alt+Up/Down    - Reorder tracks\n\n"
             "Other:\n"
             "  F5             - Refresh library\n"
             "  F8             - Settings\n"
@@ -1930,12 +2011,39 @@ class MainWindow(wx.Frame):
             ID_VIEW_LYRICS, ID_SYNCED_LYRICS,
             ID_DOWNLOAD, ID_COPY_LINK, ID_COPY_STREAM,
             ID_PROPERTIES,
+            ID_REMOVE_FROM_PLAYLIST,
+            ID_MOVE_UP, ID_MOVE_DOWN,
+            ID_RENAME_PLAYLIST, ID_DELETE_PLAYLIST,
         )
 
-        menu = build_context_menu(
+        in_playlist = bool(self._current_playlist_id())
+        item_index = self._list.GetSelection()
+
+        # Build "Add to Playlist" data for tracks
+        playlists = None
+        track_in_pls: set[str] = set()
+        if self._current_level_type == "tracks":
+            playlists = self._lib_playlists
+            server = self._db.get_active_server()
+            if server and server.id:
+                track_id = item.get("Id", "")
+                for pl in self._lib_playlists:
+                    pl_id = pl.get("Id", "")
+                    ids = self._db.get_playlist_track_ids(
+                        server.id, pl_id,
+                    )
+                    if track_id in ids:
+                        track_in_pls.add(pl_id)
+
+        menu, playlist_id_map = build_context_menu(
             self._current_level_type,
             item,
             len(self._nav_stack),
+            in_playlist=in_playlist,
+            playlists=playlists,
+            track_in_playlists=track_in_pls,
+            item_index=item_index,
+            total_items=len(self._filtered_items),
         )
 
         handler_map = {
@@ -1971,10 +2079,35 @@ class MainWindow(wx.Frame):
             ID_PROPERTIES: lambda e: (
                 self._show_properties(item)
             ),
+            ID_REMOVE_FROM_PLAYLIST: lambda e: (
+                self._remove_from_playlist(item)
+            ),
+            ID_MOVE_UP: lambda e: (
+                self._move_playlist_item(item, -1)
+            ),
+            ID_MOVE_DOWN: lambda e: (
+                self._move_playlist_item(item, 1)
+            ),
+            ID_RENAME_PLAYLIST: lambda e: (
+                self._rename_playlist(item)
+            ),
+            ID_DELETE_PLAYLIST: lambda e: (
+                self._delete_playlist(item)
+            ),
         }
 
         for mid, handler in handler_map.items():
             self.Bind(wx.EVT_MENU, handler, id=mid)
+
+        # Bind dynamic "Add to Playlist" submenu IDs
+        for mid, pl in playlist_id_map.items():
+            self.Bind(
+                wx.EVT_MENU,
+                lambda e, p=pl: (
+                    self._add_to_playlist(item, p)
+                ),
+                id=mid,
+            )
 
         self._list.PopupMenu(menu)
         menu.Destroy()
@@ -2393,6 +2526,400 @@ class MainWindow(wx.Frame):
         if result == wx.ID_OK:
             # Translators: Download complete notification.
             self._notify_toggle(_("Download complete"))
+
+    # ------------------------------------------------------------------
+    # Playlist management
+    # ------------------------------------------------------------------
+
+    def _on_new_playlist(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Show dialog to create a new playlist."""
+        # Translators: New playlist dialog prompt.
+        dlg = wx.TextEntryDialog(
+            self,
+            _("Enter playlist name:"),
+            # Translators: New playlist dialog title.
+            _("New Playlist"),
+        )
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        name = dlg.GetValue().strip()
+        dlg.Destroy()
+        if not name:
+            return
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+        srv_id = server.id
+
+        # Translators: Creating playlist status.
+        self._update_status(
+            _("Creating playlist...")
+        )
+
+        def on_done(pl_id: str | None) -> None:
+            wx.CallAfter(
+                self._on_create_playlist_done,
+                pl_id, srv_id, name,
+            )
+
+        self._client.create_playlist_async(
+            name, on_done,
+        )
+
+    def _on_create_playlist_done(
+        self,
+        playlist_id: str | None,
+        server_id: int,
+        name: str,
+    ) -> None:
+        """Handle create-playlist completion."""
+        if not playlist_id:
+            # Translators: Create playlist failed.
+            self._update_status(
+                _("Failed to create playlist")
+            )
+            return
+
+        self._db.create_playlist(
+            server_id, playlist_id, name,
+        )
+        # Reload playlists into memory
+        self._lib_playlists = (
+            self._db.get_all_playlists(server_id)
+        )
+
+        # Refresh view if on playlists section
+        idx = self._section_choice.GetSelection()
+        if (
+            SECTIONS[idx] == "playlists"
+            and not self._nav_stack
+        ):
+            self._display_level(
+                self._lib_playlists,
+                "playlists", None,
+            )
+
+        # Translators: Playlist created notification.
+        self._notify_toggle(
+            _("Playlist \"{name}\" created").format(
+                name=name,
+            )
+        )
+
+    def _rename_playlist(self, item: dict) -> None:
+        """Rename a playlist via dialog."""
+        if self._current_level_type != "playlists":
+            return
+        pl_id = item.get("Id", "")
+        old_name = item.get("Name", "")
+        if not pl_id:
+            return
+
+        # Translators: Rename playlist dialog prompt.
+        dlg = wx.TextEntryDialog(
+            self,
+            _("Enter new name:"),
+            # Translators: Rename playlist dialog title.
+            _("Rename Playlist"),
+            value=old_name,
+        )
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        new_name = dlg.GetValue().strip()
+        dlg.Destroy()
+        if not new_name or new_name == old_name:
+            return
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+        srv_id = server.id
+
+        # Update DB and in-memory immediately
+        self._db.rename_playlist(
+            srv_id, pl_id, new_name,
+        )
+        item["Name"] = new_name
+        self._lib_playlists = (
+            self._db.get_all_playlists(srv_id)
+        )
+
+        # Refresh list
+        self._list.set_items(self._filtered_items)
+        self._update_list_label()
+
+        # Fire async server request
+        self._client.rename_playlist_async(
+            pl_id, new_name,
+            lambda ok: None,
+        )
+
+        # Translators: Playlist renamed notification.
+        self._notify_toggle(
+            _("Playlist renamed to \"{name}\"").format(
+                name=new_name,
+            )
+        )
+
+    def _delete_playlist(self, item: dict) -> None:
+        """Delete a playlist with confirmation."""
+        if self._current_level_type != "playlists":
+            return
+        pl_id = item.get("Id", "")
+        pl_name = item.get("Name", "")
+        if not pl_id:
+            return
+
+        # Translators: Confirm delete playlist.
+        result = wx.MessageBox(
+            _("Delete playlist \"{name}\"?").format(
+                name=pl_name,
+            ),
+            # Translators: Confirm delete dialog title.
+            _("Delete Playlist"),
+            wx.YES_NO | wx.ICON_QUESTION,
+            self,
+        )
+        if result != wx.YES:
+            return
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+        srv_id = server.id
+
+        # Update UI immediately
+        sel = self._list.GetSelection()
+        if item in self._all_items:
+            self._all_items.remove(item)
+        if item in self._filtered_items:
+            self._filtered_items.remove(item)
+        self._list.set_items(self._filtered_items)
+        new_sel = min(
+            sel, len(self._filtered_items) - 1,
+        )
+        if new_sel >= 0:
+            self._list.SetSelection(new_sel)
+        self._update_list_label()
+
+        # Update DB and in-memory
+        self._db.delete_playlist(srv_id, pl_id)
+        self._lib_playlists = (
+            self._db.get_all_playlists(srv_id)
+        )
+
+        # Fire async server request
+        self._client.delete_playlist_async(pl_id)
+
+        # Translators: Playlist deleted notification.
+        self._notify_toggle(
+            _("Playlist \"{name}\" deleted").format(
+                name=pl_name,
+            )
+        )
+
+    def _current_playlist_id(self) -> str | None:
+        """Return the playlist ID if viewing playlist tracks."""
+        if (
+            self._current_level_type == "tracks"
+            and self._nav_stack
+            and self._nav_stack[-1].level_type
+            == "playlists"
+        ):
+            return self._nav_stack[-1].selected_id
+        return None
+
+    def _add_to_playlist(
+        self, track: dict, playlist: dict,
+    ) -> None:
+        """Add a track to the top of a playlist."""
+        track_id = track.get("Id", "")
+        pl_id = playlist.get("Id", "")
+        pl_name = playlist.get("Name", "")
+        if not track_id or not pl_id:
+            return
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+        srv_id = server.id
+
+        def on_done(success: bool) -> None:
+            wx.CallAfter(
+                self._on_add_to_playlist_done,
+                success, srv_id,
+                track, pl_id, pl_name,
+            )
+
+        # Translators: Status when adding to playlist.
+        self._update_status(
+            _("Adding to {name}...").format(
+                name=pl_name,
+            )
+        )
+
+        self._client.add_to_playlist_async(
+            pl_id, track_id, on_done,
+        )
+
+    def _on_add_to_playlist_done(
+        self,
+        success: bool,
+        server_id: int,
+        track: dict,
+        playlist_id: str,
+        playlist_name: str,
+    ) -> None:
+        """Handle add-to-playlist completion."""
+        if not success:
+            # Translators: Add to playlist failed.
+            self._update_status(
+                _("Failed to add to playlist")
+            )
+            return
+
+        # Update DB: use track Id as PlaylistItemId
+        # (matches server behavior observed in testing)
+        track_id = track.get("Id", "")
+        self._db.add_playlist_track(
+            server_id, playlist_id,
+            track_id, track_id,
+        )
+
+        # Translators: Track added to playlist.
+        self._notify_toggle(
+            _("Added to {name}").format(
+                name=playlist_name,
+            )
+        )
+
+    def _remove_from_playlist(
+        self, item: dict,
+    ) -> None:
+        """Remove a track from the current playlist."""
+        pl_id = self._current_playlist_id()
+        if not pl_id:
+            return
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+        srv_id = server.id
+
+        track_name = item.get("Name", "")
+        pid = item.get(
+            "PlaylistItemId", item.get("Id", ""),
+        )
+
+        # Translators: Confirm remove from playlist.
+        result = wx.MessageBox(
+            _("Remove \"{name}\" from the playlist?")
+            .format(name=track_name),
+            # Translators: Confirm remove dialog title.
+            _("Remove from Playlist"),
+            wx.YES_NO | wx.ICON_QUESTION,
+            self,
+        )
+        if result != wx.YES:
+            return
+
+        # Update UI immediately
+        sel = self._list.GetSelection()
+        if item in self._all_items:
+            self._all_items.remove(item)
+        if item in self._filtered_items:
+            self._filtered_items.remove(item)
+        self._list.set_items(self._filtered_items)
+        new_sel = min(
+            sel, len(self._filtered_items) - 1,
+        )
+        if new_sel >= 0:
+            self._list.SetSelection(new_sel)
+        self._update_list_label()
+
+        # Update DB
+        self._db.remove_playlist_track(
+            srv_id, pl_id, pid,
+        )
+
+        # Fire async server request
+        self._client.remove_from_playlist_async(
+            pl_id, pid,
+        )
+
+    def _move_playlist_item(
+        self, item: dict, direction: int,
+    ) -> None:
+        """Move a track up (-1) or down (+1) in playlist."""
+        pl_id = self._current_playlist_id()
+        if not pl_id:
+            return
+
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+
+        # Find index in _all_items (unfiltered order)
+        try:
+            old_idx = self._all_items.index(item)
+        except ValueError:
+            return
+        new_idx = old_idx + direction
+        if new_idx < 0 or new_idx >= len(self._all_items):
+            return
+
+        # Swap in _all_items
+        self._all_items[old_idx], self._all_items[new_idx] = (
+            self._all_items[new_idx], self._all_items[old_idx]
+        )
+
+        # If no search filter, _filtered_items is the same
+        # reference; otherwise swap there too
+        if self._filtered_items is not self._all_items:
+            try:
+                fi_old = self._filtered_items.index(item)
+            except ValueError:
+                fi_old = -1
+            if fi_old >= 0:
+                fi_new = fi_old + direction
+                if (
+                    0 <= fi_new
+                    < len(self._filtered_items)
+                ):
+                    (
+                        self._filtered_items[fi_old],
+                        self._filtered_items[fi_new],
+                    ) = (
+                        self._filtered_items[fi_new],
+                        self._filtered_items[fi_old],
+                    )
+
+        # Refresh list and restore selection
+        self._list.set_items(self._filtered_items)
+        sel = self._list.GetSelection()
+        # Move selection to follow the item
+        new_sel = sel + direction
+        if 0 <= new_sel < len(self._filtered_items):
+            self._list.SetSelection(new_sel)
+
+        # Update DB
+        pid = item.get(
+            "PlaylistItemId", item.get("Id", ""),
+        )
+        self._db.move_playlist_track(
+            server.id, pl_id, pid,
+            old_idx, new_idx,
+        )
+
+        # Fire async server request
+        self._client.move_playlist_item_async(
+            pl_id, pid, new_idx,
+        )
 
     def _go_to_artist(self, item: dict) -> None:
         """Navigate to the (regular) artist."""
