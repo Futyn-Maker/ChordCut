@@ -126,6 +126,12 @@ class MainWindow(wx.Frame):
         self._selected_library_ids: set[str] | None = None
         self._library_menu_ids: dict[int, str] = {}
 
+        # Progressive loading state
+        self._initial_loading: bool = False
+        self._loading_in_progress: bool = False
+        self._lib_track_counts: dict[str, int] = {}
+        self._lib_loaded_counts: dict[str, int] = {}
+
         # Search debounce timer
         self._search_timer = wx.Timer(self)
 
@@ -451,19 +457,19 @@ class MainWindow(wx.Frame):
         )
 
         # Search row
-        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        search_sizer.Add(
+        self._search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._search_sizer.Add(
             self._search_label,
             flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
             border=5,
         )
-        search_sizer.Add(
+        self._search_sizer.Add(
             self._search_text,
             proportion=1,
             flag=wx.EXPAND,
         )
         main_sizer.Add(
-            search_sizer,
+            self._search_sizer,
             flag=(
                 wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM
             ),
@@ -876,7 +882,7 @@ class MainWindow(wx.Frame):
     # ------------------------------------------------------------------
 
     def load_library(self) -> None:
-        """Load library: show cache, then refresh in background."""
+        """Load library: show cache, then refresh."""
         server = self._db.get_active_server()
         if not server or not server.id:
             # Translators: No server configured.
@@ -885,27 +891,31 @@ class MainWindow(wx.Frame):
             )
             return
 
+        if self._loading_in_progress:
+            return
+        self._loading_in_progress = True
+
         # Load cached data into memory
         self._load_library_from_db(server.id)
-        had_cache = bool(self._lib_tracks)
 
-        # Display current section from cache
+        total_cached = self._db.count_tracks(server.id)
+        if total_cached < 100:
+            self._start_cold_load(server)
+        else:
+            self._start_warm_load(server)
+
+    # --- Warm load (has cache) ---
+
+    def _start_warm_load(self, server) -> None:
+        """Show cache instantly, refresh in background."""
         self._switch_to_section(
             self._section_choice.GetSelection(),
         )
+        # Translators: Showing cached library.
+        self._update_status(
+            _("Library loaded from cache, updating...")
+        )
 
-        if had_cache:
-            # Translators: Showing cached library.
-            self._update_status(
-                _("Library loaded from cache, updating...")
-            )
-        else:
-            # Translators: First time loading.
-            self._update_status(
-                _("Loading library from server...")
-            )
-
-        # Background refresh
         def on_loaded(
             libraries, tracks, playlists, pl_items,
         ):
@@ -920,10 +930,234 @@ class MainWindow(wx.Frame):
                 error=e,
             )
             wx.CallAfter(self._update_status, msg)
+            wx.CallAfter(self._finish_loading)
 
         self._client.get_library_async(
             on_loaded, on_error,
         )
+
+    # --- Cold load (first launch / empty cache) ---
+
+    def _start_cold_load(self, server) -> None:
+        """Progressive loading with per-page UI updates."""
+        self._initial_loading = True
+        self._loaded_tracks = 0
+        self._total_tracks = 0
+
+        # Hide search (not usable until fully loaded)
+        self._search_sizer.ShowItems(False)
+        self._panel.Layout()
+
+        # Show empty state
+        self._switch_to_section(
+            self._section_choice.GetSelection(),
+        )
+        # Translators: First time loading.
+        self._update_status(
+            _("Loading library from server...")
+        )
+
+        def on_libs(libraries, lib_counts):
+            wx.CallAfter(
+                self._on_libraries_ready,
+                libraries, lib_counts,
+            )
+
+        def on_page(batch, lib_id, count):
+            wx.CallAfter(
+                self._on_page_loaded,
+                batch, lib_id, count,
+            )
+
+        def on_done(playlists, pl_items):
+            wx.CallAfter(
+                self._on_initial_load_done,
+                playlists, pl_items,
+            )
+
+        def on_error(e):
+            # Translators: Cold load error.
+            msg = _("Error loading: {error}").format(
+                error=e,
+            )
+            wx.CallAfter(self._update_status, msg)
+            wx.CallAfter(self._finish_cold_load)
+            wx.CallAfter(self._finish_loading)
+
+        self._client.fetch_library_paginated(
+            on_libs, on_page, on_done, on_error,
+        )
+
+    def _on_libraries_ready(
+        self,
+        libraries: list[dict],
+        lib_counts: dict[str, int],
+    ) -> None:
+        """Handle music views + per-library track counts."""
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+
+        self._lib_track_counts = dict(lib_counts)
+        self._lib_loaded_counts = {
+            lid: 0 for lid in lib_counts
+        }
+
+        if libraries:
+            self._db.cache_libraries(
+                server.id, libraries,
+            )
+            db_libs = self._db.get_libraries(server.id)
+            self._selected_library_ids = {
+                lib["Id"] for lib in db_libs
+                if lib.get("Enabled", True)
+            }
+            self._libraries = db_libs
+            self._rebuild_libraries_menu()
+
+        # Clear old track/artist/album data
+        self._db.clear_library_cache(server.id)
+
+        # Reload (now empty) in-memory lists
+        self._load_library_from_db(server.id)
+        self._update_loading_label()
+
+    def _on_page_loaded(
+        self,
+        batch: list[dict],
+        library_id: str,
+        count: int,
+    ) -> None:
+        """Handle a page of tracks from the server."""
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            return
+
+        # Update per-library loaded count
+        self._lib_loaded_counts[library_id] = (
+            self._lib_loaded_counts.get(library_id, 0)
+            + count
+        )
+
+        # Write batch to DB
+        self._db.cache_library_batch(server.id, batch)
+
+        # Refresh in-memory lists from DB
+        self._load_library_from_db(server.id)
+
+        # Refresh current view
+        self._refresh_current_view(server.id)
+        self._update_loading_label()
+
+        # Check if visible libraries are fully loaded
+        if self._visible_tracks_complete():
+            self._finish_cold_load()
+
+        loaded = sum(self._lib_loaded_counts.values())
+        total = sum(self._lib_track_counts.values())
+        # Translators: Cold load progress in status bar.
+        self._update_status(
+            _("Loading: {loaded} of {total} tracks"
+              ).format(loaded=loaded, total=total),
+        )
+
+    def _on_initial_load_done(
+        self,
+        playlists: list[dict],
+        playlist_items: dict[str, list[dict]],
+    ) -> None:
+        """Handle completion of progressive loading."""
+        server = self._db.get_active_server()
+        if not server or not server.id:
+            self._finish_cold_load()
+            return
+
+        self._db.cache_playlists(
+            server.id, playlists, playlist_items,
+        )
+        self._load_library_from_db(server.id)
+
+        # Cold load may have already finished early
+        # (all visible libraries loaded), but we still
+        # need to ensure it's finished now.
+        if self._initial_loading:
+            self._finish_cold_load()
+
+        self._loading_in_progress = False
+        self._refresh_current_view(server.id)
+        # Translators: Library updated status.
+        self._update_status(_("Library updated"))
+
+    def _finish_cold_load(self) -> None:
+        """End progressive loading: show search, etc.
+
+        Note: *_loading_in_progress* is NOT cleared here
+        because hidden libraries may still be fetching.
+        It is cleared in *_on_initial_load_done* or on
+        error.
+        """
+        if not self._initial_loading:
+            return
+        self._initial_loading = False
+
+        # Show search field
+        self._search_sizer.ShowItems(True)
+        self._panel.Layout()
+
+        # Reset label to normal format
+        self._update_list_label()
+
+    def _finish_loading(self) -> None:
+        """Clear the loading-in-progress guard."""
+        self._loading_in_progress = False
+
+    def _visible_loading_counts(
+        self,
+    ) -> tuple[int, int]:
+        """Return (loaded, total) for enabled libraries."""
+        ids = self._selected_library_ids
+        if ids is None:
+            ids = set(self._lib_track_counts)
+        loaded = sum(
+            self._lib_loaded_counts.get(lid, 0)
+            for lid in ids
+        )
+        total = sum(
+            self._lib_track_counts.get(lid, 0)
+            for lid in ids
+        )
+        return loaded, total
+
+    def _visible_tracks_complete(self) -> bool:
+        """True when all enabled libraries are loaded."""
+        if not self._initial_loading:
+            return True
+        loaded, total = self._visible_loading_counts()
+        return loaded >= total
+
+    def _update_loading_label(self) -> None:
+        """Update label during cold load to show progress."""
+        if not self._initial_loading:
+            self._update_list_label()
+            return
+
+        idx = self._section_choice.GetSelection()
+        section = SECTIONS[idx]
+
+        if section == "tracks" and not self._nav_stack:
+            loaded, total = (
+                self._visible_loading_counts()
+            )
+            # Translators: Loading progress label.
+            # {loaded} = tracks loaded so far,
+            # {total} = total tracks on server.
+            label = _(
+                "{loaded} of {total} tracks"
+            ).format(loaded=loaded, total=total)
+            self._list_label.SetLabel(label)
+            self._list.SetName(label)
+        else:
+            self._update_list_label()
 
     def _load_library_from_db(self, server_id: int) -> None:
         """Populate in-memory lists from the DB cache."""
@@ -994,6 +1228,7 @@ class MainWindow(wx.Frame):
         self._load_library_from_db(server.id)
         self._refresh_current_view(server.id)
         self._update_queue_after_refresh()
+        self._finish_loading()
 
         # Translators: Library updated status.
         self._update_status(_("Library updated"))
@@ -1365,8 +1600,15 @@ class MainWindow(wx.Frame):
             lib_id in self._selected_library_ids,
         )
         self._load_library_from_db(server.id)
-        self._refresh_current_view(server.id)
-        self._update_queue_after_refresh()
+
+        if self._initial_loading:
+            self._refresh_current_view(server.id)
+            self._update_loading_label()
+            if self._visible_tracks_complete():
+                self._finish_cold_load()
+        else:
+            self._refresh_current_view(server.id)
+            self._update_queue_after_refresh()
 
     # ------------------------------------------------------------------
     # Audio device selection
@@ -1451,6 +1693,11 @@ class MainWindow(wx.Frame):
         self, track: dict,
     ) -> None:
         """User pressed Enter/dbl-click: build queue and play."""
+        if self._initial_loading:
+            # During cold load: play without queue
+            self._play_track(track)
+            return
+
         self._queue = list(self._filtered_items)
         self._original_queue = list(
             self._filtered_items,

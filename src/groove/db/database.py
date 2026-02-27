@@ -320,177 +320,238 @@ class Database:
                 (int(enabled), server_id, library_id),
             )
 
-    def cache_library(
-        self, server_id: int, tracks: list[dict],
-    ) -> None:
-        """Cache the full library extracted from the tracks response.
+    def count_tracks(self, server_id: int) -> int:
+        """Count all cached tracks for a server (unfiltered)."""
+        with self.connection() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM tracks"
+                " WHERE server_id = ?",
+                (server_id,),
+            ).fetchone()
+            return row[0]
 
-        Populates tracks, artists, album_artists, albums, and all
-        mapping tables from a single get_all_tracks() API response.
-        Each track dict may contain a "LibraryId" key indicating
-        which music library it belongs to.
+    def clear_library_cache(
+        self, server_id: int,
+    ) -> None:
+        """Delete all library cache data for a server.
+
+        Clears tracks, artists, album_artists, albums,
+        and all mapping tables.  Does NOT touch libraries
+        or playlists.
         """
         with self.connection() as conn:
-            # Clear existing library data for this server
             for table in (
                 "track_artists", "album_album_artists",
-                "tracks", "artists", "album_artists", "albums",
+                "tracks", "artists",
+                "album_artists", "albums",
             ):
                 conn.execute(
-                    f"DELETE FROM {table} WHERE server_id = ?",
+                    f"DELETE FROM {table}"
+                    f" WHERE server_id = ?",
                     (server_id,),
                 )
 
-            artists_seen: dict[str, str] = {}
-            album_artists_seen: dict[str, str] = {}
-            albums_seen: dict[str, tuple[str, str, str]] = {}
-            track_artist_links: list[tuple[str, str]] = []
-            album_aa_links: set[tuple[str, str]] = set()
-            track_rows: list[tuple] = []
+    @staticmethod
+    def _insert_library_data(
+        conn: sqlite3.Connection,
+        server_id: int,
+        tracks: list[dict],
+    ) -> None:
+        """Insert tracks and extracted entities into DB.
 
-            for track in tracks:
-                track_id = track.get("Id")
-                if not track_id:
-                    continue
+        Extracts artists, album_artists, albums, and all
+        mapping tables from the tracks list and bulk-inserts.
+        Uses INSERT OR REPLACE for tracks and INSERT OR
+        IGNORE for everything else (safe for cross-batch
+        duplicates).
+        """
+        artists_seen: dict[str, str] = {}
+        album_artists_seen: dict[str, str] = {}
+        albums_seen: dict[str, tuple[str, str, str]] = {}
+        track_artist_links: list[tuple[str, str]] = []
+        album_aa_links: set[tuple[str, str]] = set()
+        track_rows: list[tuple] = []
 
-                library_id = track.get("LibraryId", "")
+        for track in tracks:
+            track_id = track.get("Id")
+            if not track_id:
+                continue
 
-                # All artist names for display
-                artists_list = track.get("Artists", [])
-                artist_items = track.get("ArtistItems", [])
-                artist_display = (
-                    ", ".join(artists_list) if artists_list
-                    else track.get("AlbumArtist", "")
-                )
+            library_id = track.get("LibraryId", "")
 
-                # First artist for backward compat
-                artist_name = track.get("AlbumArtist") or (
-                    artists_list[0] if artists_list else ""
-                )
-                first_artist_id = (
-                    artist_items[0].get("Id")
-                    if artist_items else None
-                )
+            # All artist names for display
+            artists_list = track.get("Artists", [])
+            artist_items = track.get("ArtistItems", [])
+            artist_display = (
+                ", ".join(artists_list) if artists_list
+                else track.get("AlbumArtist", "")
+            )
 
-                # Collect unique artists
-                for ai in artist_items:
-                    aid = ai.get("Id")
-                    if aid:
-                        artists_seen.setdefault(
-                            aid, ai.get("Name", ""),
-                        )
-                        track_artist_links.append(
-                            (track_id, aid),
-                        )
+            # First artist for backward compat
+            artist_name = track.get("AlbumArtist") or (
+                artists_list[0] if artists_list else ""
+            )
+            first_artist_id = (
+                artist_items[0].get("Id")
+                if artist_items else None
+            )
 
-                # Collect unique album artists
-                album_artists_items = track.get(
-                    "AlbumArtists", [],
+            # Collect unique artists
+            for ai in artist_items:
+                aid = ai.get("Id")
+                if aid:
+                    artists_seen.setdefault(
+                        aid, ai.get("Name", ""),
+                    )
+                    track_artist_links.append(
+                        (track_id, aid),
+                    )
+
+            # Collect unique album artists
+            album_artists_items = track.get(
+                "AlbumArtists", [],
+            )
+            for aai in album_artists_items:
+                aaid = aai.get("Id")
+                if aaid:
+                    album_artists_seen.setdefault(
+                        aaid, aai.get("Name", ""),
+                    )
+
+            # Collect unique albums and link to album artists
+            album_id = track.get("AlbumId")
+            if album_id and album_id not in albums_seen:
+                albums_seen[album_id] = (
+                    track.get("Album", ""),
+                    track.get("AlbumArtist", ""),
+                    library_id,
                 )
                 for aai in album_artists_items:
                     aaid = aai.get("Id")
                     if aaid:
-                        album_artists_seen.setdefault(
-                            aaid, aai.get("Name", ""),
+                        album_aa_links.add(
+                            (album_id, aaid),
                         )
 
-                # Collect unique albums and link to album artists
-                album_id = track.get("AlbumId")
-                if album_id and album_id not in albums_seen:
-                    albums_seen[album_id] = (
-                        track.get("Album", ""),
-                        track.get("AlbumArtist", ""),
-                        library_id,
-                    )
-                    for aai in album_artists_items:
-                        aaid = aai.get("Id")
-                        if aaid:
-                            album_aa_links.add(
-                                (album_id, aaid),
-                            )
+            # Collect track row for bulk insert
+            track_rows.append((
+                track_id,
+                server_id,
+                track.get("Name", "Unknown"),
+                track.get("Album", ""),
+                artist_name,
+                artist_display,
+                album_id,
+                first_artist_id,
+                track.get("RunTimeTicks"),
+                track.get("IndexNumber"),
+                library_id,
+                track.get("DateCreated"),
+            ))
 
-                # Collect track row for bulk insert
-                track_rows.append((
-                    track_id,
-                    server_id,
-                    track.get("Name", "Unknown"),
-                    track.get("Album", ""),
-                    artist_name,
-                    artist_display,
-                    album_id,
-                    first_artist_id,
-                    track.get("RunTimeTicks"),
-                    track.get("IndexNumber"),
-                    library_id,
-                    track.get("DateCreated"),
-                ))
+        # Bulk insert tracks
+        conn.executemany(
+            "INSERT OR REPLACE INTO tracks ("
+            "  id, server_id, name, album_name,"
+            "  artist_name, artist_display,"
+            "  album_id, artist_id,"
+            "  duration_ticks, track_number,"
+            "  library_id, date_created"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            track_rows,
+        )
 
-            # Bulk insert tracks
-            conn.executemany(
-                "INSERT OR REPLACE INTO tracks ("
-                "  id, server_id, name, album_name,"
-                "  artist_name, artist_display,"
-                "  album_id, artist_id,"
-                "  duration_ticks, track_number,"
-                "  library_id, date_created"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                track_rows,
+        # Bulk insert artists
+        conn.executemany(
+            "INSERT OR IGNORE INTO artists"
+            " (id, server_id, name) VALUES (?, ?, ?)",
+            [
+                (aid, server_id, name)
+                for aid, name in artists_seen.items()
+            ],
+        )
+
+        # Bulk insert album artists
+        conn.executemany(
+            "INSERT OR IGNORE INTO album_artists"
+            " (id, server_id, name) VALUES (?, ?, ?)",
+            [
+                (aaid, server_id, name)
+                for aaid, name
+                in album_artists_seen.items()
+            ],
+        )
+
+        # Bulk insert albums
+        conn.executemany(
+            "INSERT OR IGNORE INTO albums"
+            " (id, server_id, name, artist_display,"
+            " library_id)"
+            " VALUES (?, ?, ?, ?, ?)",
+            [
+                (aid, server_id, aname, adisplay, lib_id)
+                for aid, (aname, adisplay, lib_id)
+                in albums_seen.items()
+            ],
+        )
+
+        # Bulk insert track-artist links
+        conn.executemany(
+            "INSERT OR IGNORE INTO track_artists"
+            " (track_id, artist_id, server_id)"
+            " VALUES (?, ?, ?)",
+            [
+                (tid, aid, server_id)
+                for tid, aid in track_artist_links
+            ],
+        )
+
+        # Bulk insert album-album_artist links
+        conn.executemany(
+            "INSERT OR IGNORE INTO album_album_artists"
+            " (album_id, album_artist_id, server_id)"
+            " VALUES (?, ?, ?)",
+            [
+                (aid, aaid, server_id)
+                for aid, aaid in album_aa_links
+            ],
+        )
+
+    def cache_library(
+        self, server_id: int, tracks: list[dict],
+    ) -> None:
+        """Cache the full library (clear + insert).
+
+        Populates tracks, artists, album_artists, albums,
+        and all mapping tables from a tracks API response.
+        Clears existing data first (single transaction).
+        """
+        with self.connection() as conn:
+            for table in (
+                "track_artists", "album_album_artists",
+                "tracks", "artists",
+                "album_artists", "albums",
+            ):
+                conn.execute(
+                    f"DELETE FROM {table}"
+                    f" WHERE server_id = ?",
+                    (server_id,),
+                )
+            self._insert_library_data(
+                conn, server_id, tracks,
             )
 
-            # Bulk insert artists
-            conn.executemany(
-                "INSERT OR IGNORE INTO artists"
-                " (id, server_id, name) VALUES (?, ?, ?)",
-                [
-                    (aid, server_id, name)
-                    for aid, name in artists_seen.items()
-                ],
-            )
+    def cache_library_batch(
+        self, server_id: int, tracks: list[dict],
+    ) -> None:
+        """Insert a batch of tracks (no clear).
 
-            # Bulk insert album artists
-            conn.executemany(
-                "INSERT OR IGNORE INTO album_artists"
-                " (id, server_id, name) VALUES (?, ?, ?)",
-                [
-                    (aaid, server_id, name)
-                    for aaid, name
-                    in album_artists_seen.items()
-                ],
-            )
-
-            # Bulk insert albums
-            conn.executemany(
-                "INSERT OR IGNORE INTO albums"
-                " (id, server_id, name, artist_display,"
-                " library_id)"
-                " VALUES (?, ?, ?, ?, ?)",
-                [
-                    (aid, server_id, aname, adisplay, lib_id)
-                    for aid, (aname, adisplay, lib_id)
-                    in albums_seen.items()
-                ],
-            )
-
-            # Bulk insert track-artist links
-            conn.executemany(
-                "INSERT OR IGNORE INTO track_artists"
-                " (track_id, artist_id, server_id)"
-                " VALUES (?, ?, ?)",
-                [
-                    (tid, aid, server_id)
-                    for tid, aid in track_artist_links
-                ],
-            )
-
-            # Bulk insert album-album_artist links
-            conn.executemany(
-                "INSERT OR IGNORE INTO album_album_artists"
-                " (album_id, album_artist_id, server_id)"
-                " VALUES (?, ?, ?)",
-                [
-                    (aid, aaid, server_id)
-                    for aid, aaid in album_aa_links
-                ],
+        Used during progressive loading to add tracks
+        incrementally without deleting existing data.
+        """
+        with self.connection() as conn:
+            self._insert_library_data(
+                conn, server_id, tracks,
             )
 
     def cache_playlists(

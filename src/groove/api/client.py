@@ -138,6 +138,11 @@ class JellyfinClient:
         except Exception:
             return []
 
+    _TRACK_FIELDS = (
+        "ArtistItems,Artists,"
+        "AlbumArtists,DateCreated"
+    )
+
     def get_tracks_by_library(
         self, library_id: str,
     ) -> list[dict]:
@@ -151,11 +156,7 @@ class JellyfinClient:
                     "ParentId": library_id,
                     "IncludeItemTypes": "Audio",
                     "Recursive": True,
-                    "Fields": (
-                        "AudioInfo,ParentId,"
-                        "ArtistItems,Artists,"
-                        "AlbumArtists,DateCreated"
-                    ),
+                    "Fields": self._TRACK_FIELDS,
                     "SortBy": "AlbumArtist,Album,SortName",
                     "SortOrder": "Ascending",
                 }
@@ -163,6 +164,59 @@ class JellyfinClient:
             return result.get("Items", [])
         except Exception:
             return []
+
+    def get_tracks_page(
+        self,
+        library_id: str,
+        start_index: int,
+        limit: int,
+    ) -> tuple[list[dict], int]:
+        """Fetch a page of tracks from a library.
+
+        Returns ``(items, total_count)``.
+        """
+        if not self._user_id:
+            return [], 0
+
+        try:
+            result = self._client.jellyfin.user_items(
+                params={
+                    "ParentId": library_id,
+                    "IncludeItemTypes": "Audio",
+                    "Recursive": True,
+                    "Fields": self._TRACK_FIELDS,
+                    "SortBy": "AlbumArtist,Album,SortName",
+                    "SortOrder": "Ascending",
+                    "StartIndex": start_index,
+                    "Limit": limit,
+                }
+            )
+            return (
+                result.get("Items", []),
+                result.get("TotalRecordCount", 0),
+            )
+        except Exception:
+            return [], 0
+
+    def get_track_count(
+        self, library_id: str,
+    ) -> int:
+        """Get total track count (warms server cache)."""
+        if not self._user_id:
+            return 0
+
+        try:
+            result = self._client.jellyfin.user_items(
+                params={
+                    "ParentId": library_id,
+                    "IncludeItemTypes": "Audio",
+                    "Recursive": True,
+                    "Limit": 0,
+                }
+            )
+            return result.get("TotalRecordCount", 0)
+        except Exception:
+            return 0
 
     def get_all_tracks(self) -> list[dict]:
         """Get all audio tracks from the library."""
@@ -359,6 +413,111 @@ class JellyfinClient:
                 pid = futures[future]
                 playlist_items[pid] = future.result()
         return playlist_items
+
+    # --- Paginated library fetch ---
+
+    _PAGE_SIZE = 200
+
+    def fetch_library_paginated(
+        self,
+        libraries_callback: Callable[
+            [list[dict], dict[str, int]], None,
+        ],
+        page_callback: Callable[
+            [list[dict], str, int], None,
+        ],
+        done_callback: Callable[
+            [list[dict], dict[str, list[dict]]], None,
+        ],
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Fetch library data with per-page callbacks.
+
+        Used for progressive loading on cold start.
+
+        *libraries_callback(libraries, lib_counts)* is
+        called once after music views and per-library track
+        counts are fetched.  *lib_counts* maps library Id
+        to total track count.
+
+        *page_callback(batch, library_id, page_count)* is
+        called for each page of tracks.
+
+        *done_callback(playlists, playlist_items)* is
+        called when everything (including playlists) is
+        done.
+        """
+        def task():
+            try:
+                # 1. Get music views
+                libraries = self.get_music_views()
+                if not libraries:
+                    libraries_callback([], {})
+                    done_callback([], {})
+                    return
+
+                # 2. Warm server cache + get counts
+                lib_counts: dict[str, int] = {}
+                with ThreadPoolExecutor(
+                    max_workers=min(
+                        len(libraries), 4,
+                    ),
+                ) as pool:
+                    futures = {
+                        pool.submit(
+                            self.get_track_count,
+                            lib["Id"],
+                        ): lib["Id"]
+                        for lib in libraries
+                    }
+                    for future in as_completed(
+                        futures,
+                    ):
+                        lid = futures[future]
+                        lib_counts[lid] = (
+                            future.result()
+                        )
+
+                libraries_callback(libraries, lib_counts)
+
+                # 3. Paginate per library (sequential)
+                for lib in libraries:
+                    lib_id = lib["Id"]
+                    lib_total = lib_counts.get(
+                        lib_id, 0,
+                    )
+                    start = 0
+                    while start < lib_total:
+                        items, _ = self.get_tracks_page(
+                            lib_id,
+                            start,
+                            self._PAGE_SIZE,
+                        )
+                        if not items:
+                            break
+                        for t in items:
+                            t["LibraryId"] = lib_id
+                        page_callback(
+                            items, lib_id, len(items),
+                        )
+                        start += self._PAGE_SIZE
+
+                # 4. Playlists (parallel items)
+                playlists = self.get_playlists()
+                pl_items = (
+                    self._fetch_playlist_items_parallel(
+                        playlists,
+                    )
+                )
+                done_callback(playlists, pl_items)
+
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
 
     # --- Playlist CRUD ---
 
