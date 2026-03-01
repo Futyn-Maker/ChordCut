@@ -28,13 +28,27 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Startup flow** (`app.py`): GrooveApp creates Settings, Database, JellyfinClient, Player → checks for stored token → if none, shows LoginDialog → creates MainWindow (receives Settings) → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
 
-**Data flow** (`main_window.py` → `database.py` → `client.py`):
-1. On startup, cached library data from SQLite is shown **instantly** (tracks, artists, albums, playlists)
-2. A background thread fetches fresh data from Jellyfin via `get_library_async()` (music views + tracks per library + playlists + playlist items in one operation)
-3. When the fetch completes, `wx.CallAfter()` marshals the callback to the GUI thread
-4. SQLite cache is updated via `cache_libraries()`, `cache_library()` and `cache_playlists()`; the current view refreshes in-place preserving focus
+**Data flow — two loading modes** (`main_window.py` → `database.py` → `client.py`):
 
-**Threading model**: All Jellyfin API calls run in a `ThreadPoolExecutor(max_workers=2)`. MPV runs its own event thread. Everything that touches wxPython UI goes through `wx.CallAfter()`. Database access is on the main thread only.
+`load_library()` checks `count_tracks(server_id)` (unfiltered) to choose the mode:
+
+*Cold load* (< 100 cached tracks — first launch, empty/partial DB):
+1. `fetch_library_paginated()` runs in a background thread: fetches music views, then sends `Limit=0` requests in parallel for each library (gets `TotalRecordCount` and warms the server's query cache), then paginates tracks in pages of 200 (`StartIndex`/`Limit`) sequentially per library.
+2. Each page callback is marshaled to the GUI thread via `wx.CallAfter()`. The handler writes the batch to SQLite via `cache_library_batch()`, reloads all in-memory lists from DB, and refreshes the current view.
+3. The label shows "X of Y tracks" where X and Y are scoped to **enabled libraries only** (per-library counts stored in `_lib_track_counts` / `_lib_loaded_counts`). Toggling a library mid-load instantly recalculates the visible counts.
+4. Search field is hidden (removed from tab order) until visible libraries are fully loaded. Tracks can be played individually but no playback queue is built during cold load.
+5. When all enabled libraries finish loading, `_finish_cold_load()` fires: search appears, label normalizes. Hidden libraries continue loading in the background silently.
+6. After all libraries finish, playlists are fetched (items in parallel) and cached. `_loading_in_progress` is cleared.
+
+*Warm load* (≥ 100 cached tracks — normal restart):
+1. Cached library data from SQLite is shown **instantly** (tracks, artists, albums, playlists).
+2. A background thread fetches fresh data via `get_library_async()` (music views + all tracks per library in parallel + playlists + playlist items in parallel).
+3. When the fetch completes, `wx.CallAfter()` marshals the callback to the GUI thread.
+4. SQLite cache is fully replaced via `cache_library()` (DELETE + INSERT in one transaction) and `cache_playlists()`; the current view refreshes in-place preserving focus.
+
+A `_loading_in_progress` flag prevents concurrent loads (F5 during an active load is ignored).
+
+**Threading model**: All Jellyfin API calls run in a `ThreadPoolExecutor(max_workers=2)`. Per-library track fetches (warm load) and per-playlist item fetches use short-lived inner `ThreadPoolExecutor` pools (max 4 workers) for parallelism. MPV runs its own event thread. Everything that touches wxPython UI goes through `wx.CallAfter()`. Database access is on the main thread only.
 
 **Library navigation** (`main_window.py`): A `wx.Choice` selector switches between five sections: Tracks, Playlists, Artists, Album Artists, Albums. Each section loads its top-level items from in-memory lists (populated from DB cache). Hierarchical drill-down uses a `_nav_stack` of `_NavState` dataclass snapshots. Enter drills into sub-items (e.g. Artist → Albums → Tracks), Backspace pops back restoring focus. The section selector stays unchanged during drill-down; only the list label updates contextually (e.g. "5 albums by My Chemical Romance").
 
@@ -66,7 +80,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 ## Database Schema
 
-**Normalized library cache** — all entities are extracted from a single `get_all_tracks()` API response (plus a separate playlists fetch):
+**Normalized library cache** — all entities are extracted from track API responses (plus a separate playlists fetch):
 
 | Table | Purpose |
 |-------|---------|
@@ -84,6 +98,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 **Library filtering**: Tracks and albums store `library_id` linking them to a music library. Query methods accept an optional `library_ids: set[str]` parameter — when provided, results are filtered to only include items from the selected libraries. Artists and album artists are filtered transitively through their tracks/albums. Playlists are cross-library and never filtered.
 
+**Cache write methods**: `cache_library(server_id, tracks)` does DELETE + INSERT in a single transaction (warm load). `clear_library_cache(server_id)` + `cache_library_batch(server_id, tracks)` split the operation for progressive loading (cold load) — clear once, then insert batches incrementally. Both share `_insert_library_data()` which extracts artists, album_artists, albums, and mapping tables from the tracks list. `count_tracks(server_id)` returns the unfiltered track count (used to choose cold vs warm load).
 
 **Schema migration**: `_init_schema()` uses `CREATE TABLE IF NOT EXISTS` for all tables. No backward-compatible migrations are maintained — the DB is deleted on schema changes during development.
 
@@ -185,7 +200,7 @@ Follow these steps in order:
 - Main window with native ListBox, search debounce, status bar, menu bar
 - Keyboard shortcuts for all playback controls
 - Screen reader accessibility via native LISTBOX control (no custom IAccessible needed)
-- Cache-first loading (instant startup, background refresh)
+- Two-mode loading: cold load (progressive pagination with per-page UI updates) and warm load (instant from cache, bulk background refresh)
 - PyInstaller build script and spec file
 
 ### Stage 2: Library Navigation — COMPLETED
@@ -204,6 +219,7 @@ Follow these steps in order:
 - `LibraryListBox` with pluggable formatters replaces `TrackListBox`
 - In-memory library cache for instant section switching
 - Background refresh updates DB + in-memory data without disrupting sub-level browsing
+- Progressive cold load: paginated track fetching (200/page) with per-page UI updates, "X of Y tracks" progress label scoped to enabled libraries, search hidden until loaded, queue deferred until complete
 - Multi-library support: per-library track fetching, Libraries submenu with checkable filters, library_id on tracks/albums
 - Playlists shown regardless of library selection (cross-library entity)
 
