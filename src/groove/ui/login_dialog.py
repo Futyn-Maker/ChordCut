@@ -159,12 +159,6 @@ class LoginDialog(wx.Dialog):
             self._username_text.SetFocus()
             return
 
-        if not password:
-            # Translators: Validation error when the password field is empty.
-            self._show_error(_("Please enter your password."))
-            self._password_text.SetFocus()
-            return
-
         # Store values
         self._server_url = url
         self._username = username
