@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS libraries (
 
 -- Cached tracks
 CREATE TABLE IF NOT EXISTS tracks (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL,
     server_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     album_name TEXT,
@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     track_number INTEGER,
     library_id TEXT,
     date_created TEXT,
+    PRIMARY KEY (id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
@@ -104,7 +105,7 @@ CREATE TABLE IF NOT EXISTS track_artists (
     track_id TEXT NOT NULL,
     artist_id TEXT NOT NULL,
     server_id INTEGER NOT NULL,
-    PRIMARY KEY (track_id, artist_id),
+    PRIMARY KEY (track_id, artist_id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
@@ -113,7 +114,7 @@ CREATE TABLE IF NOT EXISTS album_album_artists (
     album_id TEXT NOT NULL,
     album_artist_id TEXT NOT NULL,
     server_id INTEGER NOT NULL,
-    PRIMARY KEY (album_id, album_artist_id),
+    PRIMARY KEY (album_id, album_artist_id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
@@ -133,7 +134,7 @@ CREATE TABLE IF NOT EXISTS playlist_tracks (
     playlist_item_id TEXT NOT NULL,
     position INTEGER NOT NULL,
     server_id INTEGER NOT NULL,
-    PRIMARY KEY (playlist_id, playlist_item_id),
+    PRIMARY KEY (playlist_id, playlist_item_id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
@@ -176,14 +177,22 @@ class Database:
     # --- Server credentials ---
 
     def save_server(self, creds: ServerCredentials) -> int:
-        """Save or update server credentials."""
+        """Save or update server credentials.
+
+        When *creds.id* is set, that row is updated directly.
+        Otherwise we look for an existing row with the same
+        ``url`` + ``user_id`` and update it (reusing the old
+        ``server_id`` so that cached data stays valid).  A new
+        row is only inserted if no match exists.
+        """
         with self.connection() as conn:
             if creds.id is not None:
                 conn.execute(
                     """
                     UPDATE servers SET
                         url = ?, user_id = ?, username = ?,
-                        access_token = ?, device_id = ?, is_active = ?
+                        access_token = ?, device_id = ?,
+                        is_active = ?
                     WHERE id = ?
                     """,
                     (
@@ -197,24 +206,56 @@ class Database:
                     ),
                 )
                 return creds.id
-            else:
-                conn.execute("UPDATE servers SET is_active = 0")
-                cursor = conn.execute(
+
+            # Check for an existing row (same server + user)
+            existing = conn.execute(
+                "SELECT id FROM servers"
+                " WHERE url = ? AND user_id = ?",
+                (creds.url, creds.user_id),
+            ).fetchone()
+
+            conn.execute(
+                "UPDATE servers SET is_active = 0",
+            )
+
+            if existing:
+                # Reuse existing server_id — keeps
+                # cached tracks, playlists, etc.
+                conn.execute(
                     """
-                    INSERT INTO servers
-                        (url, user_id, username, access_token, device_id,
-                         is_active)
-                    VALUES (?, ?, ?, ?, ?, 1)
+                    UPDATE servers SET
+                        username = ?,
+                        access_token = ?,
+                        device_id = ?,
+                        is_active = 1
+                    WHERE id = ?
                     """,
                     (
-                        creds.url,
-                        creds.user_id,
                         creds.username,
                         creds.access_token,
                         creds.device_id,
+                        existing["id"],
                     ),
                 )
-                return cursor.lastrowid or 0
+                return existing["id"]
+
+            cursor = conn.execute(
+                """
+                INSERT INTO servers
+                    (url, user_id, username,
+                     access_token, device_id,
+                     is_active)
+                VALUES (?, ?, ?, ?, ?, 1)
+                """,
+                (
+                    creds.url,
+                    creds.user_id,
+                    creds.username,
+                    creds.access_token,
+                    creds.device_id,
+                ),
+            )
+            return cursor.lastrowid or 0
 
     def get_active_server(self) -> ServerCredentials | None:
         """Get the currently active server credentials."""
