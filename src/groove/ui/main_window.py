@@ -19,6 +19,7 @@ from groove.ui.library_list import (
     FORMATTERS,
     LibraryListBox,
 )
+from groove.ui.tray_icon import TrayIcon
 
 # Section identifiers (order matches the wx.Choice control)
 SECTIONS = (
@@ -171,6 +172,9 @@ class MainWindow(wx.Frame):
 
         # Restore saved volume and audio device
         self._apply_startup_settings()
+
+        # System tray icon (always visible)
+        self._tray_icon: TrayIcon | None = TrayIcon(self)
 
         self.CenterOnScreen()
 
@@ -797,6 +801,28 @@ class MainWindow(wx.Frame):
                     pass
 
     # ------------------------------------------------------------------
+    # Tray icon helpers
+    # ------------------------------------------------------------------
+
+    def _minimize_to_tray(self) -> None:
+        """Hide the main window, leaving the tray icon visible."""
+        self.Hide()
+
+    def _restore_from_tray(self) -> None:
+        """Show and raise the main window."""
+        self.Show()
+        self.Restore()
+        self.Raise()
+
+    def _force_close(self) -> None:
+        """Close the application from the tray icon context menu."""
+        if self._tray_icon:
+            self._tray_icon.RemoveIcon()
+            self._tray_icon.Destroy()
+            self._tray_icon = None
+        self.Close()
+
+    # ------------------------------------------------------------------
     # Settings dialog
     # ------------------------------------------------------------------
 
@@ -850,6 +876,10 @@ class MainWindow(wx.Frame):
             self.SetTitle(f"{title} - {base}")
         else:
             self.SetTitle(base)
+        if self._tray_icon:
+            self._tray_icon.update_tooltip(
+                self._current_track,
+            )
 
     # ------------------------------------------------------------------
     # List label
@@ -2101,6 +2131,16 @@ class MainWindow(wx.Frame):
         code = event.GetKeyCode()
         focused = self.FindFocus()
 
+        # Shift+Escape: minimize to system tray
+        if (
+            code == wx.WXK_ESCAPE
+            and event.ShiftDown()
+            and not event.ControlDown()
+            and not event.AltDown()
+        ):
+            self._minimize_to_tray()
+            return
+
         if focused is self._list:
             if code in (
                 wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
@@ -2306,6 +2346,32 @@ class MainWindow(wx.Frame):
         self._shuffle_enabled = (
             self._menu_shuffle.IsChecked()
         )
+        if self._shuffle_enabled:
+            if self._queue:
+                self._shuffle_queue_around_current()
+            # Translators: Shuffle mode on notification.
+            self._notify_toggle(_("Shuffle on"))
+        else:
+            if self._queue and self._original_queue:
+                self._unshuffle_queue()
+            # Translators: Shuffle mode off notification.
+            self._notify_toggle(_("Shuffle off"))
+
+    def _tray_toggle_repeat(self) -> None:
+        """Toggle repeat mode, called from the tray icon menu."""
+        self._repeat_enabled = not self._repeat_enabled
+        self._menu_repeat.Check(self._repeat_enabled)
+        if self._repeat_enabled:
+            # Translators: Repeat mode on notification.
+            self._notify_toggle(_("Repeat on"))
+        else:
+            # Translators: Repeat mode off notification.
+            self._notify_toggle(_("Repeat off"))
+
+    def _tray_toggle_shuffle(self) -> None:
+        """Toggle shuffle mode, called from the tray icon menu."""
+        self._shuffle_enabled = not self._shuffle_enabled
+        self._menu_shuffle.Check(self._shuffle_enabled)
         if self._shuffle_enabled:
             if self._queue:
                 self._shuffle_queue_around_current()
@@ -3657,6 +3723,12 @@ class MainWindow(wx.Frame):
     def _on_close(self, event: wx.CloseEvent):
         self._search_timer.Stop()
         self._countdown_timer.Stop()
+
+        # Remove the tray icon before the window is destroyed.
+        if self._tray_icon:
+            self._tray_icon.RemoveIcon()
+            self._tray_icon.Destroy()
+            self._tray_icon = None
 
         # Persist volume and device if configured to do so.
         if self._settings.remember_volume:

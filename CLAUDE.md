@@ -74,6 +74,8 @@ A `_loading_in_progress` flag prevents concurrent loads (F5 during an active loa
 
 **Sleep timer** (`main_window.py`, `ui/dialogs/timer_dialog.py`): File → Sleep Timer opens `TimerDialog` with three `wx.SpinCtrl` fields (hours 0–23, minutes 0–59, seconds 0–59) and a `wx.Choice` action selector (Close the program / Shut down the computer / Put the computer to sleep). Clicking "Enable Timer" starts a `wx.Timer` that fires every second; the remaining time is shown in status bar pane 3 as `Timer: HH:MM:SS`. The File menu item is a check item — it shows a checkmark while the timer is running, and clicking it again cancels and resets the timer. On expiry: close calls `self.Close()`, shutdown calls `shutdown /s /t 0`, sleep calls `rundll32.exe powrprof.dll,SetSuspendState 0,1,0`. The countdown timer is stopped in `_on_close`. The timer is not persisted — it resets on restart.
 
+**System tray icon** (`main_window.py`, `ui/tray_icon.py`): A `TrayIcon` (`wx.adv.TaskBarIcon` subclass) is created unconditionally on startup and stays visible in the notification area at all times. If no `.ico` file is present, the icon is generated programmatically (a purple 16×16 bitmap with a "G" glyph). Shift+Escape hides the main window; left-clicking the tray icon or choosing "Restore" from its context menu calls `_restore_from_tray()` (Show + Restore + Raise). The tray context menu provides minimal playback controls: Restore, Pause/Resume, Previous Track, Next Track, Volume Up, Volume Down, Seek Forward, Seek Backward, Repeat (checkable), Shuffle (checkable), Close. "Close" calls `_force_close()` which destroys the tray icon then calls `self.Close()`. The main window's `_on_close` always destroys the tray icon before shutting down. `_tray_toggle_repeat()` and `_tray_toggle_shuffle()` are dedicated helpers that toggle state and also sync the main menu's check items, so both entry points stay consistent.
+
 **Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes), servers (ListBox + Add/Edit/Delete buttons, Delete key accelerator), timer (hours/minutes/seconds spin controls, action dropdown, validates non-zero duration).
 
 **Settings** (`settings.py`): User preferences are stored in `settings.json` next to the executable (not in `data/` alongside the DB). `Settings` loads on startup and is passed to `MainWindow`. On exit, `_on_close` saves current volume and device if the corresponding "remember" checkboxes are enabled. Volume/seek steps are read on every use so changes take effect immediately. Download dir is read on each download. Persisted keys: `active_server_id` (replaces the old DB `is_active` flag), `download_dir`, `volume_step`, `seek_step`, `remember_volume`, `remember_device`, `volume`, `device`, `track_sort`. Defaults: volume 80, steps 5, track_sort `date_desc`, active_server_id None.
@@ -145,6 +147,7 @@ xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
 | Enter | Play track / drill into item |
 | Backspace | Go back one navigation level |
 | Escape | Pause/Resume playback |
+| Shift+Escape | Minimize to system tray |
 | Ctrl+Alt+Q | Stop playback (destroys queue) |
 | Shift+Right | Next track in queue |
 | Shift+Left | Previous track in queue |
@@ -271,7 +274,17 @@ Follow these steps in order:
 - On expiry: closes the app, shuts down Windows, or suspends via `powrprof.dll`
 - New file: `ui/dialogs/timer_dialog.py`
 
-### Stage 6: Audiobooks
+### Stage 6: System Tray — COMPLETED
+
+**Goal**: Allow the user to minimize Groove to the notification area for background playback.
+
+- System tray icon always visible (`TrayIcon` in `ui/tray_icon.py`); icon generated programmatically if no `.ico` is bundled
+- Shift+Escape hides the main window to tray; left-click or "Restore" menu item restores it
+- Tray right-click menu: Restore, Pause/Resume, Previous/Next Track, Volume Up/Down, Seek Forward/Backward, Repeat (checkable), Shuffle (checkable), Close
+- "Close" from tray menu performs a full shutdown; tray icon is also destroyed in `_on_close`
+- New file: `ui/tray_icon.py`
+
+### Stage 7: Audiobooks
 
 **Goal**: Separate audiobook section with position memory.
 
