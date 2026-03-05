@@ -141,6 +141,11 @@ class MainWindow(wx.Frame):
         self._lib_track_counts: dict[str, int] = {}
         self._lib_loaded_counts: dict[str, int] = {}
 
+        # List shuffle state (not persisted)
+        self._list_shuffle_active: bool = False
+        # Original (pre-shuffle) items for the current level
+        self._pre_shuffle_items: list[dict] = []
+
         # Search debounce timer
         self._search_timer = wx.Timer(self)
 
@@ -340,6 +345,19 @@ class MainWindow(wx.Frame):
             self._sort_menu,
             # Translators: Sorting submenu label.
             _("&Sorting"),
+        )
+        self._menu_list_shuffle = view_menu.AppendCheckItem(
+            wx.ID_ANY,
+            # Translators: Menu item to shuffle the
+            # currently visible list.
+            _("&Shuffle List"),
+            # Translators: Help text for Shuffle List.
+            _("Shuffle the visible list order"),
+        )
+        self.Bind(
+            wx.EVT_MENU,
+            self._on_list_shuffle_toggle,
+            self._menu_list_shuffle,
         )
         view_menu.AppendSeparator()
         self._libraries_menu = wx.Menu()
@@ -1422,6 +1440,7 @@ class MainWindow(wx.Frame):
     def _switch_to_section(self, idx: int) -> None:
         """Reset navigation and display a top-level section."""
         self._nav_stack.clear()
+        self._deactivate_list_shuffle()
         self._search_text.ChangeValue("")
 
         section = SECTIONS[idx]
@@ -1435,8 +1454,20 @@ class MainWindow(wx.Frame):
         level_type: str,
         context_name: str | None,
     ) -> None:
-        """Show *items* in the list with the right formatter."""
-        self._all_items = items
+        """Show *items* in the list with the right formatter.
+
+        If list shuffle is active (e.g. after a library
+        refresh), a new shuffle is applied to the fresh
+        items.  Navigation events deactivate shuffle via
+        ``_deactivate_list_shuffle()`` before calling here.
+        """
+        self._pre_shuffle_items = items
+        if self._list_shuffle_active:
+            shuffled = list(items)
+            random.shuffle(shuffled)
+            self._all_items = shuffled
+        else:
+            self._all_items = items
         self._current_level_type = level_type
         self._context_name = context_name
 
@@ -1535,9 +1566,13 @@ class MainWindow(wx.Frame):
         if new_items is None:
             return
 
-        # Push current state
+        # Deactivate shuffle before navigating
+        self._deactivate_list_shuffle()
+
+        # Push current state (unshuffled original so
+        # going back always restores canonical order)
         self._nav_stack.append(_NavState(
-            all_items=self._all_items,
+            all_items=self._pre_shuffle_items,
             level_type=self._current_level_type,
             context_name=self._context_name,
             selected_id=item_id,
@@ -1551,6 +1586,7 @@ class MainWindow(wx.Frame):
         if not self._nav_stack:
             return
 
+        self._deactivate_list_shuffle()
         state = self._nav_stack.pop()
         self._search_text.ChangeValue("")
         self._display_level(
@@ -1601,6 +1637,34 @@ class MainWindow(wx.Frame):
             self._display_level(
                 self._lib_tracks, "tracks", None,
             )
+
+    def _deactivate_list_shuffle(self) -> None:
+        """Uncheck and deactivate list shuffle silently.
+
+        Does NOT restore ``_all_items`` — the caller is
+        expected to follow up with a ``_display_level``
+        call that will provide fresh items.
+        """
+        if not self._list_shuffle_active:
+            return
+        self._list_shuffle_active = False
+        self._menu_list_shuffle.Check(False)
+
+    def _on_list_shuffle_toggle(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Toggle random shuffle of the visible list."""
+        if event.IsChecked():
+            self._list_shuffle_active = True
+            shuffled = list(self._pre_shuffle_items)
+            random.shuffle(shuffled)
+            self._all_items = shuffled
+        else:
+            self._list_shuffle_active = False
+            self._all_items = self._pre_shuffle_items
+        self._apply_filter(
+            self._search_text.GetValue(),
+        )
 
     # ------------------------------------------------------------------
     # Library selection
@@ -2065,13 +2129,17 @@ class MainWindow(wx.Frame):
                         self._rename_playlist(item)
                     return
             # Alt+Up/Down: reorder in playlist
+            # (blocked while list shuffle is active)
             if (
                 event.AltDown()
                 and not event.ControlDown()
                 and not event.ShiftDown()
             ):
                 if code == wx.WXK_UP:
-                    if self._current_playlist_id():
+                    if (
+                        self._current_playlist_id()
+                        and not self._list_shuffle_active
+                    ):
                         item = (
                             self._list
                             .get_selected_item()
@@ -2082,7 +2150,10 @@ class MainWindow(wx.Frame):
                             )
                         return
                 elif code == wx.WXK_DOWN:
-                    if self._current_playlist_id():
+                    if (
+                        self._current_playlist_id()
+                        and not self._list_shuffle_active
+                    ):
                         item = (
                             self._list
                             .get_selected_item()
@@ -2528,6 +2599,7 @@ class MainWindow(wx.Frame):
             track_in_playlists=track_in_pls,
             item_index=item_index,
             total_items=len(self._filtered_items),
+            moves_locked=self._list_shuffle_active,
         )
 
         handler_map = {

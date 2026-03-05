@@ -34,6 +34,7 @@ def build_context_menu(
     track_in_playlists: set[str] | None = None,
     item_index: int = 0,
     total_items: int = 0,
+    moves_locked: bool = False,
 ) -> tuple[wx.Menu, dict[int, dict]]:
     """Build a context menu for the given item type.
 
@@ -107,9 +108,9 @@ def build_context_menu(
                 ID_MOVE_DOWN,
                 _("Move Dow&n\tAlt+Down"),
             )
-            if item_index <= 0:
+            if moves_locked or item_index <= 0:
                 mi_up.Enable(False)
-            if item_index >= total_items - 1:
+            if moves_locked or item_index >= total_items - 1:
                 mi_down.Enable(False)
 
         menu.AppendSeparator()
