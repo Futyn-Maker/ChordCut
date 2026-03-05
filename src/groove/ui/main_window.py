@@ -1,6 +1,7 @@
 """Main application window for Groove."""
 
 import random
+import subprocess
 from dataclasses import dataclass
 
 import wx
@@ -149,6 +150,11 @@ class MainWindow(wx.Frame):
         # Search debounce timer
         self._search_timer = wx.Timer(self)
 
+        # Sleep timer
+        self._countdown_seconds: int = 0
+        self._timer_action: str = ""
+        self._countdown_timer = wx.Timer(self)
+
         # Build UI
         self._create_menu_bar()
         self._create_controls()
@@ -158,8 +164,8 @@ class MainWindow(wx.Frame):
         self._setup_accelerators()
 
         # Status bar
-        self.CreateStatusBar(3)
-        self.SetStatusWidths([-2, 150, 100])
+        self.CreateStatusBar(4)
+        self.SetStatusWidths([-2, 150, 100, 130])
         # Translators: Initial status bar message.
         self._update_status(_("Ready"))
 
@@ -199,6 +205,14 @@ class MainWindow(wx.Frame):
             _("Se&ttings...\tF8"),
             # Translators: Help text for Settings.
             _("Configure application settings"),
+        )
+        file_menu.AppendSeparator()
+        self._menu_timer = file_menu.AppendCheckItem(
+            wx.ID_ANY,
+            # Translators: Menu item to set up (or cancel) the sleep timer.
+            _("Sleep &Timer..."),
+            # Translators: Help text for Sleep Timer.
+            _("Set a timer to close or shut down after a delay"),
         )
         file_menu.AppendSeparator()
         self._menu_exit = file_menu.Append(
@@ -558,6 +572,14 @@ class MainWindow(wx.Frame):
         self.Bind(
             wx.EVT_MENU, self._on_settings,
             self._menu_settings,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_timer_menu,
+            self._menu_timer,
+        )
+        self.Bind(
+            wx.EVT_TIMER, self._on_countdown_tick,
+            self._countdown_timer,
         )
         self.Bind(
             wx.EVT_MENU, self._on_exit, self._menu_exit,
@@ -3552,11 +3574,89 @@ class MainWindow(wx.Frame):
         self._switch_to_section(section_idx)
         self._drill_down(target)
 
+    # ------------------------------------------------------------------
+    # Sleep timer
+    # ------------------------------------------------------------------
+
+    def _on_timer_menu(self, event: wx.CommandEvent) -> None:
+        """Open the timer setup dialog, or cancel the active timer."""
+        if self._countdown_timer.IsRunning():
+            # User clicked the checked item — cancel the timer.
+            self._cancel_timer()
+            return
+
+        # Menu was just checked; show the setup dialog.
+        from groove.ui.dialogs.timer_dialog import TimerDialog
+        dlg = TimerDialog(self)
+        if dlg.ShowModal() == wx.ID_OK:
+            self._countdown_seconds = dlg.get_total_seconds()
+            self._timer_action = dlg.get_action()
+            self._countdown_timer.Start(1000)
+            self._menu_timer.Check(True)
+            self._update_timer_display()
+        else:
+            # User cancelled the dialog; un-check the menu item.
+            self._menu_timer.Check(False)
+        dlg.Destroy()
+
+    def _cancel_timer(self) -> None:
+        """Stop and reset the sleep timer."""
+        self._countdown_timer.Stop()
+        self._countdown_seconds = 0
+        self._timer_action = ""
+        self._menu_timer.Check(False)
+        self.SetStatusText("", 3)
+
+    def _update_timer_display(self) -> None:
+        """Render the remaining time in status bar pane 3."""
+        h = self._countdown_seconds // 3600
+        m = (self._countdown_seconds % 3600) // 60
+        s = self._countdown_seconds % 60
+        # Translators: Sleep timer countdown shown in the status bar.
+        self.SetStatusText(
+            _("Timer: {h:02d}:{m:02d}:{s:02d}").format(h=h, m=m, s=s),
+            3,
+        )
+
+    def _on_countdown_tick(self, event: wx.TimerEvent) -> None:
+        """Called every second while the sleep timer is running."""
+        self._countdown_seconds -= 1
+        if self._countdown_seconds <= 0:
+            self._countdown_timer.Stop()
+            self._menu_timer.Check(False)
+            self.SetStatusText("", 3)
+            self._execute_timer_action()
+        else:
+            self._update_timer_display()
+
+    def _execute_timer_action(self) -> None:
+        """Execute the action selected in the timer dialog."""
+        action = self._timer_action
+        self._timer_action = ""
+        self._countdown_seconds = 0
+        if action == "close":
+            self.Close()
+        elif action == "shutdown":
+            subprocess.run(
+                ["shutdown", "/s", "/t", "0"],
+                check=False,
+            )
+        elif action == "sleep":
+            subprocess.run(
+                [
+                    "rundll32.exe",
+                    "powrprof.dll,SetSuspendState",
+                    "0,1,0",
+                ],
+                check=False,
+            )
+
     def _on_exit(self, event: wx.CommandEvent):
         self.Close()
 
     def _on_close(self, event: wx.CloseEvent):
         self._search_timer.Stop()
+        self._countdown_timer.Stop()
 
         # Persist volume and device if configured to do so.
         if self._settings.remember_volume:

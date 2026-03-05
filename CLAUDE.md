@@ -72,7 +72,9 @@ A `_loading_in_progress` flag prevents concurrent loads (F5 during an active loa
 
 **Multi-server support** (`main_window.py`, `ui/dialogs/servers_dialog.py`): File → Change Server is a submenu listing all saved servers as radio items (active server checked); clicking an inactive server triggers token reconnect then `_reset_for_server_switch()` + `load_library()`. "Manage Servers..." opens `ServersDialog`: Add (full login → cold load of new server), Edit (pre-filled login dialog; on success warm-reloads if active server; on failure restores old client state), Delete (confirmation, cascade DELETE in DB, switches to first remaining server; last server cannot be deleted). `_current_server: ServerCredentials | None` on MainWindow holds the server in use by the current load. `_load_server_id: int | None` guards stale background callbacks: when a server switch clears it to `None`, any in-flight `wx.CallAfter` closures from the old load see the mismatch and exit without touching the DB or UI.
 
-**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes), servers (ListBox + Add/Edit/Delete buttons, Delete key accelerator).
+**Sleep timer** (`main_window.py`, `ui/dialogs/timer_dialog.py`): File → Sleep Timer opens `TimerDialog` with three `wx.SpinCtrl` fields (hours 0–23, minutes 0–59, seconds 0–59) and a `wx.Choice` action selector (Close the program / Shut down the computer / Put the computer to sleep). Clicking "Enable Timer" starts a `wx.Timer` that fires every second; the remaining time is shown in status bar pane 3 as `Timer: HH:MM:SS`. The File menu item is a check item — it shows a checkmark while the timer is running, and clicking it again cancels and resets the timer. On expiry: close calls `self.Close()`, shutdown calls `shutdown /s /t 0`, sleep calls `rundll32.exe powrprof.dll,SetSuspendState 0,1,0`. The countdown timer is stopped in `_on_close`. The timer is not persisted — it resets on restart.
+
+**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes), servers (ListBox + Add/Edit/Delete buttons, Delete key accelerator), timer (hours/minutes/seconds spin controls, action dropdown, validates non-zero duration).
 
 **Settings** (`settings.py`): User preferences are stored in `settings.json` next to the executable (not in `data/` alongside the DB). `Settings` loads on startup and is passed to `MainWindow`. On exit, `_on_close` saves current volume and device if the corresponding "remember" checkboxes are enabled. Volume/seek steps are read on every use so changes take effect immediately. Download dir is read on each download. Persisted keys: `active_server_id` (replaces the old DB `is_active` flag), `download_dir`, `volume_step`, `seek_step`, `remember_volume`, `remember_device`, `volume`, `device`, `track_sort`. Defaults: volume 80, steps 5, track_sort `date_desc`, active_server_id None.
 
@@ -259,7 +261,17 @@ Follow these steps in order:
 - Download folder is configurable; `DownloadDialog` accepts a `download_dir` parameter
 - Volume and seek steps applied dynamically (no restart needed)
 
-### Stage 5: Audiobooks
+### Stage 5: Sleep Timer — COMPLETED
+
+**Goal**: Allow the user to schedule an automatic action (close, shutdown, sleep) after a configurable delay.
+
+- File → Sleep Timer opens a setup dialog with hour/minute/second fields and an action dropdown
+- Countdown shown in status bar pane 3 (`Timer: HH:MM:SS`); File menu item checked while active
+- Clicking the active menu item cancels and resets the timer
+- On expiry: closes the app, shuts down Windows, or suspends via `powrprof.dll`
+- New file: `ui/dialogs/timer_dialog.py`
+
+### Stage 6: Audiobooks
 
 **Goal**: Separate audiobook section with position memory.
 
