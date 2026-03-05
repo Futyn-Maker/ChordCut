@@ -36,8 +36,13 @@ class GrooveApp(wx.App):
         self._client = JellyfinClient()
         self._player = Player()
 
-        # Check for saved credentials
-        server = self._db.get_active_server()
+        # Look up the last active server from settings
+        server_id = self._settings.active_server_id
+        server = (
+            self._db.get_server(server_id)
+            if server_id is not None
+            else None
+        )
 
         if server:
             # Try to reconnect with saved token
@@ -46,7 +51,7 @@ class GrooveApp(wx.App):
                 return True
 
         # No saved credentials or reconnect failed - show login
-        if self._show_login():
+        if self._show_login(prefill=server):
             self._show_main_window()
             return True
 
@@ -69,21 +74,32 @@ class GrooveApp(wx.App):
             server.device_id,
         )
 
-    def _show_login(self) -> bool:
+    def _show_login(
+        self,
+        prefill: ServerCredentials | None = None,
+    ) -> bool:
         """Show the login dialog and authenticate.
+
+        Args:
+            prefill: Optional server whose URL/username to pre-fill.
 
         Returns:
             True if login succeeded, False if cancelled.
         """
-        # Check if we have previous server info to pre-fill
-        server = self._db.get_active_server()
+        # Track last entered values so we can re-fill after failure.
+        last_url: str = ""
+        last_username: str = ""
 
         while True:
             dialog = LoginDialog()
 
-            if server:
-                dialog.set_server_url(server.url)
-                dialog.set_username(server.username)
+            if last_url:
+                # Re-fill with what the user previously typed.
+                dialog.set_server_url(last_url)
+                dialog.set_username(last_username)
+            elif prefill:
+                dialog.set_server_url(prefill.url)
+                dialog.set_username(prefill.username)
 
             result = dialog.ShowModal()
 
@@ -96,6 +112,10 @@ class GrooveApp(wx.App):
             username = dialog.username
             password = dialog.password
             dialog.Destroy()
+
+            # Remember these for the next iteration on failure.
+            last_url = server_url
+            last_username = username
 
             # Show progress
             # Translators: Busy dialog message shown while connecting to the Jellyfin server.
@@ -115,7 +135,9 @@ class GrooveApp(wx.App):
                     access_token=self._client.access_token or "",
                     device_id=self._client.device_id,
                 )
-                self._db.save_server(creds)
+                server_id = self._db.save_server(creds)
+                self._settings.active_server_id = server_id
+                self._settings.save()
                 return True
             else:
                 wx.MessageBox(
@@ -136,23 +158,10 @@ class GrooveApp(wx.App):
             self._settings,
         )
 
-        # Bind change server event
-        self._main_window.Bind(
-            wx.EVT_MENU,
-            self._on_change_server,
-            id=wx.ID_NEW,
-        )
-
         self._main_window.Show()
 
         # Load library
         self._main_window.load_library()
-
-    def _on_change_server(self, event: wx.CommandEvent) -> None:
-        """Handle change server request."""
-        if self._show_login():
-            if self._main_window:
-                self._main_window.load_library()
 
 
 def run() -> None:

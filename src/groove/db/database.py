@@ -19,7 +19,6 @@ class ServerCredentials:
     username: str
     access_token: str
     device_id: str
-    is_active: bool = True
 
 
 SCHEMA = """
@@ -30,8 +29,7 @@ CREATE TABLE IF NOT EXISTS servers (
     user_id TEXT NOT NULL,
     username TEXT NOT NULL,
     access_token TEXT NOT NULL,
-    device_id TEXT NOT NULL,
-    is_active INTEGER DEFAULT 1
+    device_id TEXT NOT NULL
 );
 
 -- Music libraries
@@ -40,6 +38,9 @@ CREATE TABLE IF NOT EXISTS libraries (
     server_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     enabled INTEGER NOT NULL DEFAULT 1,
+    -- Total tracks the server reported for this library the last
+    -- time a full load completed.  0 means "never finished loading".
+    expected_track_count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
@@ -191,8 +192,7 @@ class Database:
                     """
                     UPDATE servers SET
                         url = ?, user_id = ?, username = ?,
-                        access_token = ?, device_id = ?,
-                        is_active = ?
+                        access_token = ?, device_id = ?
                     WHERE id = ?
                     """,
                     (
@@ -201,7 +201,6 @@ class Database:
                         creds.username,
                         creds.access_token,
                         creds.device_id,
-                        int(creds.is_active),
                         creds.id,
                     ),
                 )
@@ -214,10 +213,6 @@ class Database:
                 (creds.url, creds.user_id),
             ).fetchone()
 
-            conn.execute(
-                "UPDATE servers SET is_active = 0",
-            )
-
             if existing:
                 # Reuse existing server_id — keeps
                 # cached tracks, playlists, etc.
@@ -226,8 +221,7 @@ class Database:
                     UPDATE servers SET
                         username = ?,
                         access_token = ?,
-                        device_id = ?,
-                        is_active = 1
+                        device_id = ?
                     WHERE id = ?
                     """,
                     (
@@ -243,9 +237,8 @@ class Database:
                 """
                 INSERT INTO servers
                     (url, user_id, username,
-                     access_token, device_id,
-                     is_active)
-                VALUES (?, ?, ?, ?, ?, 1)
+                     access_token, device_id)
+                VALUES (?, ?, ?, ?, ?)
                 """,
                 (
                     creds.url,
@@ -257,23 +250,35 @@ class Database:
             )
             return cursor.lastrowid or 0
 
-    def get_active_server(self) -> ServerCredentials | None:
-        """Get the currently active server credentials."""
+    def get_server(self, server_id: int) -> ServerCredentials | None:
+        """Get server credentials by ID."""
         with self.connection() as conn:
             row = conn.execute(
-                "SELECT * FROM servers WHERE is_active = 1 LIMIT 1"
+                "SELECT * FROM servers WHERE id = ?",
+                (server_id,),
             ).fetchone()
             if row:
-                return ServerCredentials(
-                    id=row["id"],
-                    url=row["url"],
-                    user_id=row["user_id"],
-                    username=row["username"],
-                    access_token=row["access_token"],
-                    device_id=row["device_id"],
-                    is_active=bool(row["is_active"]),
-                )
+                return self._row_to_creds(row)
             return None
+
+    def get_all_servers(self) -> list[ServerCredentials]:
+        """Get all saved server credentials ordered by id."""
+        with self.connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM servers ORDER BY id"
+            ).fetchall()
+            return [self._row_to_creds(r) for r in rows]
+
+    @staticmethod
+    def _row_to_creds(row: sqlite3.Row) -> ServerCredentials:
+        return ServerCredentials(
+            id=row["id"],
+            url=row["url"],
+            user_id=row["user_id"],
+            username=row["username"],
+            access_token=row["access_token"],
+            device_id=row["device_id"],
+        )
 
     def delete_server(self, server_id: int) -> None:
         """Delete a server and its cached data."""
@@ -289,19 +294,23 @@ class Database:
     ) -> None:
         """Cache the list of music libraries for a server.
 
-        Existing ``enabled`` states are preserved: known libraries
-        keep their current enabled flag; newly discovered libraries
-        default to enabled (1).
+        Existing ``enabled`` states and ``expected_track_count``
+        values are preserved; newly discovered libraries default to
+        enabled=1 and expected_track_count=0.
         """
         with self.connection() as conn:
-            # Remember which libraries the user has disabled.
+            # Remember per-library user settings.
             rows = conn.execute(
-                "SELECT id, enabled FROM libraries"
-                " WHERE server_id = ?",
+                "SELECT id, enabled, expected_track_count"
+                " FROM libraries WHERE server_id = ?",
                 (server_id,),
             ).fetchall()
             enabled_states = {
                 r["id"]: r["enabled"] for r in rows
+            }
+            expected_counts = {
+                r["id"]: r["expected_track_count"]
+                for r in rows
             }
 
             conn.execute(
@@ -310,14 +319,16 @@ class Database:
             )
             conn.executemany(
                 "INSERT INTO libraries"
-                " (id, server_id, name, enabled)"
-                " VALUES (?, ?, ?, ?)",
+                " (id, server_id, name, enabled,"
+                "  expected_track_count)"
+                " VALUES (?, ?, ?, ?, ?)",
                 [
                     (
                         lib["Id"],
                         server_id,
                         lib.get("Name", ""),
                         enabled_states.get(lib["Id"], 1),
+                        expected_counts.get(lib["Id"], 0),
                     )
                     for lib in libraries
                     if lib.get("Id")
@@ -327,7 +338,8 @@ class Database:
     def get_libraries(self, server_id: int) -> list[dict]:
         """Get cached music libraries for a server.
 
-        Returns dicts with ``Id``, ``Name``, and ``Enabled`` keys.
+        Returns dicts with ``Id``, ``Name``, ``Enabled``, and
+        ``ExpectedTrackCount`` keys.
         """
         with self.connection() as conn:
             rows = conn.execute(
@@ -343,9 +355,32 @@ class Database:
                     "Id": r["id"],
                     "Name": r["name"],
                     "Enabled": bool(r["enabled"]),
+                    "ExpectedTrackCount": (
+                        r["expected_track_count"]
+                    ),
                 }
                 for r in rows
             ]
+
+    def set_libraries_expected_counts(
+        self,
+        server_id: int,
+        counts: dict[str, int],
+    ) -> None:
+        """Persist per-library expected track counts.
+
+        ``counts`` maps library ID to the total number of tracks
+        the server reported for that library.  Only the listed
+        libraries are updated; others are left unchanged.
+        """
+        with self.connection() as conn:
+            for lib_id, count in counts.items():
+                conn.execute(
+                    "UPDATE libraries"
+                    " SET expected_track_count = ?"
+                    " WHERE server_id = ? AND id = ?",
+                    (count, server_id, lib_id),
+                )
 
     def set_library_enabled(
         self,

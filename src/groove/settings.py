@@ -11,6 +11,8 @@ from pathlib import Path
 from groove.utils.paths import get_settings_path
 
 _DEFAULTS: dict = {
+    # ID of the active server (stored here, not in the DB).
+    "active_server_id": None,
     # Folder where downloaded tracks are saved.
     # None means get_app_dir() / "music" at runtime.
     "download_dir": None,
@@ -140,6 +142,16 @@ class Settings:
     @device.setter
     def device(self, value: str) -> None:
         self._data["device"] = str(value)
+
+    @property
+    def active_server_id(self) -> int | None:
+        """ID of the currently active server."""
+        val = self._data.get("active_server_id")
+        return int(val) if val is not None else None
+
+    @active_server_id.setter
+    def active_server_id(self, value: int | None) -> None:
+        self._data["active_server_id"] = value
 
     _VALID_TRACK_SORTS = {
         "alpha_asc", "alpha_desc", "date_desc", "date_asc",

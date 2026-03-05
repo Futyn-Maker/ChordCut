@@ -9,6 +9,7 @@ import wx.adv
 from groove import __app_name__, __version__
 from groove.api import JellyfinClient
 from groove.db import Database
+from groove.db.database import ServerCredentials
 from groove.i18n import _, ngettext
 from groove.player import Player
 from groove.player.mpv_player import format_duration
@@ -121,10 +122,18 @@ class MainWindow(wx.Frame):
         self._lib_album_artists: list[dict] = []
         self._lib_albums: list[dict] = []
 
+        # Active server (set in load_library, cleared on switch)
+        self._current_server: ServerCredentials | None = None
+        # Server ID that initiated the current background load;
+        # callbacks check against this to ignore stale results.
+        self._load_server_id: int | None = None
+
         # Music libraries (for filtering)
         self._libraries: list[dict] = []
         self._selected_library_ids: set[str] | None = None
         self._library_menu_ids: dict[int, str] = {}
+        # Server submenu: menu_item_id → server_id
+        self._server_menu_items: dict[int, int] = {}
 
         # Progressive loading state
         self._initial_loading: bool = False
@@ -172,12 +181,11 @@ class MainWindow(wx.Frame):
             _("Create a new playlist"),
         )
         file_menu.AppendSeparator()
-        self._menu_change_server = file_menu.Append(
-            wx.ID_ANY,
-            # Translators: Menu item to switch server.
-            _("Change &Server..."),
-            # Translators: Help text for Change Server.
-            _("Connect to a different server"),
+        self._servers_submenu = wx.Menu()
+        self._servers_submenu_item = file_menu.AppendSubMenu(
+            self._servers_submenu,
+            # Translators: Submenu label for switching servers.
+            _("Change &Server"),
         )
         file_menu.AppendSeparator()
         self._menu_settings = file_menu.Append(
@@ -530,10 +538,6 @@ class MainWindow(wx.Frame):
             self._menu_new_playlist,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_change_server,
-            self._menu_change_server,
-        )
-        self.Bind(
             wx.EVT_MENU, self._on_settings,
             self._menu_settings,
         )
@@ -883,7 +887,12 @@ class MainWindow(wx.Frame):
 
     def load_library(self) -> None:
         """Load library: show cache, then refresh."""
-        server = self._db.get_active_server()
+        server_id = self._settings.active_server_id
+        server = (
+            self._db.get_server(server_id)
+            if server_id is not None
+            else None
+        )
         if not server or not server.id:
             # Translators: No server configured.
             self._update_status(
@@ -895,14 +904,30 @@ class MainWindow(wx.Frame):
             return
         self._loading_in_progress = True
 
-        # Load cached data into memory
-        self._load_library_from_db(server.id)
+        self._current_server = server
+        self._load_server_id = server.id
 
+        # Rebuild the servers submenu to reflect all saved servers
+        self._rebuild_servers_menu()
+
+        # Decide warm vs cold based on whether the last load
+        # completed fully.  Each library stores how many tracks
+        # the server reported; if the DB total matches the sum
+        # of those expected counts the cache is complete.
+        libraries = self._db.get_libraries(server.id)
+        total_expected = sum(
+            lib.get("ExpectedTrackCount", 0)
+            for lib in libraries
+        )
         total_cached = self._db.count_tracks(server.id)
-        if total_cached < 100:
-            self._start_cold_load(server)
-        else:
+
+        if total_expected > 0 and total_cached >= total_expected:
+            # Cache is complete — show it instantly, then refresh.
+            self._load_library_from_db(server.id)
             self._start_warm_load(server)
+        else:
+            # No cache or interrupted load — fetch from scratch.
+            self._start_cold_load(server)
 
     # --- Warm load (has cache) ---
 
@@ -916,21 +941,29 @@ class MainWindow(wx.Frame):
             _("Library loaded from cache, updating...")
         )
 
+        sid = server.id
+
         def on_loaded(
             libraries, tracks, playlists, pl_items,
         ):
-            wx.CallAfter(
-                self._on_library_loaded,
-                libraries, tracks, playlists, pl_items,
-            )
+            def run():
+                if self._load_server_id == sid:
+                    self._on_library_loaded(
+                        libraries, tracks,
+                        playlists, pl_items,
+                    )
+            wx.CallAfter(run)
 
         def on_error(e):
             # Translators: Background refresh error.
             msg = _("Error refreshing: {error}").format(
                 error=e,
             )
-            wx.CallAfter(self._update_status, msg)
-            wx.CallAfter(self._finish_loading)
+            def run():
+                if self._load_server_id == sid:
+                    self._update_status(msg)
+                    self._finish_loading()
+            wx.CallAfter(run)
 
         self._client.get_library_async(
             on_loaded, on_error,
@@ -957,32 +990,43 @@ class MainWindow(wx.Frame):
             _("Loading library from server...")
         )
 
+        sid = server.id
+
         def on_libs(libraries, lib_counts):
-            wx.CallAfter(
-                self._on_libraries_ready,
-                libraries, lib_counts,
-            )
+            def run():
+                if self._load_server_id == sid:
+                    self._on_libraries_ready(
+                        libraries, lib_counts,
+                    )
+            wx.CallAfter(run)
 
         def on_page(batch, lib_id, count):
-            wx.CallAfter(
-                self._on_page_loaded,
-                batch, lib_id, count,
-            )
+            def run():
+                if self._load_server_id == sid:
+                    self._on_page_loaded(
+                        batch, lib_id, count,
+                    )
+            wx.CallAfter(run)
 
         def on_done(playlists, pl_items):
-            wx.CallAfter(
-                self._on_initial_load_done,
-                playlists, pl_items,
-            )
+            def run():
+                if self._load_server_id == sid:
+                    self._on_initial_load_done(
+                        playlists, pl_items,
+                    )
+            wx.CallAfter(run)
 
         def on_error(e):
             # Translators: Cold load error.
             msg = _("Error loading: {error}").format(
                 error=e,
             )
-            wx.CallAfter(self._update_status, msg)
-            wx.CallAfter(self._finish_cold_load)
-            wx.CallAfter(self._finish_loading)
+            def run():
+                if self._load_server_id == sid:
+                    self._update_status(msg)
+                    self._finish_cold_load()
+                    self._finish_loading()
+            wx.CallAfter(run)
 
         self._client.fetch_library_paginated(
             on_libs, on_page, on_done, on_error,
@@ -994,7 +1038,7 @@ class MainWindow(wx.Frame):
         lib_counts: dict[str, int],
     ) -> None:
         """Handle music views + per-library track counts."""
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 
@@ -1006,6 +1050,11 @@ class MainWindow(wx.Frame):
         if libraries:
             self._db.cache_libraries(
                 server.id, libraries,
+            )
+            # Store the expected count per library so we can
+            # detect an interrupted load on the next startup.
+            self._db.set_libraries_expected_counts(
+                server.id, lib_counts,
             )
             db_libs = self._db.get_libraries(server.id)
             self._selected_library_ids = {
@@ -1029,7 +1078,7 @@ class MainWindow(wx.Frame):
         count: int,
     ) -> None:
         """Handle a page of tracks from the server."""
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 
@@ -1067,7 +1116,7 @@ class MainWindow(wx.Frame):
         playlist_items: dict[str, list[dict]],
     ) -> None:
         """Handle completion of progressive loading."""
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             self._finish_cold_load()
             return
@@ -1202,7 +1251,7 @@ class MainWindow(wx.Frame):
         playlist_items: dict[str, list[dict]],
     ) -> None:
         """Handle fresh library data from the server."""
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 
@@ -1225,6 +1274,21 @@ class MainWindow(wx.Frame):
         self._db.cache_playlists(
             server.id, playlists, playlist_items,
         )
+
+        # Update per-library expected counts from the actual
+        # track data so future startups choose warm load.
+        lib_counts: dict[str, int] = {}
+        for track in tracks:
+            lid = track.get("LibraryId", "") or ""
+            if lid:
+                lib_counts[lid] = (
+                    lib_counts.get(lid, 0) + 1
+                )
+        if lib_counts:
+            self._db.set_libraries_expected_counts(
+                server.id, lib_counts,
+            )
+
         self._load_library_from_db(server.id)
         self._refresh_current_view(server.id)
         self._update_queue_after_refresh()
@@ -1428,7 +1492,7 @@ class MainWindow(wx.Frame):
     def _drill_down(self, item: dict) -> None:
         """Enter a sub-level for the selected item."""
         lt = self._current_level_type
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 
@@ -1518,7 +1582,7 @@ class MainWindow(wx.Frame):
         self._settings.track_sort = sort_key
         self._settings.save()
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 
@@ -1590,7 +1654,7 @@ class MainWindow(wx.Frame):
             self._selected_library_ids.discard(lib_id)
 
         # Persist the new state and reload
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 
@@ -2163,13 +2227,186 @@ class MainWindow(wx.Frame):
     def _on_refresh(self, event: wx.CommandEvent):
         self.load_library()
 
-    def _on_change_server(self, event: wx.CommandEvent):
-        wx.PostEvent(
-            self,
-            wx.PyCommandEvent(
-                wx.EVT_MENU.typeId, wx.ID_NEW,
-            ),
+    def _rebuild_servers_menu(self) -> None:
+        """Rebuild the 'Change Server' submenu from the DB."""
+        # Remove old items and unbind
+        for item in list(
+            self._servers_submenu.GetMenuItems()
+        ):
+            self.Unbind(
+                wx.EVT_MENU, id=item.GetId(),
+            )
+            self._servers_submenu.Delete(item)
+        self._server_menu_items.clear()
+
+        active_id = self._settings.active_server_id
+        for server in self._db.get_all_servers():
+            label = "{user} @ {url}".format(
+                user=server.username, url=server.url,
+            )
+            item = self._servers_submenu.AppendRadioItem(
+                wx.ID_ANY, label,
+            )
+            if server.id == active_id:
+                item.Check(True)
+            self._server_menu_items[item.GetId()] = (
+                server.id or 0
+            )
+            self.Bind(
+                wx.EVT_MENU,
+                self._on_server_menu_item,
+                item,
+            )
+
+        if self._server_menu_items:
+            self._servers_submenu.AppendSeparator()
+
+        # Translators: Menu item to open server manager.
+        manage_item = self._servers_submenu.Append(
+            wx.ID_ANY,
+            _("Manage Servers..."),
         )
+        self.Bind(
+            wx.EVT_MENU,
+            self._on_manage_servers,
+            manage_item,
+        )
+
+    def _on_server_menu_item(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Switch to a saved server from the submenu."""
+        server_id = self._server_menu_items.get(
+            event.GetId(),
+        )
+        if server_id is None:
+            return
+        # Clicking the already-active server does nothing
+        if server_id == self._settings.active_server_id:
+            return
+        server = self._db.get_server(server_id)
+        if not server:
+            return
+        self._switch_to_server(server)
+
+    def _on_manage_servers(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Open the server management dialog."""
+        from groove.ui.dialogs.servers_dialog import (
+            ServersDialog,
+        )
+        dlg = ServersDialog(
+            self, self._db, self._client,
+            self._settings,
+        )
+        dlg.ShowModal()
+        switch_needed = dlg.server_switch_needed
+        dlg.Destroy()
+
+        self._rebuild_servers_menu()
+
+        if switch_needed:
+            self._reset_for_server_switch()
+            self.load_library()
+
+    def _switch_to_server(
+        self, server: ServerCredentials,
+    ) -> None:
+        """Reconnect to a saved server and reload library."""
+        # Translators: Busy dialog while switching servers.
+        progress = wx.BusyInfo(
+            _("Connecting to server...")
+        )
+        ok = self._client.login_with_token(
+            server.url,
+            server.user_id,
+            server.access_token,
+            server.device_id,
+        )
+        del progress
+
+        if not ok:
+            wx.MessageBox(
+                # Translators: Error when switching servers.
+                _(
+                    "Failed to connect to the server.\n\n"
+                    "The previous server remains active."
+                ),
+                # Translators: Server switch error title.
+                _("Connection Failed"),
+                wx.OK | wx.ICON_ERROR,
+                self,
+            )
+            # Restore checkmark to current active server
+            self._rebuild_servers_menu()
+            return
+
+        self._settings.active_server_id = server.id
+        self._settings.save()
+        self._reset_for_server_switch()
+        self.load_library()
+
+    def _reset_for_server_switch(self) -> None:
+        """Clear all library state to prepare for a new server."""
+        # Stop playback
+        self._player.stop()
+        self._current_track = None
+
+        # Clear queue
+        self._queue = []
+        self._queue_index = -1
+        self._queue_origin = None
+        self._original_queue = []
+
+        # Invalidate pending background load callbacks
+        self._load_server_id = None
+        self._current_server = None
+
+        # Clear loading state
+        self._loading_in_progress = False
+        self._initial_loading = False
+        self._lib_track_counts = {}
+        self._lib_loaded_counts = {}
+
+        # Clear navigation
+        self._nav_stack = []
+        self._current_level_type = "tracks"
+        self._context_name = None
+        self._all_items = []
+        self._filtered_items = []
+
+        # Clear in-memory library
+        self._lib_tracks = []
+        self._lib_playlists = []
+        self._lib_artists = []
+        self._lib_album_artists = []
+        self._lib_albums = []
+
+        # Clear library filter state
+        self._libraries = []
+        self._selected_library_ids = None
+
+        # Clear lyrics cache
+        self._lyrics_cache = {}
+
+        # Reset UI
+        self._search_text.ChangeValue("")
+        self._search_sizer.ShowItems(True)
+        self._section_choice.SetSelection(0)
+        self._list.set_items([])
+        # Translators: Label when no library is loaded.
+        self._list_label.SetLabel(
+            ngettext(
+                "{n} track", "{n} tracks", 0,
+            ).format(n=0)
+        )
+        # Translators: Now playing when nothing plays.
+        self._now_playing_label.SetLabel(
+            _("Not playing")
+        )
+        self._update_title()
+        self._panel.Layout()
 
     def _on_shortcuts(self, event: wx.CommandEvent):
         # Translators: Keyboard shortcuts help text.
@@ -2271,7 +2508,7 @@ class MainWindow(wx.Frame):
         track_in_pls: set[str] = set()
         if self._current_level_type == "tracks":
             playlists = self._lib_playlists
-            server = self._db.get_active_server()
+            server = self._current_server
             if server and server.id:
                 track_id = item.get("Id", "")
                 for pl in self._lib_playlists:
@@ -2446,7 +2683,7 @@ class MainWindow(wx.Frame):
             build_playlist_properties,
         )
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
         lib_ids = self._selected_library_ids
@@ -2797,7 +3034,7 @@ class MainWindow(wx.Frame):
         if not name:
             return
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
         srv_id = server.id
@@ -2882,7 +3119,7 @@ class MainWindow(wx.Frame):
         if not new_name or new_name == old_name:
             return
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
         srv_id = server.id
@@ -2935,7 +3172,7 @@ class MainWindow(wx.Frame):
         if result != wx.YES:
             return
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
         srv_id = server.id
@@ -2991,7 +3228,7 @@ class MainWindow(wx.Frame):
         if not track_id or not pl_id:
             return
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
         srv_id = server.id
@@ -3053,7 +3290,7 @@ class MainWindow(wx.Frame):
         if not pl_id:
             return
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
         srv_id = server.id
@@ -3107,7 +3344,7 @@ class MainWindow(wx.Frame):
         if not pl_id:
             return
 
-        server = self._db.get_active_server()
+        server = self._current_server
         if not server or not server.id:
             return
 

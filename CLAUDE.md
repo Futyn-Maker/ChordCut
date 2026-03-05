@@ -26,7 +26,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 ## Architecture
 
-**Startup flow** (`app.py`): GrooveApp creates Settings, Database, JellyfinClient, Player → checks for stored token → if none, shows LoginDialog → creates MainWindow (receives Settings) → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
+**Startup flow** (`app.py`): GrooveApp creates Settings, Database, JellyfinClient, Player → reads `settings.active_server_id` → looks up server via `db.get_server(id)` → tries token reconnect → if none or failed, shows LoginDialog (saves new server_id to settings) → creates MainWindow → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
 
 **Data flow — two loading modes** (`main_window.py` → `database.py` → `client.py`):
 
@@ -70,9 +70,11 @@ A `_loading_in_progress` flag prevents concurrent loads (F5 during an active loa
 
 **Playlist management** (`main_window.py`): Three operations on playlist tracks via context menu and keyboard. "Add to Playlist" submenu appears on all tracks — lists all playlists, disables those already containing the track; adds to the top (API add + move to index 0). "Remove from Playlist" (Delete key) appears only inside playlist tracks — shows confirmation, updates UI instantly, then fires async API request. "Move Up/Down" (Alt+Up/Down) reorders tracks within a playlist — swaps in `_all_items` immediately, updates DB positions, fires async `Move/{newIndex}` API call. All three use `PlaylistItemId` (stored in `playlist_tracks.playlist_item_id` DB column) for API calls. The `_current_playlist_id()` helper detects when we're inside a playlist by checking `_nav_stack[-1].level_type == "playlists"`.
 
-**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes).
+**Multi-server support** (`main_window.py`, `ui/dialogs/servers_dialog.py`): File → Change Server is a submenu listing all saved servers as radio items (active server checked); clicking an inactive server triggers token reconnect then `_reset_for_server_switch()` + `load_library()`. "Manage Servers..." opens `ServersDialog`: Add (full login → cold load of new server), Edit (pre-filled login dialog; on success warm-reloads if active server; on failure restores old client state), Delete (confirmation, cascade DELETE in DB, switches to first remaining server; last server cannot be deleted). `_current_server: ServerCredentials | None` on MainWindow holds the server in use by the current load. `_load_server_id: int | None` guards stale background callbacks: when a server switch clears it to `None`, any in-flight `wx.CallAfter` closures from the old load see the mismatch and exit without touching the DB or UI.
 
-**Settings** (`settings.py`): User preferences are stored in `settings.json` next to the executable (not in `data/` alongside the DB). `Settings` loads on startup and is passed to `MainWindow`. On exit, `_on_close` saves current volume and device if the corresponding "remember" checkboxes are enabled. Volume/seek steps are read on every use so changes take effect immediately. Download dir is read on each download. Persisted keys: `download_dir`, `volume_step`, `seek_step`, `remember_volume`, `remember_device`, `volume`, `device`, `track_sort`. Defaults: volume 80, steps 5, track_sort `date_desc`.
+**Dialogs** (`ui/dialogs/`): Properties (ListBox with key-value lines, Ctrl+C to copy), plain lyrics (read-only TextCtrl), synced lyrics (ListBox with `[MM:SS] text`, Enter seeks), download (Gauge progress bar, background thread), settings (download folder via `wx.DirPickerCtrl`, volume/seek steps, remember-on-exit checkboxes), servers (ListBox + Add/Edit/Delete buttons, Delete key accelerator).
+
+**Settings** (`settings.py`): User preferences are stored in `settings.json` next to the executable (not in `data/` alongside the DB). `Settings` loads on startup and is passed to `MainWindow`. On exit, `_on_close` saves current volume and device if the corresponding "remember" checkboxes are enabled. Volume/seek steps are read on every use so changes take effect immediately. Download dir is read on each download. Persisted keys: `active_server_id` (replaces the old DB `is_active` flag), `download_dir`, `volume_step`, `seek_step`, `remember_volume`, `remember_device`, `volume`, `device`, `track_sort`. Defaults: volume 80, steps 5, track_sort `date_desc`, active_server_id None.
 
 **Track sorting** (`main_window.py`): The View → Sorting submenu controls how the top-level Tracks section is ordered. Four radio options: Alphabetical A–Z (`alpha_asc`), Alphabetical Z–A (`alpha_desc`), By date added newest first (`date_desc`, default), By date added oldest first (`date_asc`). The setting is persisted in `settings.json` via `track_sort` and passed to `Database.get_all_tracks(sort=...)` which uses different `ORDER BY` clauses. Only the top-level Tracks section is affected — album tracks always sort by track number, playlist tracks by playlist position, and artists/albums stay alphabetical. The `DateCreated` timestamp from Jellyfin is stored in the `tracks.date_created` DB column.
 
@@ -84,7 +86,7 @@ A `_loading_in_progress` flag prevents concurrent loads (F5 during an active loa
 
 | Table | Purpose |
 |-------|---------|
-| `servers` | Server credentials and connection info |
+| `servers` | Server credentials and connection info (no `is_active` — active server ID lives in `settings.json`) |
 | `libraries` | Music library views from the server (with `enabled` flag) |
 | `tracks` | Cached audio tracks (with `artist_display`, `library_id`, `date_created`) |
 | `artists` | Unique artists (from `ArtistItems`) |
