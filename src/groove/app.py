@@ -44,6 +44,16 @@ class GrooveApp(wx.App):
             else None
         )
 
+        # If no active server in settings, check if there are servers in DB
+        # (handles migration from older versions where DB exists but no settings)
+        if server is None:
+            all_servers = self._db.get_all_servers()
+            if all_servers:
+                server = all_servers[0]
+                # Persist this as the active server
+                self._settings.active_server_id = server.id
+                self._settings.save()
+
         if server:
             # Try to reconnect with saved token
             if self._try_reconnect(server):
