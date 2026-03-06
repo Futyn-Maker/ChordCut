@@ -64,6 +64,23 @@ if %LIBMPV_FOUND%==0 (
 )
 echo.
 
+REM Compile translations (.po to .mo)
+echo Compiling translations...
+if exist "locale" (
+    for /d %%l in (locale\*) do (
+        if exist "%%l\LC_MESSAGES\groove.po" (
+            echo   Compiling %%~nl translation...
+            msgfmt -o "%%l\LC_MESSAGES\groove.mo" "%%l\LC_MESSAGES\groove.po" 2>nul
+            if errorlevel 1 (
+                echo   WARNING: Failed to compile %%~nl translation - msgfmt not found or error
+            )
+        )
+    )
+) else (
+    echo   No locale folder found, skipping translations.
+)
+echo.
+
 REM Clean previous build
 echo Cleaning previous build...
 if exist "dist\Groove" rmdir /s /q "dist\Groove"
@@ -85,6 +102,20 @@ REM Create data folder
 echo.
 echo Creating data folder...
 if not exist "dist\Groove\data" mkdir "dist\Groove\data"
+
+REM Copy locale folder (translations - only .mo files)
+echo Copying translations...
+if exist "locale" (
+    for /d %%l in (locale\*) do (
+        if exist "%%l\LC_MESSAGES\groove.mo" (
+            if not exist "dist\Groove\locale\%%~nxl\LC_MESSAGES" mkdir "dist\Groove\locale\%%~nxl\LC_MESSAGES"
+            copy /Y "%%l\LC_MESSAGES\groove.mo" "dist\Groove\locale\%%~nxl\LC_MESSAGES\" >nul
+            echo   Copied %%~nxl translation
+        )
+    )
+) else (
+    echo   No locale folder found, skipping.
+)
 
 echo.
 echo ============================================

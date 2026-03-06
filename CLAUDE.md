@@ -110,22 +110,53 @@ A `_loading_in_progress` flag prevents concurrent loads (F5 during an active loa
 
 ## Internationalization (i18n)
 
-All user-facing strings are wrapped with `_()` (or `ngettext()` for plurals) from `groove.i18n`, which uses Python's `gettext` module with `fallback=True` (returns the original English string when no translation is installed).
+All user-facing strings are wrapped with `_()` (or `ngettext()` for plurals) from `groove.i18n`. The application automatically detects the system locale and loads the appropriate translation from `locale/{lang}/LC_MESSAGES/groove.mo`. If no translation exists, English strings are used (fallback mode).
+
+**Locale folder structure:**
+
+```
+locale/
+├── groove.pot              # Translation template (generated)
+├── ru/
+│   └── LC_MESSAGES/
+│       ├── groove.po       # Russian translation source
+│       └── groove.mo       # Compiled translation (build artifact, not in git)
+└── ... (other languages)
+```
 
 **Rules for new strings:**
 
 1. Import `from groove.i18n import _` (and `ngettext` if needed) in every UI module.
 2. Wrap every user-facing string literal with `_()`.
-3. Add a `# Translators:` comment on the line(s) immediately before each `_()` call explaining the context — these comments are extracted into `.pot` files by `xgettext -c Translators`.
+3. Add a `# Translators:` comment on the line(s) immediately before each `_()` call explaining the context — these comments are extracted into `.pot` files by `xgettext --add-comments=Translators`.
 4. Use `ngettext("{n} track", "{n} tracks", n).format(n=n)` for count-dependent strings.
 5. Never use f-strings inside `_()` — use `_("...{var}...").format(var=val)` so `xgettext` can extract the template.
 6. Keep the gettext domain name `"groove"`.
 
-**Generating a .pot template:**
+**Updating translations:**
+
+1. Regenerate the .pot template after adding/modifying strings:
+   ```bash
+   xgettext --add-comments=Translators -o locale/groove.pot --from-code=UTF-8 \
+       src/groove/*.py src/groove/**/*.py
+   ```
+
+2. Update existing .po files with new strings:
+   ```bash
+   msgmerge -U locale/ru/LC_MESSAGES/groove.po locale/groove.pot
+   ```
+
+3. Compile .po to .mo (happens automatically during build, or manually):
+   ```bash
+   msgfmt -o locale/ru/LC_MESSAGES/groove.mo locale/ru/LC_MESSAGES/groove.po
+   ```
+
+**Creating a new translation:**
 
 ```bash
-xgettext -c Translators -o locale/groove.pot --from-code=UTF-8 \
-    src/groove/*.py src/groove/**/*.py
+msginit -i locale/groove.pot -o locale/{lang}/LC_MESSAGES/groove.po -l {lang}
+# Edit the .po file, then compile:
+msgfmt -o locale/{lang}/LC_MESSAGES/groove.mo locale/{lang}/LC_MESSAGES/groove.po
 ```
 
 ## Key Conventions

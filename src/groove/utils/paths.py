@@ -42,3 +42,13 @@ def get_settings_path() -> Path:
     or project root in dev mode), separate from the database.
     """
     return get_app_dir() / "settings.json"
+
+
+def get_locale_dir() -> Path:
+    """Get the locale directory containing translation files.
+
+    When running as a frozen executable (PyInstaller), returns the
+    locale/ subfolder next to the executable. When running from source,
+    returns the locale/ folder in the project root.
+    """
+    return get_app_dir() / "locale"
