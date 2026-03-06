@@ -156,6 +156,9 @@ class MainWindow(wx.Frame):
         self._timer_action: str = ""
         self._countdown_timer = wx.Timer(self)
 
+        # Focus tracking for window activation
+        self._last_focused_window: wx.Window | None = None
+
         # Build UI
         self._create_menu_bar()
         self._create_controls()
@@ -680,6 +683,7 @@ class MainWindow(wx.Frame):
 
         # Window
         self.Bind(wx.EVT_CLOSE, self._on_close)
+        self.Bind(wx.EVT_ACTIVATE, self._on_activate)
 
     def _setup_accelerators(self) -> None:
         """Set up keyboard accelerators."""
@@ -3716,6 +3720,41 @@ class MainWindow(wx.Frame):
                 ],
                 check=False,
             )
+
+    def _on_activate(self, event: wx.ActivateEvent):
+        """Handle window activation/deactivation to preserve focus.
+
+        When the window is deactivated (Alt+Tab, minimize, etc.), we save
+        which control had focus. When reactivated, we restore focus to that
+        control instead of letting wx/Windows pick an arbitrary one.
+        """
+        if event.GetActive():
+            # Window is being activated - restore focus via CallAfter
+            # to let Windows finish its own focus management first
+            wx.CallAfter(self._restore_focus)
+        else:
+            # Window is being deactivated - save current focus
+            focused = self.FindFocus()
+            if focused:
+                self._last_focused_window = focused
+        event.Skip()
+
+    def _restore_focus(self) -> None:
+        """Restore focus to the last focused control, or section selector."""
+        if self._last_focused_window:
+            try:
+                # Check if the window is still valid and focusable
+                if (
+                    self._last_focused_window.IsShown()
+                    and self._last_focused_window.IsEnabled()
+                ):
+                    self._last_focused_window.SetFocus()
+                    return
+            except (RuntimeError, Exception):
+                pass
+        # No saved focus or control invalid - default to section selector
+        if self._section_choice.IsShown():
+            self._section_choice.SetFocus()
 
     def _on_exit(self, event: wx.CommandEvent):
         self.Close()
