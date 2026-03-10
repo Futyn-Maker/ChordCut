@@ -9,8 +9,7 @@ import wx.adv
 
 from chordcut import __app_name__, __version__
 from chordcut.api import JellyfinClient
-from chordcut.db import Database
-from chordcut.db.database import ServerCredentials
+from chordcut.db import Database, ServerCredentials
 from chordcut.i18n import _, ngettext
 from chordcut.player import Player
 from chordcut.player.mpv_player import format_duration

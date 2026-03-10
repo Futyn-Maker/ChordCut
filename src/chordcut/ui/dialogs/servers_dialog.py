@@ -3,11 +3,10 @@
 import wx
 
 from chordcut.api import JellyfinClient
-from chordcut.db import Database
-from chordcut.db.database import ServerCredentials
+from chordcut.db import Database, ServerCredentials
 from chordcut.i18n import _
 from chordcut.settings import Settings
-from chordcut.ui.login_dialog import LoginDialog
+from chordcut.ui.dialogs.login_dialog import LoginDialog
 
 
 class ServersDialog(wx.Dialog):

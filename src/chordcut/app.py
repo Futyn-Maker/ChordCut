@@ -5,8 +5,7 @@ import threading
 import wx
 
 from chordcut.api import JellyfinClient
-from chordcut.db import Database
-from chordcut.db.database import ServerCredentials
+from chordcut.db import Database, ServerCredentials
 from chordcut.i18n import _
 from chordcut.player import Player
 from chordcut.settings import Settings

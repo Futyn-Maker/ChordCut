@@ -1,3 +1,4 @@
 """Dialog windows for ChordCut."""
 
-from .servers_dialog import ServersDialog
+from .login_dialog import LoginDialog  # noqa: F401
+from .servers_dialog import ServersDialog  # noqa: F401
