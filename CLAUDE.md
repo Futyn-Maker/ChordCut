@@ -26,7 +26,7 @@ There are no unit tests. Verification is manual on Windows with a real Jellyfin 
 
 ## Architecture
 
-**Startup flow** (`app.py`): GrooveApp creates Settings, Database, JellyfinClient, Player → reads `settings.active_server_id` → looks up server via `db.get_server(id)` → tries token reconnect → if none or failed, shows LoginDialog (saves new server_id to settings) → creates MainWindow → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
+**Startup flow** (`app.py`): `OnInit` first checks `wx.SingleInstanceChecker` — if another instance is running it opens the named Windows Event `Global\Groove_ActivateWindow`, signals it (causing the first instance to restore its window), and returns False. Otherwise it creates that event, starts a daemon listener thread, then creates Settings, Database, JellyfinClient, Player → reads `settings.active_server_id` → looks up server via `db.get_server(id)` → tries token reconnect → if none or failed, shows LoginDialog (saves new server_id to settings) → creates MainWindow → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
 
 **Data flow — two loading modes** (`main_window.py` → `database.py` → `client.py`):
 

@@ -1,5 +1,7 @@
 """Main application class for Groove."""
 
+import ctypes
+import threading
 import wx
 
 from groove.api import JellyfinClient
@@ -9,6 +11,9 @@ from groove.i18n import _
 from groove.player import Player
 from groove.settings import Settings
 from groove.ui import LoginDialog, MainWindow
+
+# Named Windows Event used to signal the first instance to activate.
+_ACTIVATE_EVENT_NAME = "Global\\Groove_ActivateWindow"
 
 
 class GrooveApp(wx.App):
@@ -21,6 +26,9 @@ class GrooveApp(wx.App):
         self._player: Player | None = None
         self._settings: Settings | None = None
         self._main_window: MainWindow | None = None
+        self._instance_checker: wx.SingleInstanceChecker | None = None
+        # Win32 HANDLE to the named activation event (first instance only).
+        self._activate_event: int = 0
 
         super().__init__(redirect=False)
 
@@ -30,6 +38,27 @@ class GrooveApp(wx.App):
         Returns:
             True if initialization succeeded.
         """
+        # Single-instance guard: if another copy is running, signal it
+        # to restore/focus its window, then exit this second instance.
+        checker = wx.SingleInstanceChecker("Groove")
+        self._instance_checker = checker
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+        if checker.IsAnotherRunning():
+            handle = kernel32.OpenEventW(
+                0x0002,  # EVENT_MODIFY_STATE
+                False,
+                _ACTIVATE_EVENT_NAME,
+            )
+            if handle:
+                kernel32.SetEvent(handle)
+                kernel32.CloseHandle(handle)
+            return False
+
+        # Create the named event that a future second instance can signal.
+        self._activate_event = kernel32.CreateEventW(
+            None, False, False, _ACTIVATE_EVENT_NAME,
+        )
+
         # Initialize core components
         self._settings = Settings()
         self._db = Database()
@@ -172,6 +201,38 @@ class GrooveApp(wx.App):
 
         # Load library
         self._main_window.load_library()
+
+        # Listen for activation signals from future second instances.
+        self._start_instance_listener()
+
+    def _start_instance_listener(self) -> None:
+        """Start a daemon thread that waits for a second-instance signal."""
+        handle = self._activate_event
+        if not handle:
+            return
+
+        def listen() -> None:
+            while True:
+                # Wait up to 500 ms so the thread can exit when the
+                # process ends (daemon threads are killed on exit).
+                result = ctypes.WinDLL("kernel32").WaitForSingleObject(  # type: ignore[attr-defined]
+                    handle, 500,
+                )
+                if result == 0 and self._main_window:  # WAIT_OBJECT_0
+                    wx.CallAfter(
+                        self._main_window._restore_from_tray,
+                    )
+
+        threading.Thread(target=listen, daemon=True).start()
+
+    def OnExit(self) -> int:
+        """Clean up Windows handles on exit."""
+        if self._activate_event:
+            ctypes.WinDLL("kernel32").CloseHandle(  # type: ignore[attr-defined]
+                self._activate_event,
+            )
+            self._activate_event = 0
+        return 0
 
 
 def run() -> None:
