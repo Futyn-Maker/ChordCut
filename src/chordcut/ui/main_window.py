@@ -472,6 +472,17 @@ class MainWindow(wx.Frame):
         self._device_names: list[str] = []
         self._populate_audio_devices()
 
+        # Album art (hidden until a track with art plays)
+        self._ART_SIZE = 60
+        self._art_bitmap = wx.StaticBitmap(
+            self._panel,
+            size=(self._ART_SIZE, self._ART_SIZE),
+        )
+        self._art_bitmap.Hide()
+        # Track which image request is current so stale
+        # callbacks don't overwrite a newer image.
+        self._art_request_id: str = ""
+
         # Now-playing label
         self._now_playing_label = wx.StaticText(
             self._panel,
@@ -557,9 +568,20 @@ class MainWindow(wx.Frame):
             border=10,
         )
 
-        # Now playing
-        main_sizer.Add(
+        # Now playing row (album art + label)
+        self._np_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._np_sizer.Add(
+            self._art_bitmap,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+            border=8,
+        )
+        self._np_sizer.Add(
             self._now_playing_label,
+            proportion=1,
+            flag=wx.ALIGN_CENTER_VERTICAL,
+        )
+        main_sizer.Add(
+            self._np_sizer,
             flag=(
                 wx.EXPAND
                 | wx.LEFT | wx.RIGHT | wx.BOTTOM
@@ -1947,6 +1969,75 @@ class MainWindow(wx.Frame):
         )
         self._update_volume_display()
         self._update_title()
+        self._update_album_art(track)
+
+    # ------------------------------------------------------------------
+    # Album art
+    # ------------------------------------------------------------------
+
+    def _update_album_art(self, track: dict) -> None:
+        """Fetch and display album art for the given track."""
+        # Try the track's own image first, then its album
+        track_id = track.get("Id", "")
+        album_id = track.get("AlbumId", "")
+        request_id = track_id
+        self._art_request_id = request_id
+
+        def _on_image(data: bytes | None) -> None:
+            # Try album image if the track itself had none
+            if data is None and album_id:
+                self._client.fetch_image_async(
+                    album_id,
+                    lambda d: wx.CallAfter(
+                        self._apply_album_art, d, request_id,
+                    ),
+                    max_size=self._ART_SIZE * 2,
+                )
+            else:
+                wx.CallAfter(
+                    self._apply_album_art, data, request_id,
+                )
+
+        self._client.fetch_image_async(
+            track_id, _on_image,
+            max_size=self._ART_SIZE * 2,
+        )
+
+    def _apply_album_art(
+        self, data: bytes | None, request_id: str,
+    ) -> None:
+        """Apply fetched image data to the art bitmap."""
+        if self._art_request_id != request_id:
+            return  # stale callback
+        if data is None:
+            self._clear_album_art()
+            return
+        try:
+            import io
+            stream = io.BytesIO(data)
+            img = wx.Image(stream, wx.BITMAP_TYPE_ANY)
+            if not img.IsOk():
+                self._clear_album_art()
+                return
+            img = img.Scale(
+                self._ART_SIZE, self._ART_SIZE,
+                wx.IMAGE_QUALITY_BICUBIC,
+            )
+            self._art_bitmap.SetBitmap(
+                wx.Bitmap(img)
+            )
+            if not self._art_bitmap.IsShown():
+                self._art_bitmap.Show()
+                self._np_sizer.Layout()
+        except Exception:
+            self._clear_album_art()
+
+    def _clear_album_art(self) -> None:
+        """Hide the album art bitmap."""
+        self._art_request_id = ""
+        if self._art_bitmap.IsShown():
+            self._art_bitmap.Hide()
+            self._np_sizer.Layout()
 
     def _on_track_end(self) -> None:
         """Handle track end: repeat, advance queue, or stop."""
@@ -1986,6 +2077,7 @@ class MainWindow(wx.Frame):
 
         self._clear_queue()
         self._current_track = None
+        self._clear_album_art()
         # Translators: Not playing label.
         self._now_playing_label.SetLabel(
             _("Not playing")
@@ -2290,6 +2382,7 @@ class MainWindow(wx.Frame):
         self._player.stop()
         self._current_track = None
         self._clear_queue()
+        self._clear_album_art()
         # Translators: Not playing label.
         self._now_playing_label.SetLabel(
             _("Not playing")
@@ -2515,6 +2608,7 @@ class MainWindow(wx.Frame):
         # Stop playback
         self._player.stop()
         self._current_track = None
+        self._clear_album_art()
 
         # Clear queue
         self._queue = []

@@ -793,6 +793,60 @@ class JellyfinClient:
 
         self._executor.submit(task)
 
+    # --- Images ---
+
+    def get_image_url(
+        self, item_id: str, max_size: int = 200,
+        quality: int = 80,
+    ) -> str:
+        """Build URL for an item's primary image."""
+        if not self._server_url:
+            return ""
+        return (
+            "{base}/Items/{id}/Images/Primary"
+            "?maxWidth={sz}&maxHeight={sz}&quality={q}"
+        ).format(
+            base=self._server_url, id=item_id,
+            sz=max_size, q=quality,
+        )
+
+    def fetch_image(
+        self, item_id: str, max_size: int = 200,
+    ) -> bytes | None:
+        """Download an item's primary image as raw bytes.
+
+        Returns *None* when the item has no image or on error.
+        """
+        url = self.get_image_url(item_id, max_size)
+        if not url:
+            return None
+        try:
+            import urllib.request
+            req = urllib.request.Request(url)
+            if self._access_token:
+                req.add_header(
+                    "Authorization",
+                    'MediaBrowser Token="{tok}"'.format(
+                        tok=self._access_token,
+                    ),
+                )
+            with urllib.request.urlopen(req, timeout=5) as r:
+                return r.read()
+        except Exception:
+            return None
+
+    def fetch_image_async(
+        self,
+        item_id: str,
+        callback: Callable[[bytes | None], None],
+        max_size: int = 200,
+    ) -> None:
+        """Fetch an item's primary image asynchronously."""
+        def task() -> None:
+            result = self.fetch_image(item_id, max_size)
+            callback(result)
+        self._executor.submit(task)
+
     # --- Streaming ---
 
     def get_stream_url(self, item_id: str) -> str:
