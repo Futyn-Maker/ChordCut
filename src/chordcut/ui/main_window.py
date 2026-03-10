@@ -176,6 +176,14 @@ class MainWindow(wx.Frame):
         # Restore saved volume and audio device
         self._apply_startup_settings()
 
+        # Window icon (title bar + taskbar)
+        from chordcut.utils.paths import get_icon_path
+        _ico_path = get_icon_path()
+        if _ico_path:
+            self.SetIcon(
+                wx.Icon(str(_ico_path), wx.BITMAP_TYPE_ICO)
+            )
+
         # System tray icon (always visible)
         self._tray_icon: TrayIcon | None = TrayIcon(self)
 

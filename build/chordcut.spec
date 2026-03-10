@@ -30,7 +30,9 @@ a = Analysis(
     [os.path.join(SPECPATH, '..', 'src', 'chordcut', '__main__.py')],
     pathex=[os.path.join(SPECPATH, '..', 'src')],
     binaries=binaries,
-    datas=[],
+    datas=[
+        (os.path.join(SPECPATH, '..', 'resources', 'chordcut.ico'), '.'),
+    ],
     hiddenimports=[
         'wx',
         'wx._core',
@@ -72,7 +74,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Add icon path here if desired: 'resources/chordcut.ico'
+    icon=os.path.join(SPECPATH, '..', 'resources', 'chordcut.ico'),
 )
 
 coll = COLLECT(

@@ -44,6 +44,26 @@ def get_settings_path() -> Path:
     return get_app_dir() / "settings.json"
 
 
+def get_icon_path() -> Path | None:
+    """Get the path to the application icon file.
+
+    Returns *None* when no icon file is found.
+    """
+    # Frozen: icon sits next to the executable
+    # Dev: icon sits in resources/ under the project root
+    app = get_app_dir()
+    candidates = [
+        app / "chordcut.ico",
+        # PyInstaller --onedir puts datas in _internal/
+        app / "_internal" / "chordcut.ico",
+        app / "resources" / "chordcut.ico",
+    ]
+    for p in candidates:
+        if p.is_file():
+            return p
+    return None
+
+
 def get_locale_dir() -> Path:
     """Get the locale directory containing translation files.
 

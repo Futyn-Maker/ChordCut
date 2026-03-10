@@ -4,17 +4,25 @@ import wx
 import wx.adv
 
 from chordcut.i18n import _
+from chordcut.utils.paths import get_icon_path
 
 
-def _make_tray_icon() -> wx.Icon:
-    """Create a simple icon for the system tray.
+def _load_icon() -> wx.Icon:
+    """Load the application icon.
 
-    Draws a purple 'G' on a dark background.  Used when no .ico
-    file is bundled with the application.
+    Tries the bundled .ico file first.  Falls back to a simple
+    generated bitmap when no file is found.
     """
+    icon_path = get_icon_path()
+    if icon_path:
+        icon = wx.Icon(str(icon_path), wx.BITMAP_TYPE_ICO)
+        if icon.IsOk():
+            return icon
+
+    # Fallback: programmatic purple note placeholder
     bmp = wx.Bitmap(16, 16)
     dc = wx.MemoryDC(bmp)
-    dc.SetBackground(wx.Brush(wx.Colour(80, 40, 160)))
+    dc.SetBackground(wx.Brush(wx.Colour(90, 40, 170)))
     dc.Clear()
     dc.SetTextForeground(wx.WHITE)
     dc.SetFont(
@@ -25,7 +33,7 @@ def _make_tray_icon() -> wx.Icon:
             wx.FONTWEIGHT_BOLD,
         )
     )
-    dc.DrawText("G", 3, 1)
+    dc.DrawText("C", 3, 1)
     dc.SelectObject(wx.NullBitmap)
     icon = wx.Icon()
     icon.CopyFromBitmap(bmp)
@@ -38,7 +46,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
     def __init__(self, main_window) -> None:
         super().__init__()
         self._main_window = main_window
-        self._icon = _make_tray_icon()
+        self._icon = _load_icon()
 
         # Translators: Tooltip shown when hovering over the tray icon.
         self.SetIcon(self._icon, _("ChordCut"))
