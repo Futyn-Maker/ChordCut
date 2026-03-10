@@ -1,6 +1,6 @@
-"""Entry point for running Groove as a module."""
+"""Entry point for running ChordCut as a module."""
 
-from groove.app import run
+from chordcut.app import run
 
 
 def main() -> None:

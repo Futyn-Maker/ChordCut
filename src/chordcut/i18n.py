@@ -1,12 +1,12 @@
-"""Internationalization support for Groove.
+"""Internationalization support for ChordCut.
 
 All user-facing strings must be wrapped with _() or ngettext() from this module
 and preceded by a ``# Translators:`` comment explaining the context.
 
 To generate a .pot translation template::
 
-    xgettext --add-comments=Translators -o locale/groove.pot --from-code=UTF-8 \\
-        src/groove/*.py src/groove/**/*.py
+    xgettext --add-comments=Translators -o locale/chordcut.pot --from-code=UTF-8 \\
+        src/chordcut/*.py src/chordcut/**/*.py
 """
 
 import gettext
@@ -15,7 +15,7 @@ import logging
 import os
 import sys
 
-from groove.utils.paths import get_locale_dir
+from chordcut.utils.paths import get_locale_dir
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ def _init_translation():
     try:
         # Try to load translation for the detected language
         translation = gettext.translation(
-            "groove",
+            "chordcut",
             localedir=str(localedir),
             languages=[lang] if lang else None,
             fallback=True,
@@ -105,7 +105,7 @@ def _init_translation():
             logger.debug("Using fallback (English) strings")
     except Exception as e:
         logger.warning(f"Failed to load translation: {e}, using fallback")
-        translation = gettext.translation("groove", fallback=True)
+        translation = gettext.translation("chordcut", fallback=True)
 
     return translation
 

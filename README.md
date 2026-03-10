@@ -1,4 +1,4 @@
-# Groove
+# ChordCut
 
 An accessible Jellyfin music client for Windows, designed for blind and visually impaired users with full screen reader support.
 
@@ -48,24 +48,24 @@ An accessible Jellyfin music client for Windows, designed for blind and visually
    build\build.bat
    ```
 
-4. The built application will be in `dist\Groove\`
+4. The built application will be in `dist\ChordCut\`
 
-5. Run `dist\Groove\Groove.exe`
+5. Run `dist\ChordCut\ChordCut.exe`
 
 ### Manual Build (Alternative)
 
 ```batch
 pip install pyinstaller wxPython python-mpv jellyfin-apiclient-python
-pyinstaller --clean --noconfirm build/groove.spec
-mkdir dist\Groove\data
-copy resources\libmpv\mpv-2.dll dist\Groove\
+pyinstaller --clean --noconfirm build/chordcut.spec
+mkdir dist\ChordCut\data
+copy resources\libmpv\mpv-2.dll dist\ChordCut\
 ```
 
 ## Project Structure
 
 ```
-groove/
-├── src/groove/          # Source code
+chordcut/
+├── src/chordcut/          # Source code
 │   ├── api/             # Jellyfin API client
 │   ├── db/              # SQLite database
 │   ├── player/          # MPV audio player
@@ -79,9 +79,9 @@ groove/
 ## Data Storage
 
 All data is stored in the `data/` subfolder next to the executable:
-- `groove.db` - Server credentials and cached library data
+- `chordcut.db` - Server credentials and cached library data
 
-The application is fully portable - copy the entire `Groove/` folder to move it.
+The application is fully portable - copy the entire `ChordCut/` folder to move it.
 
 ## Requirements
 
@@ -94,7 +94,7 @@ The application is fully portable - copy the entire `Groove/` folder to move it.
 Development is done in WSL. To verify syntax:
 
 ```bash
-python3 -m py_compile src/groove/**/*.py
+python3 -m py_compile src/chordcut/**/*.py
 ```
 
 Building must be done on Windows (or via Wine) as PyInstaller cannot cross-compile.

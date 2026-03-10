@@ -1,4 +1,4 @@
-"""Portable path detection for Groove application."""
+"""Portable path detection for ChordCut application."""
 
 import sys
 from pathlib import Path
@@ -15,14 +15,14 @@ def get_app_dir() -> Path:
         # Running as compiled executable
         return Path(sys.executable).parent
     else:
-        # Running from source: utils/ → groove/ → src/ → project root
+        # Running from source: utils/ → chordcut/ → src/ → project root
         return Path(__file__).parent.parent.parent.parent
 
 
 def get_data_dir() -> Path:
     """Get the data directory, creating it if needed.
 
-    Returns the path to the data/ subfolder where groove.db and other
+    Returns the path to the data/ subfolder where chordcut.db and other
     persistent data are stored.
     """
     data_dir = get_app_dir() / "data"
@@ -32,7 +32,7 @@ def get_data_dir() -> Path:
 
 def get_db_path() -> Path:
     """Get the full path to the SQLite database file."""
-    return get_data_dir() / "groove.db"
+    return get_data_dir() / "chordcut.db"
 
 
 def get_settings_path() -> Path:

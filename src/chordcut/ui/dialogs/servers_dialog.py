@@ -1,13 +1,13 @@
-"""Server management dialog for Groove."""
+"""Server management dialog for ChordCut."""
 
 import wx
 
-from groove.api import JellyfinClient
-from groove.db import Database
-from groove.db.database import ServerCredentials
-from groove.i18n import _
-from groove.settings import Settings
-from groove.ui.login_dialog import LoginDialog
+from chordcut.api import JellyfinClient
+from chordcut.db import Database
+from chordcut.db.database import ServerCredentials
+from chordcut.i18n import _
+from chordcut.settings import Settings
+from chordcut.ui.login_dialog import LoginDialog
 
 
 class ServersDialog(wx.Dialog):

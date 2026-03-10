@@ -2,8 +2,8 @@
 
 import wx
 
-from groove.i18n import _, ngettext
-from groove.player.mpv_player import format_duration
+from chordcut.i18n import _, ngettext
+from chordcut.player.mpv_player import format_duration
 
 
 class PropertiesDialog(wx.Dialog):

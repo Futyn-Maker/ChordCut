@@ -2,7 +2,7 @@
 
 import wx
 
-from groove.i18n import _
+from chordcut.i18n import _
 
 # Stable IDs for context menu items
 ID_PLAY = wx.NewIdRef()

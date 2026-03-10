@@ -1,22 +1,22 @@
-"""Main application class for Groove."""
+"""Main application class for ChordCut."""
 
 import ctypes
 import threading
 import wx
 
-from groove.api import JellyfinClient
-from groove.db import Database
-from groove.db.database import ServerCredentials
-from groove.i18n import _
-from groove.player import Player
-from groove.settings import Settings
-from groove.ui import LoginDialog, MainWindow
+from chordcut.api import JellyfinClient
+from chordcut.db import Database
+from chordcut.db.database import ServerCredentials
+from chordcut.i18n import _
+from chordcut.player import Player
+from chordcut.settings import Settings
+from chordcut.ui import LoginDialog, MainWindow
 
 # Named Windows Event used to signal the first instance to activate.
-_ACTIVATE_EVENT_NAME = "Global\\Groove_ActivateWindow"
+_ACTIVATE_EVENT_NAME = "Global\\ChordCut_ActivateWindow"
 
 
-class GrooveApp(wx.App):
+class ChordCutApp(wx.App):
     """Main wxPython application class."""
 
     def __init__(self):
@@ -40,7 +40,7 @@ class GrooveApp(wx.App):
         """
         # Single-instance guard: if another copy is running, signal it
         # to restore/focus its window, then exit this second instance.
-        checker = wx.SingleInstanceChecker("Groove")
+        checker = wx.SingleInstanceChecker("ChordCut")
         self._instance_checker = checker
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
         if checker.IsAnotherRunning():
@@ -236,6 +236,6 @@ class GrooveApp(wx.App):
 
 
 def run() -> None:
-    """Run the Groove application."""
-    app = GrooveApp()
+    """Run the ChordCut application."""
+    app = ChordCutApp()
     app.MainLoop()

@@ -1,4 +1,4 @@
-"""Application settings manager for Groove.
+"""Application settings manager for ChordCut.
 
 Settings are stored in a JSON file next to the executable (or the
 project root in dev mode), separate from the SQLite database that
@@ -8,7 +8,7 @@ holds server credentials and library cache.
 import json
 from pathlib import Path
 
-from groove.utils.paths import get_settings_path
+from chordcut.utils.paths import get_settings_path
 
 _DEFAULTS: dict = {
     # ID of the active server (stored here, not in the DB).
@@ -82,7 +82,7 @@ class Settings:
         val = self._data.get("download_dir")
         if val:
             return Path(val)
-        from groove.utils.paths import get_app_dir
+        from chordcut.utils.paths import get_app_dir
         return get_app_dir() / "music"
 
     @download_dir.setter

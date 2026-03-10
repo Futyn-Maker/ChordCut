@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Groove is a portable, accessible Jellyfin music client for Windows, designed for blind users with full NVDA/JAWS screen reader support. Python 3.13+, wxPython GUI, MPV audio, SQLite storage.
+ChordCut is a portable, accessible Jellyfin music client for Windows, designed for blind users with full NVDA/JAWS screen reader support. Python 3.13+, wxPython GUI, MPV audio, SQLite storage.
 
 ## Development & Build
 
@@ -12,21 +12,21 @@ Development happens in WSL. Building and testing must be done on Windows (PyInst
 
 ```bash
 # Syntax check (WSL — no wxPython/mpv available)
-python3 -m py_compile src/groove/db/database.py src/groove/utils/paths.py
+python3 -m py_compile src/chordcut/db/database.py src/chordcut/utils/paths.py
 
 # Build on Windows (run from project root)
 build\build.bat
 
 # Manual build on Windows
 pip install pyinstaller wxPython python-mpv jellyfin-apiclient-python
-pyinstaller --clean --noconfirm build/groove.spec
+pyinstaller --clean --noconfirm build/chordcut.spec
 ```
 
 There are no unit tests. Verification is manual on Windows with a real Jellyfin server.
 
 ## Architecture
 
-**Startup flow** (`app.py`): `OnInit` first checks `wx.SingleInstanceChecker` — if another instance is running it opens the named Windows Event `Global\Groove_ActivateWindow`, signals it (causing the first instance to restore its window), and returns False. Otherwise it creates that event, starts a daemon listener thread, then creates Settings, Database, JellyfinClient, Player → reads `settings.active_server_id` → looks up server via `db.get_server(id)` → tries token reconnect → if none or failed, shows LoginDialog (saves new server_id to settings) → creates MainWindow → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
+**Startup flow** (`app.py`): `OnInit` first checks `wx.SingleInstanceChecker` — if another instance is running it opens the named Windows Event `Global\ChordCut_ActivateWindow`, signals it (causing the first instance to restore its window), and returns False. Otherwise it creates that event, starts a daemon listener thread, then creates Settings, Database, JellyfinClient, Player → reads `settings.active_server_id` → looks up server via `db.get_server(id)` → tries token reconnect → if none or failed, shows LoginDialog (saves new server_id to settings) → creates MainWindow → calls `load_library()`. MainWindow applies saved volume and audio device in `_apply_startup_settings()`.
 
 **Data flow — two loading modes** (`main_window.py` → `database.py` → `client.py`):
 
@@ -110,53 +110,53 @@ A `_loading_in_progress` flag prevents concurrent loads (F5 during an active loa
 
 ## Internationalization (i18n)
 
-All user-facing strings are wrapped with `_()` (or `ngettext()` for plurals) from `groove.i18n`. The application automatically detects the system locale and loads the appropriate translation from `locale/{lang}/LC_MESSAGES/groove.mo`. If no translation exists, English strings are used (fallback mode).
+All user-facing strings are wrapped with `_()` (or `ngettext()` for plurals) from `chordcut.i18n`. The application automatically detects the system locale and loads the appropriate translation from `locale/{lang}/LC_MESSAGES/chordcut.mo`. If no translation exists, English strings are used (fallback mode).
 
 **Locale folder structure:**
 
 ```
 locale/
-├── groove.pot              # Translation template (generated)
+├── chordcut.pot              # Translation template (generated)
 ├── ru/
 │   └── LC_MESSAGES/
-│       ├── groove.po       # Russian translation source
-│       └── groove.mo       # Compiled translation (build artifact, not in git)
+│       ├── chordcut.po       # Russian translation source
+│       └── chordcut.mo       # Compiled translation (build artifact, not in git)
 └── ... (other languages)
 ```
 
 **Rules for new strings:**
 
-1. Import `from groove.i18n import _` (and `ngettext` if needed) in every UI module.
+1. Import `from chordcut.i18n import _` (and `ngettext` if needed) in every UI module.
 2. Wrap every user-facing string literal with `_()`.
 3. Add a `# Translators:` comment on the line(s) immediately before each `_()` call explaining the context — these comments are extracted into `.pot` files by `xgettext --add-comments=Translators`.
 4. Use `ngettext("{n} track", "{n} tracks", n).format(n=n)` for count-dependent strings.
 5. Never use f-strings inside `_()` — use `_("...{var}...").format(var=val)` so `xgettext` can extract the template.
-6. Keep the gettext domain name `"groove"`.
+6. Keep the gettext domain name `"chordcut"`.
 
 **Updating translations:**
 
 1. Regenerate the .pot template after adding/modifying strings:
    ```bash
-   xgettext --add-comments=Translators -o locale/groove.pot --from-code=UTF-8 \
-       src/groove/*.py src/groove/**/*.py
+   xgettext --add-comments=Translators -o locale/chordcut.pot --from-code=UTF-8 \
+       src/chordcut/*.py src/chordcut/**/*.py
    ```
 
 2. Update existing .po files with new strings:
    ```bash
-   msgmerge -U locale/ru/LC_MESSAGES/groove.po locale/groove.pot
+   msgmerge -U locale/ru/LC_MESSAGES/chordcut.po locale/chordcut.pot
    ```
 
 3. Compile .po to .mo (happens automatically during build, or manually):
    ```bash
-   msgfmt -o locale/ru/LC_MESSAGES/groove.mo locale/ru/LC_MESSAGES/groove.po
+   msgfmt -o locale/ru/LC_MESSAGES/chordcut.mo locale/ru/LC_MESSAGES/chordcut.po
    ```
 
 **Creating a new translation:**
 
 ```bash
-msginit -i locale/groove.pot -o locale/{lang}/LC_MESSAGES/groove.po -l {lang}
+msginit -i locale/chordcut.pot -o locale/{lang}/LC_MESSAGES/chordcut.po -l {lang}
 # Edit the .po file, then compile:
-msgfmt -o locale/{lang}/LC_MESSAGES/groove.mo locale/{lang}/LC_MESSAGES/groove.po
+msgfmt -o locale/{lang}/LC_MESSAGES/chordcut.mo locale/{lang}/LC_MESSAGES/chordcut.po
 ```
 
 ## Key Conventions
@@ -166,7 +166,7 @@ msgfmt -o locale/{lang}/LC_MESSAGES/groove.mo locale/{lang}/LC_MESSAGES/groove.p
 - **Portable paths**: `utils/paths.py` detects frozen (PyInstaller) vs source execution. Database and cache live in `data/` next to the executable. `settings.json` lives directly next to the executable (via `get_settings_path()`). Nothing is stored in user profile folders.
 - **Search debounce**: 50ms `wx.Timer` prevents filtering on every keystroke. Search is contextual: filters by Name for artists/playlists, by Name+ArtistDisplay for albums, by Name+ArtistDisplay+AlbumArtist for tracks.
 - **MPV end-file race condition**: When starting a new track while one is playing, MPV fires `end-file` for the old track. The callback checks `player.is_loaded` to avoid resetting the UI for the new track.
-- **Window title**: Managed by `_update_title()` — shows "Track - Groove - Version" when playing/paused, "Groove - Version" when idle. `_current_track` stays set during pause.
+- **Window title**: Managed by `_update_title()` — shows "Track - ChordCut - Version" when playing/paused, "ChordCut - Version" when idle. `_current_track` stays set during pause.
 - **libmpv DLL**: Must be placed in `resources/libmpv/` before building. Accepts `mpv-2.dll`, `libmpv-2.dll`, or `mpv-1.dll`.
 
 ## Keyboard Shortcuts
@@ -307,7 +307,7 @@ Follow these steps in order:
 
 ### Stage 6: System Tray — COMPLETED
 
-**Goal**: Allow the user to minimize Groove to the notification area for background playback.
+**Goal**: Allow the user to minimize ChordCut to the notification area for background playback.
 
 - System tray icon always visible (`TrayIcon` in `ui/tray_icon.py`); icon generated programmatically if no `.ico` is bundled
 - Shift+Escape hides the main window to tray; left-click or "Restore" menu item restores it

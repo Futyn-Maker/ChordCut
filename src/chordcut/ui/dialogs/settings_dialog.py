@@ -1,9 +1,9 @@
-"""Settings dialog for Groove."""
+"""Settings dialog for ChordCut."""
 
 import wx
 
-from groove.i18n import _
-from groove.settings import Settings
+from chordcut.i18n import _
+from chordcut.settings import Settings
 
 
 class SettingsDialog(wx.Dialog):

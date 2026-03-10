@@ -1,4 +1,4 @@
-"""SQLite database manager for Groove."""
+"""SQLite database manager for ChordCut."""
 
 import sqlite3
 from contextlib import contextmanager
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
-from groove.utils.paths import get_db_path
+from chordcut.utils.paths import get_db_path
 
 
 @dataclass

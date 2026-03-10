@@ -9,7 +9,7 @@ from typing import Callable
 
 from jellyfin_apiclient_python import JellyfinClient as BaseJellyfinClient
 
-from groove import __app_name__, __version__
+from chordcut import __app_name__, __version__
 
 
 class JellyfinClient:
@@ -29,7 +29,7 @@ class JellyfinClient:
         self._client.config.app(
             __app_name__,
             __version__,
-            "Groove Device",
+            "ChordCut Device",
             self._device_id,
         )
         self._client.config.data["auth.ssl"] = True
@@ -92,7 +92,7 @@ class JellyfinClient:
         self._client.config.app(
             __app_name__,
             __version__,
-            "Groove Device",
+            "ChordCut Device",
             device_id,
         )
 

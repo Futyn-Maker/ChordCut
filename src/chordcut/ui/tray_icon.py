@@ -1,9 +1,9 @@
-"""System tray icon for Groove."""
+"""System tray icon for ChordCut."""
 
 import wx
 import wx.adv
 
-from groove.i18n import _
+from chordcut.i18n import _
 
 
 def _make_tray_icon() -> wx.Icon:
@@ -41,7 +41,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
         self._icon = _make_tray_icon()
 
         # Translators: Tooltip shown when hovering over the tray icon.
-        self.SetIcon(self._icon, _("Groove"))
+        self.SetIcon(self._icon, _("ChordCut"))
 
         self.Bind(
             wx.adv.EVT_TASKBAR_LEFT_DOWN,
@@ -70,7 +70,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
                 tooltip = tooltip[:125] + "..."
         else:
             # Translators: Tray tooltip when nothing is playing.
-            tooltip = _("Groove")
+            tooltip = _("ChordCut")
         self.SetIcon(self._icon, tooltip)
 
     def CreatePopupMenu(self) -> wx.Menu:

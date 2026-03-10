@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ============================================
-echo    Groove Build Script
+echo    ChordCut Build Script
 echo ============================================
 echo.
 
@@ -68,9 +68,9 @@ REM Compile translations (.po to .mo)
 echo Compiling translations...
 if exist "locale" (
     for /d %%l in (locale\*) do (
-        if exist "%%l\LC_MESSAGES\groove.po" (
+        if exist "%%l\LC_MESSAGES\chordcut.po" (
             echo   Compiling %%~nl translation...
-            msgfmt -o "%%l\LC_MESSAGES\groove.mo" "%%l\LC_MESSAGES\groove.po" 2>nul
+            msgfmt -o "%%l\LC_MESSAGES\chordcut.mo" "%%l\LC_MESSAGES\chordcut.po" 2>nul
             if errorlevel 1 (
                 echo   WARNING: Failed to compile %%~nl translation - msgfmt not found or error
             )
@@ -83,14 +83,14 @@ echo.
 
 REM Clean previous build
 echo Cleaning previous build...
-if exist "dist\Groove" rmdir /s /q "dist\Groove"
-if exist "build\Groove" rmdir /s /q "build\Groove"
+if exist "dist\ChordCut" rmdir /s /q "dist\ChordCut"
+if exist "build\ChordCut" rmdir /s /q "build\ChordCut"
 echo.
 
 REM Build
-echo Building Groove...
+echo Building ChordCut...
 echo.
-pyinstaller --clean --noconfirm build/groove.spec
+pyinstaller --clean --noconfirm build/chordcut.spec
 if errorlevel 1 (
     echo.
     echo ERROR: Build failed!
@@ -101,15 +101,15 @@ if errorlevel 1 (
 REM Create data folder
 echo.
 echo Creating data folder...
-if not exist "dist\Groove\data" mkdir "dist\Groove\data"
+if not exist "dist\ChordCut\data" mkdir "dist\ChordCut\data"
 
 REM Copy locale folder (translations - only .mo files)
 echo Copying translations...
 if exist "locale" (
     for /d %%l in (locale\*) do (
-        if exist "%%l\LC_MESSAGES\groove.mo" (
-            if not exist "dist\Groove\locale\%%~nxl\LC_MESSAGES" mkdir "dist\Groove\locale\%%~nxl\LC_MESSAGES"
-            copy /Y "%%l\LC_MESSAGES\groove.mo" "dist\Groove\locale\%%~nxl\LC_MESSAGES\" >nul
+        if exist "%%l\LC_MESSAGES\chordcut.mo" (
+            if not exist "dist\ChordCut\locale\%%~nxl\LC_MESSAGES" mkdir "dist\ChordCut\locale\%%~nxl\LC_MESSAGES"
+            copy /Y "%%l\LC_MESSAGES\chordcut.mo" "dist\ChordCut\locale\%%~nxl\LC_MESSAGES\" >nul
             echo   Copied %%~nxl translation
         )
     )
@@ -122,10 +122,10 @@ echo ============================================
 echo    Build Complete!
 echo ============================================
 echo.
-echo Output folder: dist\Groove\
-echo Executable:    dist\Groove\Groove.exe
+echo Output folder: dist\ChordCut\
+echo Executable:    dist\ChordCut\ChordCut.exe
 echo.
-echo To run: double-click dist\Groove\Groove.exe
+echo To run: double-click dist\ChordCut\ChordCut.exe
 echo.
 
 pause

@@ -3,14 +3,14 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "groove"
+name = "chordcut"
 version = "0.1.0"
 description = "Accessible Jellyfin music client for the blind"
 readme = "README.md"
 requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
-    {name = "Groove Developer"}
+    {name = "ChordCut Developer"}
 ]
 keywords = ["jellyfin", "music", "accessibility", "blind", "screen-reader"]
 classifiers = [
@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [project.scripts]
-groove = "groove.__main__:main"
+chordcut = "chordcut.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

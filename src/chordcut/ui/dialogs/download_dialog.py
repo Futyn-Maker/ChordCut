@@ -6,8 +6,8 @@ from pathlib import Path
 
 import wx
 
-from groove.i18n import _
-from groove.utils.paths import get_app_dir
+from chordcut.i18n import _
+from chordcut.utils.paths import get_app_dir
 
 
 class DownloadDialog(wx.Dialog):

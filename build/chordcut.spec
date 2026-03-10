@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec file for Groove."""
+"""PyInstaller spec file for ChordCut."""
 
 import os
 import sys
@@ -27,7 +27,7 @@ else:
     binaries = [libmpv_path]
 
 a = Analysis(
-    [os.path.join(SPECPATH, '..', 'src', 'groove', '__main__.py')],
+    [os.path.join(SPECPATH, '..', 'src', 'chordcut', '__main__.py')],
     pathex=[os.path.join(SPECPATH, '..', 'src')],
     binaries=binaries,
     datas=[],
@@ -61,7 +61,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Groove',
+    name='ChordCut',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -72,7 +72,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Add icon path here if desired: 'resources/groove.ico'
+    icon=None,  # Add icon path here if desired: 'resources/chordcut.ico'
 )
 
 coll = COLLECT(
@@ -82,5 +82,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Groove',
+    name='ChordCut',
 )

@@ -1,4 +1,4 @@
-"""Main application window for Groove."""
+"""Main application window for ChordCut."""
 
 import random
 import subprocess
@@ -7,19 +7,19 @@ from dataclasses import dataclass
 import wx
 import wx.adv
 
-from groove import __app_name__, __version__
-from groove.api import JellyfinClient
-from groove.db import Database
-from groove.db.database import ServerCredentials
-from groove.i18n import _, ngettext
-from groove.player import Player
-from groove.player.mpv_player import format_duration
-from groove.settings import Settings
-from groove.ui.library_list import (
+from chordcut import __app_name__, __version__
+from chordcut.api import JellyfinClient
+from chordcut.db import Database
+from chordcut.db.database import ServerCredentials
+from chordcut.i18n import _, ngettext
+from chordcut.player import Player
+from chordcut.player.mpv_player import format_duration
+from chordcut.settings import Settings
+from chordcut.ui.library_list import (
     FORMATTERS,
     LibraryListBox,
 )
-from groove.ui.tray_icon import TrayIcon
+from chordcut.ui.tray_icon import TrayIcon
 
 # Section identifiers (order matches the wx.Choice control)
 SECTIONS = (
@@ -405,7 +405,7 @@ class MainWindow(wx.Frame):
             # Translators: Menu item for About.
             _("&About"),
             # Translators: Help text for About.
-            _("About Groove"),
+            _("About ChordCut"),
         )
         # Translators: Help menu label.
         menubar.Append(help_menu, _("&Help"))
@@ -834,7 +834,7 @@ class MainWindow(wx.Frame):
         self, _event: wx.CommandEvent,
     ) -> None:
         """Open the settings dialog."""
-        from groove.ui.dialogs.settings_dialog import (
+        from chordcut.ui.dialogs.settings_dialog import (
             SettingsDialog,
         )
         dlg = SettingsDialog(self, self._settings)
@@ -2456,7 +2456,7 @@ class MainWindow(wx.Frame):
         self, event: wx.CommandEvent,
     ) -> None:
         """Open the server management dialog."""
-        from groove.ui.dialogs.servers_dialog import (
+        from chordcut.ui.dialogs.servers_dialog import (
             ServersDialog,
         )
         dlg = ServersDialog(
@@ -2650,7 +2650,7 @@ class MainWindow(wx.Frame):
         if not item:
             return
 
-        from groove.ui.context_menu import (
+        from chordcut.ui.context_menu import (
             build_context_menu,
             ID_PLAY, ID_OPEN, ID_GO_BACK,
             ID_GO_TO_ARTIST, ID_GO_TO_ALBUM,
@@ -2840,7 +2840,7 @@ class MainWindow(wx.Frame):
             self._show_track_properties(item)
             return
 
-        from groove.ui.dialogs.properties_dialog import (
+        from chordcut.ui.dialogs.properties_dialog import (
             PropertiesDialog,
             build_artist_properties,
             build_album_properties,
@@ -2906,7 +2906,7 @@ class MainWindow(wx.Frame):
     def _on_track_details_received(
         self, track: dict, details: dict | None,
     ) -> None:
-        from groove.ui.dialogs.properties_dialog import (
+        from chordcut.ui.dialogs.properties_dialog import (
             PropertiesDialog,
             build_track_properties,
         )
@@ -2993,7 +2993,7 @@ class MainWindow(wx.Frame):
             for cue in lyrics
         )
 
-        from groove.ui.dialogs.lyrics_dialog import (
+        from chordcut.ui.dialogs.lyrics_dialog import (
             PlainLyricsDialog,
             SyncedLyricsDialog,
         )
@@ -3156,7 +3156,7 @@ class MainWindow(wx.Frame):
         )
         filename = filename.strip() or "track"
 
-        from groove.ui.dialogs.download_dialog import (
+        from chordcut.ui.dialogs.download_dialog import (
             DownloadDialog,
         )
 
@@ -3656,7 +3656,7 @@ class MainWindow(wx.Frame):
             return
 
         # Menu was just checked; show the setup dialog.
-        from groove.ui.dialogs.timer_dialog import TimerDialog
+        from chordcut.ui.dialogs.timer_dialog import TimerDialog
         dlg = TimerDialog(self)
         if dlg.ShowModal() == wx.ID_OK:
             self._countdown_seconds = dlg.get_total_seconds()

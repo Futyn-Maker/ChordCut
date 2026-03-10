@@ -1,4 +1,4 @@
-"""MPV audio player wrapper for Groove."""
+"""MPV audio player wrapper for ChordCut."""
 
 from typing import Callable
 

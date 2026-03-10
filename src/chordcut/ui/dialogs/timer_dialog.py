@@ -1,8 +1,8 @@
-"""Sleep timer setup dialog for Groove."""
+"""Sleep timer setup dialog for ChordCut."""
 
 import wx
 
-from groove.i18n import _
+from chordcut.i18n import _
 
 # Action identifiers returned by the dialog
 TIMER_ACTION_CLOSE = "close"

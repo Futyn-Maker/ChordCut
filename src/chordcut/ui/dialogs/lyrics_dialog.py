@@ -1,11 +1,11 @@
-"""Lyrics dialogs for Groove."""
+"""Lyrics dialogs for ChordCut."""
 
 from typing import Callable
 
 import wx
 
-from groove.i18n import _
-from groove.player.mpv_player import format_duration
+from chordcut.i18n import _
+from chordcut.player.mpv_player import format_duration
 
 
 class PlainLyricsDialog(wx.Dialog):
