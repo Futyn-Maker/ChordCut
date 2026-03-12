@@ -19,6 +19,7 @@ from chordcut.ui.library_list import (
     LibraryListBox,
 )
 from chordcut.ui.tray_icon import TrayIcon
+from chordcut.utils.text import normalize_search
 
 # Section identifiers (order matches the wx.Choice control)
 SECTIONS = (
@@ -1566,7 +1567,7 @@ class MainWindow(wx.Frame):
         if not query:
             self._filtered_items = self._all_items
         else:
-            q = query.lower()
+            q = normalize_search(query)
             lt = self._current_level_type
             self._filtered_items = [
                 i for i in self._all_items
@@ -1580,27 +1581,25 @@ class MainWindow(wx.Frame):
     def _matches(
         item: dict, q: str, level_type: str,
     ) -> bool:
-        """Check if *item* matches the search query."""
+        """Check if *item* matches the search query.
+
+        *q* must already be normalized via :func:`normalize_search`.
+        """
+        n = normalize_search
         if level_type in ("artists", "album_artists"):
-            return q in item.get("Name", "").lower()
+            return q in n(item.get("Name", ""))
         if level_type == "playlists":
-            return q in item.get("Name", "").lower()
+            return q in n(item.get("Name", ""))
         if level_type == "albums":
             return (
-                q in item.get("Name", "").lower()
-                or q in item.get(
-                    "ArtistDisplay", "",
-                ).lower()
+                q in n(item.get("Name", ""))
+                or q in n(item.get("ArtistDisplay", ""))
             )
         # tracks
         return (
-            q in item.get("Name", "").lower()
-            or q in item.get(
-                "ArtistDisplay", "",
-            ).lower()
-            or q in item.get(
-                "AlbumArtist", "",
-            ).lower()
+            q in n(item.get("Name", ""))
+            or q in n(item.get("ArtistDisplay", ""))
+            or q in n(item.get("AlbumArtist", ""))
         )
 
     # --- Drill down / go back ---
