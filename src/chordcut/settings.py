@@ -30,6 +30,8 @@ _DEFAULTS: dict = {
     "device": "auto",
     # Track list sort order.
     "track_sort": "date_desc",
+    # Whether closing the window minimizes to tray instead of exiting.
+    "close_to_tray": False,
 }
 
 
@@ -152,6 +154,15 @@ class Settings:
     @active_server_id.setter
     def active_server_id(self, value: int | None) -> None:
         self._data["active_server_id"] = value
+
+    @property
+    def close_to_tray(self) -> bool:
+        """Whether closing the window minimizes to tray."""
+        return bool(self._data.get("close_to_tray", False))
+
+    @close_to_tray.setter
+    def close_to_tray(self, value: bool) -> None:
+        self._data["close_to_tray"] = bool(value)
 
     _VALID_TRACK_SORTS = {
         "alpha_asc", "alpha_desc", "date_desc", "date_asc",

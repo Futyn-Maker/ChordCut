@@ -15,7 +15,7 @@ class SettingsDialog(wx.Dialog):
             parent,
             title=_("Settings"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-            size=(500, 380),
+            size=(500, 460),
         )
 
         self._settings = settings
@@ -136,6 +136,32 @@ class SettingsDialog(wx.Dialog):
             border=10,
         )
 
+        # ---- Behavior settings group --------------------------------
+        # Translators: Label for the behavior settings group box.
+        behavior_box = wx.StaticBox(
+            panel, label=_("Behavior"),
+        )
+        behavior_sizer = wx.StaticBoxSizer(
+            behavior_box, wx.VERTICAL,
+        )
+
+        # Translators: Checkbox to minimize to tray on close.
+        self._close_to_tray = wx.CheckBox(
+            panel,
+            label=_("&Close button minimizes to tray "
+                     "instead of exiting"),
+        )
+        self._close_to_tray.SetValue(settings.close_to_tray)
+        behavior_sizer.Add(
+            self._close_to_tray, flag=wx.ALL, border=5,
+        )
+
+        main_sizer.Add(
+            behavior_sizer,
+            flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
+            border=10,
+        )
+
         # ---- Buttons ------------------------------------------------
         btn_sizer = wx.StdDialogButtonSizer()
         # Translators: Save button in settings dialog.
@@ -178,6 +204,9 @@ class SettingsDialog(wx.Dialog):
         )
         self._settings.remember_device = (
             self._remember_device.GetValue()
+        )
+        self._settings.close_to_tray = (
+            self._close_to_tray.GetValue()
         )
         self._settings.save()
         self.EndModal(wx.ID_OK)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chordcut"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Accessible Jellyfin music client for the blind"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -30,6 +30,9 @@ dependencies = [
 
 [project.scripts]
 chordcut = "chordcut.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "chordcut.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

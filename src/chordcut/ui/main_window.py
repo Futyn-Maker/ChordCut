@@ -159,6 +159,9 @@ class MainWindow(wx.Frame):
         # Focus tracking for window activation
         self._last_focused_window: wx.Window | None = None
 
+        # When True, _on_close always exits (bypass close_to_tray).
+        self._force_closing: bool = False
+
         # Build UI
         self._create_menu_bar()
         self._create_controls()
@@ -850,6 +853,7 @@ class MainWindow(wx.Frame):
 
     def _force_close(self) -> None:
         """Close the application from the tray icon context menu."""
+        self._force_closing = True
         if self._tray_icon:
             self._tray_icon.RemoveIcon()
             self._tray_icon.Destroy()
@@ -3857,9 +3861,19 @@ class MainWindow(wx.Frame):
             self._section_choice.SetFocus()
 
     def _on_exit(self, event: wx.CommandEvent):
+        self._force_closing = True
         self.Close()
 
     def _on_close(self, event: wx.CloseEvent):
+        if (
+            not self._force_closing
+            and self._settings.close_to_tray
+            and event.CanVeto()
+        ):
+            event.Veto()
+            self._minimize_to_tray()
+            return
+
         self._search_timer.Stop()
         self._countdown_timer.Stop()
 

@@ -1,0 +1,128 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: 'Release notes (Markdown supported; you can edit them later on the release page)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Calculate version
+        id: version
+        shell: bash
+        run: |
+          BASE="$(date -u +%Y.%m.%d)"
+          TAG="v${BASE}"
+
+          # If a tag for today already exists, append .1, .2, etc.
+          if git ls-remote --tags origin "refs/tags/${TAG}" 2>/dev/null | grep -q .; then
+            N=1
+            while git ls-remote --tags origin "refs/tags/v${BASE}.${N}" 2>/dev/null | grep -q .; do
+              N=$((N + 1))
+            done
+            TAG="v${BASE}.${N}"
+          fi
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "py_version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${TAG}"
+
+      - name: Update version in source
+        shell: bash
+        run: |
+          sed -i "s/__version__ = .*/__version__ = \"${{ steps.version.outputs.py_version }}\"/" src/chordcut/__init__.py
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Download libmpv
+        shell: pwsh
+        run: & build/download_libmpv.ps1 -OutputDir "resources\libmpv"
+
+      - name: Install gettext tools
+        run: choco install gettext -y --no-progress
+
+      - name: Generate translation template (.pot)
+        shell: bash
+        run: |
+          find src/chordcut -name "*.py" | sort | xargs xgettext \
+            --add-comments=Translators \
+            --from-code=UTF-8 \
+            --package-name=ChordCut \
+            --package-version="${{ steps.version.outputs.py_version }}" \
+            -o locale/chordcut.pot
+
+      - name: Compile translations (.po → .mo)
+        shell: cmd
+        run: |
+          if exist "locale" (
+            for /d %%l in (locale\*) do (
+              if exist "%%l\LC_MESSAGES\chordcut.po" (
+                echo Compiling %%~nl...
+                msgfmt -o "%%l\LC_MESSAGES\chordcut.mo" "%%l\LC_MESSAGES\chordcut.po"
+              )
+            )
+          )
+
+      - name: Build with PyInstaller
+        run: pyinstaller --clean --noconfirm build/chordcut.spec
+
+      - name: Prepare distribution
+        shell: cmd
+        run: |
+          if not exist "dist\ChordCut\data" mkdir "dist\ChordCut\data"
+          if exist "locale" (
+            for /d %%l in (locale\*) do (
+              if exist "%%l\LC_MESSAGES\chordcut.mo" (
+                if not exist "dist\ChordCut\locale\%%~nxl\LC_MESSAGES" mkdir "dist\ChordCut\locale\%%~nxl\LC_MESSAGES"
+                copy /Y "%%l\LC_MESSAGES\chordcut.mo" "dist\ChordCut\locale\%%~nxl\LC_MESSAGES\" >nul
+              )
+            )
+          )
+
+      - name: Create ZIP archive
+        shell: pwsh
+        run: Compress-Archive -Path "dist\ChordCut" -DestinationPath "ChordCut-Windows.zip"
+
+      - name: Commit version bump
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/chordcut/__init__.py
+          git commit -m "Release ${{ steps.version.outputs.tag }}"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin main "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ChordCut ${{ steps.version.outputs.tag }}
+          body: ${{ github.event.inputs.changelog }}
+          files: |
+            ChordCut-Windows.zip
+            locale/chordcut.pot
+          make_latest: true
