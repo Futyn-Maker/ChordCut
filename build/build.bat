@@ -51,16 +51,28 @@ if exist "resources\libmpv\mpv-1.dll" set LIBMPV_FOUND=1
 
 if %LIBMPV_FOUND%==0 (
     echo.
-    echo WARNING: libmpv DLL not found in resources\libmpv\
+    echo libmpv DLL not found in resources\libmpv\
     echo.
-    echo Please download libmpv from:
-    echo   https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
-    echo.
-    echo Extract mpv-2.dll ^(or libmpv-2.dll^) to the resources\libmpv\ folder
-    echo.
-    echo The build will continue, but the app won't work without libmpv!
-    echo.
-    pause
+    set /p DOWNLOAD_MPV="Would you like to download it automatically? (Y/N): "
+    if /i "!DOWNLOAD_MPV!"=="Y" (
+        powershell -ExecutionPolicy Bypass -File "build\download_libmpv.ps1" -OutputDir "resources\libmpv"
+        if errorlevel 1 (
+            echo.
+            echo Automatic download failed. Please download libmpv manually from:
+            echo   https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
+            echo Extract libmpv-2.dll to the resources\libmpv\ folder.
+            echo.
+            pause
+            exit /b 1
+        )
+        echo.
+    ) else (
+        echo.
+        echo Skipping libmpv download.
+        echo The build will continue, but the app won't work without libmpv!
+        echo.
+        pause
+    )
 )
 echo.
 
