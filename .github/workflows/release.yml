@@ -59,7 +59,8 @@ jobs:
 
       - name: Download libmpv
         shell: pwsh
-        run: & build/download_libmpv.ps1 -OutputDir "resources\libmpv"
+        run: |
+          & build/download_libmpv.ps1 -OutputDir "resources\libmpv"
 
       - name: Install gettext tools
         run: choco install gettext -y --no-progress
