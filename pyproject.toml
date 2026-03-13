@@ -10,7 +10,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
-    {name = "ChordCut Developer"}
+    {name = "Andrey Yakuboy"},
+    {name = "ChordCut Contributors"}
 ]
 keywords = ["jellyfin", "music", "accessibility", "blind", "screen-reader"]
 classifiers = [
