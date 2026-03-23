@@ -65,7 +65,7 @@ Central controller orchestrating all UI and logic. Key state: `_queue` (playback
 Detects frozen (PyInstaller) vs source execution. Data stored next to executable: `data/chordcut.db`, `settings.json`, `data/music/` (downloads).
 
 ### i18n (`i18n.py`)
-GNU gettext. All user-facing strings use `_()`. Translations live in `locale/<lang>/LC_MESSAGES/`.
+GNU gettext. All user-facing strings use `_()`. Translations live in `locale/<lang>/LC_MESSAGES/`. The module exposes `current_language` (a two-letter code like `'ru'` or `'en'`) used by the Help → Documentation menu item to open the matching localized HTML documentation (`readme_<lang>.html`) in the default browser, falling back to `readme_en.html`.
 
 ### Auto-Updates (`updater.py`)
 Checks for new releases via the GitHub API (`GET /repos/{owner}/{repo}/releases/latest`). The target repository is defined by `__repo__` in `src/chordcut/__init__.py` — change it there for forks.
@@ -104,7 +104,7 @@ The release is built by a GitHub Actions workflow (`.github/workflows/release.ym
    gh release list --limit=1
    ```
 
-The workflow automatically: calculates a `v{YYYY.MM.DD}[.N]` tag, bumps `__version__` in `src/chordcut/__init__.py`, builds the Windows executable, packages it as `ChordCut-Windows.zip`, commits the version bump, tags, pushes, and creates a GitHub Release with the ZIP and `.pot` template attached.
+The workflow automatically: calculates a `v{YYYY.MM.DD}[.N]` tag, bumps `__version__` in `src/chordcut/__init__.py`, builds the Windows executable, converts all `README*.md` files to standalone HTML documentation via pandoc (using `build/docs.css` for styling, embedded into each file) and places them in the release root as `readme_<lang>.html` (`README.md` → `readme_en.html`, `READMEru.md` → `readme_ru.html`, etc.), packages everything as `ChordCut-Windows.zip`, commits the version bump, tags, pushes, and creates a GitHub Release with the ZIP and `.pot` template attached.
 
 **After the release**, pull the version bump commit locally:
 ```bash

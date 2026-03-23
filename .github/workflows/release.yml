@@ -108,6 +108,23 @@ jobs:
             )
           )
 
+      - name: Convert README files to HTML documentation
+        shell: bash
+        run: |
+          for f in README*.md; do
+            [ -f "$f" ] || continue
+            base="${f%.md}"
+            lang="${base#README}"
+            lang="${lang:-en}"
+            lang=$(echo "$lang" | tr '[:upper:]' '[:lower:]')
+            pandoc --standalone --embed-resources \
+              --css=build/docs.css \
+              --metadata title="ChordCut" \
+              --metadata lang="$lang" \
+              -o "dist/ChordCut/readme_${lang}.html" \
+              "$f"
+          done
+
       - name: Create ZIP archive
         shell: pwsh
         run: Compress-Archive -Path "dist\ChordCut" -DestinationPath "ChordCut-Windows.zip"

@@ -83,10 +83,13 @@ def _get_system_language() -> str | None:
     return None
 
 
+current_language: str = _get_system_language() or 'en'
+
+
 def _init_translation():
     """Initialize the translation object based on system locale."""
     localedir = get_locale_dir()
-    lang = _get_system_language()
+    lang = current_language
 
     if lang:
         logger.debug(f"Detected system language: {lang}, locale dir: {localedir}")

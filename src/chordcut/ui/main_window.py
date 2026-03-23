@@ -412,6 +412,13 @@ class MainWindow(wx.Frame):
             # Translators: Help text for Keyboard Shortcuts.
             _("Show keyboard shortcuts"),
         )
+        self._menu_docs = help_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item for opening documentation.
+            _("&Documentation"),
+            # Translators: Help text for Documentation.
+            _("Open ChordCut documentation in the browser"),
+        )
         help_menu.AppendSeparator()
         self._menu_check_updates = help_menu.Append(
             wx.ID_ANY,
@@ -667,6 +674,10 @@ class MainWindow(wx.Frame):
         self.Bind(
             wx.EVT_MENU, self._on_shortcuts,
             self._menu_shortcuts,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_documentation,
+            self._menu_docs,
         )
         self.Bind(
             wx.EVT_MENU, self._on_check_updates,
@@ -3035,6 +3046,29 @@ class MainWindow(wx.Frame):
     # ------------------------------------------------------------------
     # About
     # ------------------------------------------------------------------
+
+    def _on_documentation(self, event: wx.CommandEvent):
+        """Open the bundled HTML documentation in the default browser."""
+        import webbrowser
+
+        from chordcut.i18n import current_language
+        from chordcut.utils.paths import get_app_dir
+
+        app_dir = get_app_dir()
+        doc_file = app_dir / f"readme_{current_language}.html"
+        if not doc_file.is_file():
+            doc_file = app_dir / "readme_en.html"
+        if doc_file.is_file():
+            webbrowser.open(doc_file.as_uri())
+        else:
+            wx.MessageBox(
+                # Translators: Shown when documentation file is missing.
+                _("Documentation file not found."),
+                # Translators: Title of documentation error dialog.
+                _("Documentation"),
+                wx.OK | wx.ICON_WARNING,
+                self,
+            )
 
     def _on_about(self, event: wx.CommandEvent):
         wx.MessageBox(
