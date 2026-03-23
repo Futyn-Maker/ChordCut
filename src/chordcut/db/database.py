@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+from chordcut.db.migrations import MIGRATIONS, SCHEMA_VERSION
 from chordcut.db.models import SCHEMA, ServerCredentials
 from chordcut.utils.paths import get_db_path
 
@@ -17,9 +18,22 @@ class Database:
         self._init_schema()
 
     def _init_schema(self) -> None:
-        """Create database tables if they don't exist."""
+        """Create tables and run pending schema migrations."""
         with self.connection() as conn:
             conn.executescript(SCHEMA)
+
+            current_ver = conn.execute(
+                "PRAGMA user_version",
+            ).fetchone()[0]
+
+            for target_ver, migrate in MIGRATIONS:
+                if current_ver < target_ver:
+                    migrate(conn)
+                    current_ver = target_ver
+
+            conn.execute(
+                f"PRAGMA user_version = {SCHEMA_VERSION}",
+            )
 
     @contextmanager
     def connection(self) -> Iterator[sqlite3.Connection]:

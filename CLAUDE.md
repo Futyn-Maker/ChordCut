@@ -39,8 +39,8 @@ There are no automated tests. The app is tested manually on Windows with a real 
 ### Core Components (all passed into MainWindow)
 - **JellyfinClient** (`api/client.py`) — Wrapper around jellyfin-apiclient-python. All calls run in `ThreadPoolExecutor(max_workers=2)`. Bulk operations (per-library pagination, playlist items) use inner pools with up to 4 workers.
 - **Player** (`player/mpv_player.py`) — Thin MPV wrapper. Audio-only (`video=False`). Property observers for position/duration, event callback for track end.
-- **Database** (`db/database.py`) — SQLite with normalized schema: servers, libraries, tracks, artists, album_artists, albums, playlists, playlist_tracks, plus junction tables. All query methods accept optional `library_ids: set[str]` for library filtering.
-- **Settings** (`settings.py`) — JSON file persistence for user preferences (volume, seek step, sort order, active server, etc.).
+- **Database** (`db/database.py`) — SQLite with normalized schema: servers, libraries, tracks, artists, album_artists, albums, playlists, playlist_tracks, plus junction tables. All query methods accept optional `library_ids: set[str]` for library filtering. Schema versioned via `PRAGMA user_version`; migrations live in `db/migrations.py`.
+- **Settings** (`settings.py`) — JSON file persistence for user preferences (volume, seek step, sort order, check for updates, active server, etc.). Unknown keys in `settings.json` are silently ignored on load; missing keys fall back to `_DEFAULTS`.
 
 ### MainWindow (`ui/main_window.py` — largest file)
 Central controller orchestrating all UI and logic. Key state: `_queue` (playback queue snapshot), `_nav_stack` (drill-in/out navigation), `_all_items`/`_filtered_items` (current view), per-type library caches (`_lib_tracks`, `_lib_albums`, etc.).
@@ -66,6 +66,15 @@ Detects frozen (PyInstaller) vs source execution. Data stored next to executable
 
 ### i18n (`i18n.py`)
 GNU gettext. All user-facing strings use `_()`. Translations live in `locale/<lang>/LC_MESSAGES/`.
+
+### Auto-Updates (`updater.py`)
+Checks for new releases via the GitHub API (`GET /repos/{owner}/{repo}/releases/latest`). The target repository is defined by `__repo__` in `src/chordcut/__init__.py` — change it there for forks.
+
+**Startup check:** if `Settings.check_updates` is enabled (default), `app.py` calls `MainWindow.check_updates_on_startup()` after the window is shown. The check runs in a daemon thread; errors and "already latest" are silently ignored.
+
+**Manual check:** Help → Check for Updates. Shows errors (with HTTP code), "up to date", or the update dialog.
+
+**Update flow:** download ZIP to temp dir → extract → write a batch script (`chordcut_update.bat`) → launch it detached → close the app. The batch script waits for the process to exit, removes `_internal/` and `locale/` (which must be fully replaced), copies new files via `xcopy` (preserving `data/`, `settings.json`, `music/`), starts the new executable, and self-deletes.
 
 ## Versioning
 
@@ -138,3 +147,43 @@ All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals)
 4. **Recompile** to `.mo` (same as step 4 above).
 
 The release workflow automatically regenerates the `.pot`, compiles all `.po` → `.mo`, and includes them in the build. The `.pot` file is also attached to each GitHub Release for external translators.
+
+## Database Migrations
+
+Schema is versioned with SQLite's `PRAGMA user_version`. The current version number, the migration list, and all migration functions live in `src/chordcut/db/migrations.py`. The base table definitions (`CREATE TABLE IF NOT EXISTS`) live in `src/chordcut/db/models.py:SCHEMA`.
+
+On startup `Database._init_schema()` runs `SCHEMA` (idempotent), then applies any migrations whose version exceeds the database's `user_version`, then sets `user_version` to `SCHEMA_VERSION`.
+
+### How to add a migration (step by step)
+
+When you need to change the database schema (add/remove a table, add/remove/rename a column, add an index, etc.):
+
+1. **Edit `SCHEMA` in `src/chordcut/db/models.py`** to reflect the final desired state. This is what fresh installs will get. For example, add a new column to a `CREATE TABLE` block, or add a new `CREATE TABLE IF NOT EXISTS` statement.
+
+2. **Open `src/chordcut/db/migrations.py`** and:
+   - Write a migration function `_migrate_to_N(conn: sqlite3.Connection) -> None` that performs the change on an existing database. The function **must be defensive** — it should check whether the change is already present before applying it, because it also runs on fresh databases where `SCHEMA` already includes the change.
+   - Append `(N, _migrate_to_N)` to the `MIGRATIONS` list.
+   - Set `SCHEMA_VERSION = N`.
+
+3. **Never delete old migrations.** A user could be updating from any previous version, so all migrations must remain in order.
+
+### Example migration
+
+Adding a `genre` column to `tracks` and a new `favorites` table:
+
+```python
+# In migrations.py:
+
+def _migrate_to_2(conn: sqlite3.Connection) -> None:
+    # Add column — check first because fresh DBs already have it.
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(tracks)")}
+    if "genre" not in cols:
+        conn.execute("ALTER TABLE tracks ADD COLUMN genre TEXT")
+    # New tables are handled by CREATE TABLE IF NOT EXISTS in SCHEMA,
+    # so no action needed here for the favorites table.
+
+SCHEMA_VERSION = 2
+MIGRATIONS.append((2, _migrate_to_2))
+```
+
+And in `models.py`, update the `tracks` table in `SCHEMA` to include the `genre TEXT` column, and add the `CREATE TABLE IF NOT EXISTS favorites (...)` block.

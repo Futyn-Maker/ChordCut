@@ -156,6 +156,16 @@ class SettingsDialog(wx.Dialog):
             self._close_to_tray, flag=wx.ALL, border=5,
         )
 
+        # Translators: Checkbox to enable automatic update checks.
+        self._check_updates = wx.CheckBox(
+            panel,
+            label=_("Check for &updates on startup"),
+        )
+        self._check_updates.SetValue(settings.check_updates)
+        behavior_sizer.Add(
+            self._check_updates, flag=wx.ALL, border=5,
+        )
+
         main_sizer.Add(
             behavior_sizer,
             flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
@@ -207,6 +217,9 @@ class SettingsDialog(wx.Dialog):
         )
         self._settings.close_to_tray = (
             self._close_to_tray.GetValue()
+        )
+        self._settings.check_updates = (
+            self._check_updates.GetValue()
         )
         self._settings.save()
         self.EndModal(wx.ID_OK)

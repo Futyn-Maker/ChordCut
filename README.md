@@ -21,6 +21,7 @@ ChordCut is a portable, accessible music client for [Jellyfin](https://jellyfin.
 - System tray icon with basic playback controls — minimize and keep listening in the background.
 - Connect to multiple Jellyfin servers and switch between them.
 - Configurable volume and seek steps, output device selection, and persistent settings across restarts.
+- Built-in auto-update — check for new versions on startup or on demand, download and install without leaving the app.
 - Fully portable — the entire program runs from a single folder with no installation required.
 
 ## Getting Started
@@ -115,6 +116,7 @@ Press F8 or go to File > Settings to configure:
 - **Remember volume level on exit** — restore the last volume on next launch.
 - **Remember output device on exit** — restore the last output device on next launch.
 - **Close button minimizes to tray** — when checked, the close button minimize to the notification area instead of exiting. Use File > Exit or the tray menu to quit.
+- **Check for updates on startup** — when checked (default), ChordCut silently checks for a newer version when launched. If an update is found, a dialog offers to download and install it. You can also check manually at any time via Help > Check for Updates.
 
 ## Keyboard Shortcuts
 

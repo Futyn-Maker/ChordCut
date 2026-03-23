@@ -32,6 +32,8 @@ _DEFAULTS: dict = {
     "track_sort": "date_desc",
     # Whether closing the window minimizes to tray instead of exiting.
     "close_to_tray": False,
+    # Whether to check for updates on startup.
+    "check_updates": True,
 }
 
 
@@ -180,3 +182,12 @@ class Settings:
     def track_sort(self, value: str) -> None:
         if value in self._VALID_TRACK_SORTS:
             self._data["track_sort"] = value
+
+    @property
+    def check_updates(self) -> bool:
+        """Whether to check for updates on startup."""
+        return bool(self._data.get("check_updates", True))
+
+    @check_updates.setter
+    def check_updates(self, value: bool) -> None:
+        self._data["check_updates"] = bool(value)

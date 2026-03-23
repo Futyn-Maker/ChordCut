@@ -204,6 +204,10 @@ class ChordCutApp(wx.App):
         # Listen for activation signals from future second instances.
         self._start_instance_listener()
 
+        # Background update check (non-blocking, errors are ignored).
+        if self._settings.check_updates:
+            self._main_window.check_updates_on_startup()
+
     def _start_instance_listener(self) -> None:
         """Start a daemon thread that waits for a second-instance signal."""
         handle = self._activate_event

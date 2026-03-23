@@ -1,7 +1,9 @@
 """Main application window for ChordCut."""
 
+import logging
 import random
 import subprocess
+import threading
 from dataclasses import dataclass
 
 import wx
@@ -411,6 +413,14 @@ class MainWindow(wx.Frame):
             _("Show keyboard shortcuts"),
         )
         help_menu.AppendSeparator()
+        self._menu_check_updates = help_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item for checking updates.
+            _("Check for &Updates..."),
+            # Translators: Help text for Check for Updates.
+            _("Check for a newer version of ChordCut"),
+        )
+        help_menu.AppendSeparator()
         self._menu_about = help_menu.Append(
             wx.ID_ABOUT,
             # Translators: Menu item for About.
@@ -657,6 +667,10 @@ class MainWindow(wx.Frame):
         self.Bind(
             wx.EVT_MENU, self._on_shortcuts,
             self._menu_shortcuts,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_check_updates,
+            self._menu_check_updates,
         )
         self.Bind(
             wx.EVT_MENU, self._on_about,
@@ -2720,6 +2734,307 @@ class MainWindow(wx.Frame):
             wx.OK | wx.ICON_INFORMATION,
             self,
         )
+
+    # ------------------------------------------------------------------
+    # Updates
+    # ------------------------------------------------------------------
+
+    _log = logging.getLogger(f"{__name__}.MainWindow")
+
+    def _on_check_updates(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        """Handle Help → Check for Updates (manual)."""
+        self._do_update_check(silent=False)
+
+    def check_updates_on_startup(self) -> None:
+        """Run a background update check (called once after init)."""
+        self._do_update_check(silent=True)
+
+    def _do_update_check(self, *, silent: bool) -> None:
+        """Check for updates in a background thread.
+
+        When *silent* is True, errors and "already up to date" are
+        ignored (startup mode).  When False, they are shown to the
+        user (manual mode via Help menu).
+        """
+        from chordcut.updater import UpdateInfo, check_for_update
+
+        if not silent:
+            self._menu_check_updates.Enable(False)
+
+        def _check() -> None:
+            info: UpdateInfo | None = None
+            error: Exception | None = None
+            try:
+                info = check_for_update()
+            except Exception as exc:
+                error = exc
+            wx.CallAfter(_on_result, info, error)
+
+        def _on_result(
+            info: UpdateInfo | None,
+            error: Exception | None,
+        ) -> None:
+            if not silent:
+                self._menu_check_updates.Enable(True)
+
+            if error is not None:
+                if not silent:
+                    self._show_update_error(error)
+                return
+
+            if info is None:
+                if not silent:
+                    wx.MessageBox(
+                        # Translators: Shown when no update available.
+                        _(
+                            "You are running the latest "
+                            "version ({version})."
+                        ).format(version=__version__),
+                        # Translators: Title for the update check
+                        # result dialog.
+                        _("Check for Updates"),
+                        wx.OK | wx.ICON_INFORMATION,
+                        self,
+                    )
+                return
+
+            self._show_update_dialog(info)
+
+        threading.Thread(
+            target=_check, daemon=True,
+        ).start()
+
+    def _show_update_error(
+        self, error: Exception,
+    ) -> None:
+        """Show a detailed error dialog for a failed update check."""
+        import urllib.error
+
+        if isinstance(error, urllib.error.HTTPError):
+            detail = _(
+                "The server returned HTTP {code}."
+            ).format(code=error.code)
+        elif isinstance(error, urllib.error.URLError):
+            detail = str(error.reason)
+        else:
+            detail = str(error)
+
+        wx.MessageBox(
+            # Translators: Error message when update check fails.
+            # {detail} is the technical error description.
+            _(
+                "Could not check for updates.\n\n{detail}"
+            ).format(detail=detail),
+            # Translators: Title for the update error dialog.
+            _("Update Error"),
+            wx.OK | wx.ICON_ERROR,
+            self,
+        )
+
+    def _show_update_dialog(self, info) -> None:
+        """Show a dialog offering to install the available update."""
+        dlg = wx.Dialog(
+            self,
+            # Translators: Title of the update available dialog.
+            title=_("Update Available"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+            size=(480, 400),
+        )
+        panel = wx.Panel(dlg)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Translators: Heading shown when a new version is found.
+        sizer.Add(
+            wx.StaticText(
+                panel,
+                label=_(
+                    "A new version of {app_name} is "
+                    "available!"
+                ).format(app_name=__app_name__),
+            ),
+            flag=wx.ALL,
+            border=10,
+        )
+
+        # Version info
+        ver_sizer = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
+        # Translators: Label for current version in update dialog.
+        ver_sizer.Add(wx.StaticText(
+            panel, label=_("Current version:"),
+        ))
+        ver_sizer.Add(wx.StaticText(
+            panel, label=info.current_version,
+        ))
+        # Translators: Label for new version in update dialog.
+        ver_sizer.Add(wx.StaticText(
+            panel, label=_("New version:"),
+        ))
+        ver_sizer.Add(wx.StaticText(
+            panel, label=info.new_version,
+        ))
+        sizer.Add(
+            ver_sizer,
+            flag=wx.LEFT | wx.RIGHT,
+            border=10,
+        )
+
+        # Changelog
+        if info.changelog:
+            # Translators: Label above the changelog text.
+            sizer.Add(
+                wx.StaticText(
+                    panel, label=_("What's new:"),
+                ),
+                flag=wx.LEFT | wx.RIGHT | wx.TOP,
+                border=10,
+            )
+            changelog_ctrl = wx.TextCtrl(
+                panel,
+                value=info.changelog,
+                style=(
+                    wx.TE_MULTILINE
+                    | wx.TE_READONLY
+                    | wx.TE_WORDWRAP
+                ),
+                # Translators: Accessible name for changelog field.
+                name=_("Changelog"),
+            )
+            sizer.Add(
+                changelog_ctrl,
+                proportion=1,
+                flag=wx.EXPAND | wx.LEFT | wx.RIGHT,
+                border=10,
+            )
+
+        # Translators: Prompt asking user to confirm the update.
+        sizer.Add(
+            wx.StaticText(
+                panel,
+                label=_("Would you like to update now?"),
+            ),
+            flag=wx.ALL,
+            border=10,
+        )
+
+        # Buttons
+        btn_sizer = wx.StdDialogButtonSizer()
+        # Translators: Button to accept the update.
+        yes_btn = wx.Button(panel, wx.ID_YES, _("Yes"))
+        yes_btn.SetDefault()
+        # Translators: Button to decline the update.
+        no_btn = wx.Button(panel, wx.ID_NO, _("No"))
+        btn_sizer.AddButton(yes_btn)
+        btn_sizer.AddButton(no_btn)
+        btn_sizer.Realize()
+        sizer.Add(
+            btn_sizer,
+            flag=wx.EXPAND | wx.ALL,
+            border=10,
+        )
+
+        panel.SetSizer(sizer)
+
+        yes_btn.Bind(
+            wx.EVT_BUTTON,
+            lambda e: dlg.EndModal(wx.ID_YES),
+        )
+        no_btn.Bind(
+            wx.EVT_BUTTON,
+            lambda e: dlg.EndModal(wx.ID_NO),
+        )
+
+        result = dlg.ShowModal()
+        dlg.Destroy()
+
+        if result == wx.ID_YES:
+            self._do_download_and_apply(info)
+
+    def _do_download_and_apply(self, info) -> None:
+        """Download the update and apply it."""
+        from chordcut.updater import (
+            apply_update,
+            download_update,
+        )
+
+        progress = wx.ProgressDialog(
+            # Translators: Title of the download progress dialog.
+            _("Updating"),
+            # Translators: Message shown while downloading update.
+            _("Downloading update..."),
+            maximum=100,
+            parent=self,
+            style=(
+                wx.PD_APP_MODAL
+                | wx.PD_AUTO_HIDE
+                | wx.PD_SMOOTH
+            ),
+        )
+
+        result_box: list = [None]
+
+        def _progress_cb(downloaded: int, total: int):
+            if total > 0:
+                pct = min(int(downloaded * 100 / total), 100)
+                wx.CallAfter(progress.Update, pct)
+
+        def _download():
+            try:
+                result_box[0] = download_update(
+                    info, _progress_cb,
+                )
+            except Exception as exc:
+                result_box[0] = exc
+            wx.CallAfter(_on_done)
+
+        def _on_done():
+            progress.Destroy()
+            r = result_box[0]
+
+            if isinstance(r, Exception):
+                wx.MessageBox(
+                    # Translators: Error downloading update.
+                    # {error} is the error description.
+                    _(
+                        "Failed to download the "
+                        "update.\n\n{error}"
+                    ).format(error=str(r)),
+                    # Translators: Title for download error.
+                    _("Update Error"),
+                    wx.OK | wx.ICON_ERROR,
+                    self,
+                )
+                return
+
+            update_dir, temp_root = r
+            try:
+                apply_update(update_dir, temp_root)
+            except Exception as exc:
+                wx.MessageBox(
+                    # Translators: Error applying update.
+                    _(
+                        "Failed to apply the "
+                        "update.\n\n{error}"
+                    ).format(error=str(exc)),
+                    _("Update Error"),
+                    wx.OK | wx.ICON_ERROR,
+                    self,
+                )
+                return
+
+            # Close the application; the updater script handles
+            # the rest.
+            self._force_closing = True
+            self.Close()
+
+        threading.Thread(
+            target=_download, daemon=True,
+        ).start()
+
+    # ------------------------------------------------------------------
+    # About
+    # ------------------------------------------------------------------
 
     def _on_about(self, event: wx.CommandEvent):
         wx.MessageBox(
