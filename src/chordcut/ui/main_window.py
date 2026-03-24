@@ -2254,7 +2254,7 @@ class MainWindow(wx.Frame):
         if focused is self._list:
             if code in (
                 wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
-            ) and not event.AltDown():
+            ) and not event.AltDown() and not event.ControlDown():
                 item = self._list.get_selected_item()
                 if item:
                     if (

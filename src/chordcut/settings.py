@@ -90,8 +90,10 @@ class Settings:
         return get_app_dir() / "music"
 
     @download_dir.setter
-    def download_dir(self, value: "Path | str") -> None:
-        self._data["download_dir"] = str(value)
+    def download_dir(self, value: "Path | str | None") -> None:
+        self._data["download_dir"] = (
+            str(value) if value is not None else None
+        )
 
     @property
     def volume_step(self) -> int:

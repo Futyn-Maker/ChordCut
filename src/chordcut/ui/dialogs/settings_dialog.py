@@ -207,7 +207,17 @@ class SettingsDialog(wx.Dialog):
         """Apply values from the dialog to settings and save."""
         path = self._folder_picker.GetPath()
         if path:
-            self._settings.download_dir = path
+            from pathlib import Path
+
+            from chordcut.utils.paths import get_app_dir
+
+            default_dir = get_app_dir() / "music"
+            if Path(path).resolve() == default_dir.resolve():
+                # Keep as relative so it follows the app
+                # when the portable folder is moved.
+                self._settings.download_dir = None
+            else:
+                self._settings.download_dir = path
 
         self._settings.volume_step = (
             self._volume_step.GetValue()
