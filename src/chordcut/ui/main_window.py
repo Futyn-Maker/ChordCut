@@ -238,7 +238,7 @@ class MainWindow(wx.Frame):
         self._menu_exit = file_menu.Append(
             wx.ID_EXIT,
             # Translators: Menu item to exit.
-            _("E&xit\tAlt+F4"),
+            _("E&xit"),
             # Translators: Help text for Exit.
             _("Exit the application"),
         )
@@ -2715,7 +2715,7 @@ class MainWindow(wx.Frame):
             "  F5             - Refresh library\n"
             "  F8             - Settings\n"
             "  F1             - Show this help\n"
-            "  Alt+F4         - Exit"
+            "  Alt+F4         - Minimize to tray (if enabled) / Exit"
         )
         wx.MessageBox(
             shortcuts,

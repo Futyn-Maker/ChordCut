@@ -100,7 +100,7 @@ Open via File > Sleep Timer. Set hours, minutes, and seconds, choose an action (
 
 ### System Tray
 
-Press Shift+Escape to minimize ChordCut to the notification area, or enable "Close button minimizes to tray" in Settings so that the close button also minimize instead of exiting. Left-click the tray icon or choose Restore from its context menu to bring the window back. The tray context menu also provides basic playback controls: pause/resume, next/previous track, volume, seeking, repeat, shuffle, and close.
+Press Shift+Escape to minimize ChordCut to the notification area, or enable "Close button minimizes to tray" in Settings so that the close button and Alt+F4 also minimize instead of exiting. Left-click the tray icon or choose Restore from its context menu to bring the window back. The tray context menu also provides basic playback controls: pause/resume, next/previous track, volume, seeking, repeat, shuffle, and close.
 
 ### Multiple Servers
 
@@ -115,7 +115,7 @@ Press F8 or go to File > Settings to configure:
 - **Seek step** — how far to seek per keypress (1–60 seconds, default 5).
 - **Remember volume level on exit** — restore the last volume on next launch.
 - **Remember output device on exit** — restore the last output device on next launch.
-- **Close button minimizes to tray** — when checked, the close button minimize to the notification area instead of exiting. Use File > Exit or the tray menu to quit.
+- **Close button minimizes to tray** — when checked, the close button and Alt+F4 minimize to the notification area instead of exiting. Use File > Exit or the tray menu to quit.
 - **Check for updates on startup** — when checked (default), ChordCut silently checks for a newer version when launched. If an update is found, a dialog offers to download and install it. You can also check manually at any time via Help > Check for Updates.
 
 ## Keyboard Shortcuts
@@ -149,7 +149,7 @@ Press F8 or go to File > Settings to configure:
 | F5 | Refresh library |
 | F8 | Settings |
 | F1 | Keyboard shortcuts reference |
-| Alt+F4 | Exit |
+| Alt+F4 | Minimize to tray (if enabled) / Exit |
 
 ## Building from Source
 
