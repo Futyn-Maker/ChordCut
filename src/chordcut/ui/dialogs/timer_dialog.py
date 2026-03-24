@@ -14,9 +14,9 @@ class TimerDialog(wx.Dialog):
     """Dialog for configuring the sleep timer."""
 
     def __init__(self, parent: wx.Window):
-        # Translators: Title of the sleep timer dialog.
         super().__init__(
             parent,
+            # Translators: Title of the sleep timer dialog.
             title=_("Sleep Timer"),
             style=wx.DEFAULT_DIALOG_STYLE,
         )

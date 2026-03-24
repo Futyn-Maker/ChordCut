@@ -43,13 +43,17 @@ class PlainLyricsDialog(wx.Dialog):
         )
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # Translators: Copy button in lyrics dialog.
         copy_btn = wx.Button(
-            panel, wx.ID_COPY, _("&Copy"),
+            panel,
+            wx.ID_COPY,
+            # Translators: Copy button in lyrics dialog.
+            _("&Copy"),
         )
-        # Translators: Close button in lyrics dialog.
         close_btn = wx.Button(
-            panel, wx.ID_CLOSE, _("C&lose"),
+            panel,
+            wx.ID_CLOSE,
+            # Translators: Close button in lyrics dialog.
+            _("C&lose"),
         )
         btn_sizer.Add(copy_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
@@ -146,13 +150,17 @@ class SyncedLyricsDialog(wx.Dialog):
         )
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # Translators: Copy all button in synced lyrics.
         copy_all_btn = wx.Button(
-            panel, wx.ID_ANY, _("Copy &All"),
+            panel,
+            wx.ID_ANY,
+            # Translators: Copy all button in synced lyrics.
+            _("Copy &All"),
         )
-        # Translators: Close button in synced lyrics.
         close_btn = wx.Button(
-            panel, wx.ID_CLOSE, _("C&lose"),
+            panel,
+            wx.ID_CLOSE,
+            # Translators: Close button in synced lyrics.
+            _("C&lose"),
         )
         btn_sizer.Add(copy_all_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)

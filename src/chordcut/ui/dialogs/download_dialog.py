@@ -31,9 +31,10 @@ class DownloadDialog(wx.Dialog):
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Translators: Download progress label.
         self._label = wx.StaticText(
-            panel, label=_("Downloading..."),
+            panel,
+            # Translators: Download progress label.
+            label=_("Downloading..."),
         )
         sizer.Add(self._label, 0, wx.ALL, 10)
 
@@ -145,8 +146,8 @@ class DownloadDialog(wx.Dialog):
     def _update_progress(self, pct: int) -> None:
         if self.IsShown():
             self._gauge.SetValue(min(pct, 100))
-            # Translators: Download progress with percent.
             self._label.SetLabel(
+                # Translators: Download progress with percent.
                 _("Downloading... {pct}%").format(
                     pct=pct,
                 )

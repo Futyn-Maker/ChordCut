@@ -47,9 +47,9 @@ class ServersDialog(wx.Dialog):
 
     def _create_controls(self) -> None:
         """Create the dialog controls."""
-        # Translators: Label for the server list.
         self._list_label = wx.StaticText(
             self,
+            # Translators: Label for the server list.
             label=_("&Servers:"),
         )
         self._server_list = wx.ListBox(

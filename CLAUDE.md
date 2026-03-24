@@ -25,8 +25,9 @@ build\build.bat
 msgfmt -o locale/<lang>/LC_MESSAGES/chordcut.mo locale/<lang>/LC_MESSAGES/chordcut.po
 
 # Generate translation template
-xgettext --add-comments=Translators -o locale/chordcut.pot --from-code=UTF-8 \
-    src/chordcut/*.py src/chordcut/**/*.py
+find src/chordcut -name "*.py" | sort | xargs xgettext \
+  --add-comments=Translators --from-code=UTF-8 \
+  --package-name=ChordCut -o locale/chordcut.pot
 ```
 
 There are no automated tests. The app is tested manually on Windows with a real Jellyfin server. Development/editing can happen in WSL but building and running requires Windows.
@@ -113,7 +114,7 @@ git pull origin main
 
 ## Adding or Updating Translations
 
-All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals) imported from `chordcut.i18n`, and preceded by a `# Translators:` comment explaining context.
+All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals) imported from `chordcut.i18n`, and preceded by a `# Translators:` comment explaining context. See [Writing translator comments](#writing-translator-comments) below for placement rules — a misplaced comment is silently dropped from the `.pot` template.
 
 ### Adding a new translation language
 
@@ -147,6 +148,58 @@ All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals)
 4. **Recompile** to `.mo` (same as step 4 above).
 
 The release workflow automatically regenerates the `.pot`, compiles all `.po` → `.mo`, and includes them in the build. The `.pot` file is also attached to each GitHub Release for external translators.
+
+### Writing translator comments
+
+xgettext picks up `# Translators:` comments only when they appear on the **line immediately before** the `_()` or `ngettext()` call, and when the call's string argument starts on the **same line** as `_(`. Violating either rule silently drops the comment from the `.pot`, leaving translators without context.
+
+**Rule 1 — comment goes directly before `_()`**, not before an outer function call:
+
+```python
+# WRONG — comment is on the line before wx.Button(), not _()
+# Translators: Save button.
+wx.Button(panel, wx.ID_OK, _("Save"))
+
+# CORRECT — comment inside the outer call, directly above _()
+wx.Button(
+    panel, wx.ID_OK,
+    # Translators: Save button.
+    _("Save"),
+)
+```
+
+**Rule 2 — `_()` must be single-line** (string on the same line as the opening paren):
+
+```python
+# WRONG — multi-line _() call; comment is not picked up
+# Translators: Status message.
+_(
+    "Loading library from server..."
+)
+
+# CORRECT
+# Translators: Status message.
+_("Loading library from server...")
+```
+
+**Rule 3 — `ngettext()` must also be single-line.** For calls that exceed line length, use an intermediate variable:
+
+```python
+# WRONG — xgettext misses the comment
+# Translators: Track count. {n} = count, {name} = context.
+ngettext(
+    "{n} track in {name}", "{n} tracks in {name}", n,
+).format(n=n, name=name)
+
+# CORRECT — single-line call; use a variable if it's too long
+# Translators: Track count. {n} = count, {name} = context.
+fmt = ngettext("{n} track in {name}", "{n} tracks in {name}", n)
+return fmt.format(n=n, name=name)
+```
+
+Multiple consecutive comment lines directly before `_()` are all captured and appear together in the `.pot`.
+
+**Do not use f-strings inside `_()`** — they evaluate before gettext can translate the string. Always use `_("...{placeholder}...").format(placeholder=value)`.
 
 ## Database Migrations
 

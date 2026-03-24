@@ -10,9 +10,9 @@ class SettingsDialog(wx.Dialog):
     """Dialog for configuring application settings."""
 
     def __init__(self, parent: wx.Window, settings: Settings):
-        # Translators: Title of the settings dialog.
         super().__init__(
             parent,
+            # Translators: Title of the settings dialog.
             title=_("Settings"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
             size=(500, 460),
@@ -24,9 +24,10 @@ class SettingsDialog(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---- Download folder ----------------------------------------
-        # Translators: Label for download folder picker.
         folder_label = wx.StaticText(
-            panel, label=_("Download &folder:"),
+            panel,
+            # Translators: Label for download folder picker.
+            label=_("Download &folder:"),
         )
         main_sizer.Add(
             folder_label,
@@ -56,9 +57,10 @@ class SettingsDialog(wx.Dialog):
         )
 
         # ---- Player settings group ----------------------------------
-        # Translators: Label for the player settings group box.
         player_box = wx.StaticBox(
-            panel, label=_("Player settings"),
+            panel,
+            # Translators: Label for the player settings group box.
+            label=_("Player settings"),
         )
         player_sizer = wx.StaticBoxSizer(
             player_box, wx.VERTICAL,
@@ -66,9 +68,10 @@ class SettingsDialog(wx.Dialog):
 
         # Volume step
         vol_row = wx.BoxSizer(wx.HORIZONTAL)
-        # Translators: Label for volume step spin control.
         vol_label = wx.StaticText(
-            panel, label=_("&Volume step (%):"),
+            panel,
+            # Translators: Label for volume step spin control.
+            label=_("&Volume step (%):"),
         )
         self._volume_step = wx.SpinCtrl(
             panel,
@@ -88,9 +91,10 @@ class SettingsDialog(wx.Dialog):
 
         # Seek step
         seek_row = wx.BoxSizer(wx.HORIZONTAL)
-        # Translators: Label for seek step spin control.
         seek_label = wx.StaticText(
-            panel, label=_("&Seek step (seconds):"),
+            panel,
+            # Translators: Label for seek step spin control.
+            label=_("&Seek step (seconds):"),
         )
         self._seek_step = wx.SpinCtrl(
             panel,
@@ -109,9 +113,9 @@ class SettingsDialog(wx.Dialog):
         player_sizer.Add(seek_row, flag=wx.ALL, border=5)
 
         # Remember volume checkbox
-        # Translators: Checkbox to save volume on exit.
         self._remember_volume = wx.CheckBox(
             panel,
+            # Translators: Checkbox to save volume on exit.
             label=_("Remember &volume level on exit"),
         )
         self._remember_volume.SetValue(settings.remember_volume)
@@ -120,9 +124,9 @@ class SettingsDialog(wx.Dialog):
         )
 
         # Remember device checkbox
-        # Translators: Checkbox to save audio device on exit.
         self._remember_device = wx.CheckBox(
             panel,
+            # Translators: Checkbox to save audio device on exit.
             label=_("Remember output &device on exit"),
         )
         self._remember_device.SetValue(settings.remember_device)
@@ -137,28 +141,28 @@ class SettingsDialog(wx.Dialog):
         )
 
         # ---- Behavior settings group --------------------------------
-        # Translators: Label for the behavior settings group box.
         behavior_box = wx.StaticBox(
-            panel, label=_("Behavior"),
+            panel,
+            # Translators: Label for the behavior settings group box.
+            label=_("Behavior"),
         )
         behavior_sizer = wx.StaticBoxSizer(
             behavior_box, wx.VERTICAL,
         )
 
-        # Translators: Checkbox to minimize to tray on close.
         self._close_to_tray = wx.CheckBox(
             panel,
-            label=_("&Close button minimizes to tray "
-                     "instead of exiting"),
+            # Translators: Checkbox to minimize to tray on close.
+            label=_("&Close button minimizes to tray instead of exiting"),
         )
         self._close_to_tray.SetValue(settings.close_to_tray)
         behavior_sizer.Add(
             self._close_to_tray, flag=wx.ALL, border=5,
         )
 
-        # Translators: Checkbox to enable automatic update checks.
         self._check_updates = wx.CheckBox(
             panel,
+            # Translators: Checkbox to enable automatic update checks.
             label=_("Check for &updates on startup"),
         )
         self._check_updates.SetValue(settings.check_updates)
@@ -174,9 +178,11 @@ class SettingsDialog(wx.Dialog):
 
         # ---- Buttons ------------------------------------------------
         btn_sizer = wx.StdDialogButtonSizer()
-        # Translators: Save button in settings dialog.
         self._save_btn = wx.Button(
-            panel, wx.ID_OK, _("Save"),
+            panel,
+            wx.ID_OK,
+            # Translators: Save button in settings dialog.
+            _("Save"),
         )
         self._save_btn.SetDefault()
         # Translators: Cancel button in settings dialog.

@@ -98,26 +98,26 @@ def build_track_properties(
 ) -> list[str]:
     """Build property lines for a track."""
     props = []
-    # Translators: Track property: title.
     props.append(
+        # Translators: Track property: title.
         _("Title: {value}").format(
             value=track.get("Name", ""),
         )
     )
-    # Translators: Track property: artist.
     props.append(
+        # Translators: Track property: artist.
         _("Artist: {value}").format(
             value=track.get("ArtistDisplay", ""),
         )
     )
-    # Translators: Track property: album artist.
     props.append(
+        # Translators: Track property: album artist.
         _("Album Artist: {value}").format(
             value=track.get("AlbumArtist", ""),
         )
     )
-    # Translators: Track property: album.
     props.append(
+        # Translators: Track property: album.
         _("Album: {value}").format(
             value=track.get("Album", ""),
         )
@@ -125,8 +125,8 @@ def build_track_properties(
 
     ticks = track.get("RunTimeTicks", 0)
     if ticks:
-        # Translators: Track property: duration.
         props.append(
+            # Translators: Track property: duration.
             _("Duration: {value}").format(
                 value=format_duration(
                     ticks / 10_000_000,
@@ -136,8 +136,8 @@ def build_track_properties(
 
     idx_num = track.get("IndexNumber")
     if idx_num:
-        # Translators: Track property: track number.
         props.append(
+            # Translators: Track property: track number.
             _("Track Number: {value}").format(
                 value=idx_num,
             )
@@ -150,24 +150,24 @@ def build_track_properties(
             src = sources[0]
             container = src.get("Container", "")
             if container:
-                # Translators: Track property: format.
                 props.append(
+                    # Translators: Track property: format.
                     _("Format: {value}").format(
                         value=container.upper(),
                     )
                 )
             bitrate = src.get("Bitrate", 0)
             if bitrate:
-                # Translators: Track property: bitrate.
                 props.append(
+                    # Translators: Track property: bitrate.
                     _("Bitrate: {value}").format(
                         value=_fmt_bitrate(bitrate),
                     )
                 )
             size = src.get("Size", 0)
             if size:
-                # Translators: Track property: file size.
                 props.append(
+                    # Translators: Track property: file size.
                     _("File Size: {value}").format(
                         value=_fmt_size(size),
                     )
@@ -177,8 +177,8 @@ def build_track_properties(
         if date_created:
             # Show just the date part
             date_str = date_created[:10]
-            # Translators: Track property: date added.
             props.append(
+                # Translators: Track property: date added.
                 _("Date Added: {value}").format(
                     value=date_str,
                 )
@@ -192,25 +192,21 @@ def build_artist_properties(
 ) -> list[str]:
     """Build property lines for an artist."""
     props = []
-    # Translators: Artist property: name.
     props.append(
+        # Translators: Artist property: name.
         _("Name: {value}").format(
             value=artist.get("Name", ""),
         )
     )
     n_albums = stats.get("album_count", 0)
-    # Translators: Artist property: album count.
     props.append(
-        ngettext(
-            "{n} album", "{n} albums", n_albums,
-        ).format(n=n_albums)
+        # Translators: Artist property: album count.
+        ngettext("{n} album", "{n} albums", n_albums).format(n=n_albums)
     )
     n_tracks = stats.get("track_count", 0)
-    # Translators: Artist property: track count.
     props.append(
-        ngettext(
-            "{n} track", "{n} tracks", n_tracks,
-        ).format(n=n_tracks)
+        # Translators: Artist property: track count.
+        ngettext("{n} track", "{n} tracks", n_tracks).format(n=n_tracks)
     )
     return props
 
@@ -220,29 +216,27 @@ def build_album_properties(
 ) -> list[str]:
     """Build property lines for an album."""
     props = []
-    # Translators: Album property: name.
     props.append(
+        # Translators: Album property: name.
         _("Name: {value}").format(
             value=album.get("Name", ""),
         )
     )
-    # Translators: Album property: artist.
     props.append(
+        # Translators: Album property: artist.
         _("Artist: {value}").format(
             value=album.get("ArtistDisplay", ""),
         )
     )
     n_tracks = stats.get("track_count", 0)
-    # Translators: Album property: track count.
     props.append(
-        ngettext(
-            "{n} track", "{n} tracks", n_tracks,
-        ).format(n=n_tracks)
+        # Translators: Album property: track count.
+        ngettext("{n} track", "{n} tracks", n_tracks).format(n=n_tracks)
     )
     total_ticks = stats.get("total_duration_ticks", 0)
     if total_ticks:
-        # Translators: Album property: total duration.
         props.append(
+            # Translators: Album property: total duration.
             _("Total Duration: {value}").format(
                 value=format_duration(
                     total_ticks / 10_000_000,
@@ -257,23 +251,21 @@ def build_playlist_properties(
 ) -> list[str]:
     """Build property lines for a playlist."""
     props = []
-    # Translators: Playlist property: name.
     props.append(
+        # Translators: Playlist property: name.
         _("Name: {value}").format(
             value=playlist.get("Name", ""),
         )
     )
     n_tracks = stats.get("track_count", 0)
-    # Translators: Playlist property: track count.
     props.append(
-        ngettext(
-            "{n} track", "{n} tracks", n_tracks,
-        ).format(n=n_tracks)
+        # Translators: Playlist property: track count.
+        ngettext("{n} track", "{n} tracks", n_tracks).format(n=n_tracks)
     )
     total_ticks = stats.get("total_duration_ticks", 0)
     if total_ticks:
-        # Translators: Playlist property: total duration.
         props.append(
+            # Translators: Playlist property: total duration.
             _("Total Duration: {value}").format(
                 value=format_duration(
                     total_ticks / 10_000_000,

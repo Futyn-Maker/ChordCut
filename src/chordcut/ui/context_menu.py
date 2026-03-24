@@ -50,23 +50,26 @@ def build_context_menu(
         # Translators: Context menu: play track.
         menu.Append(ID_PLAY, _("&Play"))
         if nav_depth > 0:
-            # Translators: Context menu: go back.
             menu.Append(
-                ID_GO_BACK, _("Go &Back\tBackspace"),
+                ID_GO_BACK,
+                # Translators: Context menu: go back.
+                _("Go &Back\tBackspace"),
             )
         menu.AppendSeparator()
-        # Translators: Context menu: go to artist.
         menu.Append(
-            ID_GO_TO_ARTIST, _("Go to &Artist"),
+            ID_GO_TO_ARTIST,
+            # Translators: Context menu: go to artist.
+            _("Go to &Artist"),
         )
-        # Translators: Context menu: go to album artist.
         menu.Append(
             ID_GO_TO_ALBUM_ARTIST,
+            # Translators: Context menu: go to album artist.
             _("Go to Album A&rtist"),
         )
-        # Translators: Context menu: go to album.
         menu.Append(
-            ID_GO_TO_ALBUM, _("Go to A&lbum"),
+            ID_GO_TO_ALBUM,
+            # Translators: Context menu: go to album.
+            _("Go to A&lbum"),
         )
         menu.AppendSeparator()
 
@@ -82,30 +85,31 @@ def build_context_menu(
                 playlist_id_map[int(mid)] = pl
                 if pl.get("Id", "") in track_pls:
                     mi.Enable(False)
-            # Translators: Context menu: add to playlist.
             menu.AppendSubMenu(
-                sub, _("Add to &Playlist"),
+                sub,
+                # Translators: Context menu: add to playlist.
+                _("Add to &Playlist"),
             )
 
         # Playlist-specific actions
         if in_playlist:
-            # Translators: Context menu: remove track
-            # from playlist.
             menu.Append(
                 ID_REMOVE_FROM_PLAYLIST,
+                # Translators: Context menu: remove track
+                # from playlist.
                 _("&Remove from Playlist\tDelete"),
             )
             menu.AppendSeparator()
-            # Translators: Context menu: move track up
-            # in playlist.
             mi_up = menu.Append(
                 ID_MOVE_UP,
+                # Translators: Context menu: move track up
+                # in playlist.
                 _("Move &Up\tAlt+Up"),
             )
-            # Translators: Context menu: move track down
-            # in playlist.
             mi_down = menu.Append(
                 ID_MOVE_DOWN,
+                # Translators: Context menu: move track down
+                # in playlist.
                 _("Move Dow&n\tAlt+Down"),
             )
             if moves_locked or item_index <= 0:
@@ -114,18 +118,20 @@ def build_context_menu(
                 mi_down.Enable(False)
 
         menu.AppendSeparator()
-        # Translators: Context menu: view lyrics.
         menu.Append(
-            ID_VIEW_LYRICS, _("View &Lyrics"),
+            ID_VIEW_LYRICS,
+            # Translators: Context menu: view lyrics.
+            _("View &Lyrics"),
         )
-        # Translators: Context menu: synced lyrics.
         menu.Append(
-            ID_SYNCED_LYRICS, _("&Synced Lyrics"),
+            ID_SYNCED_LYRICS,
+            # Translators: Context menu: synced lyrics.
+            _("&Synced Lyrics"),
         )
         menu.AppendSeparator()
-        # Translators: Context menu: download track.
         menu.Append(
             ID_DOWNLOAD,
+            # Translators: Context menu: download track.
             _("&Download\tCtrl+Shift+Enter"),
         )
     else:
@@ -133,47 +139,50 @@ def build_context_menu(
         # Translators: Context menu: open item.
         menu.Append(ID_OPEN, _("&Open\tEnter"))
         if nav_depth > 0:
-            # Translators: Context menu: go back.
             menu.Append(
-                ID_GO_BACK, _("Go &Back\tBackspace"),
+                ID_GO_BACK,
+                # Translators: Context menu: go back.
+                _("Go &Back\tBackspace"),
             )
 
         if level_type == "albums":
             menu.AppendSeparator()
-            # Translators: Context menu: go to album
-            # artist.
             menu.Append(
                 ID_GO_TO_ALBUM_ARTIST,
+                # Translators: Context menu: go to album
+                # artist.
                 _("Go to Album A&rtist"),
             )
 
         if level_type == "playlists":
             menu.AppendSeparator()
-            # Translators: Context menu: rename playlist.
             menu.Append(
                 ID_RENAME_PLAYLIST,
+                # Translators: Context menu: rename playlist.
                 _("&Rename\tF2"),
             )
-            # Translators: Context menu: delete playlist.
             menu.Append(
                 ID_DELETE_PLAYLIST,
+                # Translators: Context menu: delete playlist.
                 _("&Delete\tDelete"),
             )
 
     menu.AppendSeparator()
-    # Translators: Context menu: copy link.
     menu.Append(
-        ID_COPY_LINK, _("&Copy Link\tCtrl+C"),
+        ID_COPY_LINK,
+        # Translators: Context menu: copy link.
+        _("&Copy Link\tCtrl+C"),
     )
     if level_type == "tracks":
-        # Translators: Context menu: copy stream link.
         menu.Append(
             ID_COPY_STREAM,
+            # Translators: Context menu: copy stream link.
             _("Copy &Stream Link\tCtrl+Shift+C"),
         )
-    # Translators: Context menu: properties.
     menu.Append(
-        ID_PROPERTIES, _("P&roperties\tAlt+Enter"),
+        ID_PROPERTIES,
+        # Translators: Context menu: properties.
+        _("P&roperties\tAlt+Enter"),
     )
 
     return menu, playlist_id_map

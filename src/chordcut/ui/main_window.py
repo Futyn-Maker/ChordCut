@@ -356,11 +356,9 @@ class MainWindow(wx.Frame):
             # Translators: Sort option: alphabetical Z-A.
             ("alpha_desc", _("Alphabetical Z\u2013A")),
             # Translators: Sort option: newest first.
-            ("date_desc",
-             _("By date added (newest first)")),
+            ("date_desc", _("By date added (newest first)")),
             # Translators: Sort option: oldest first.
-            ("date_asc",
-             _("By date added (oldest first)")),
+            ("date_asc", _("By date added (oldest first)")),
         ]
         current_sort = self._settings.track_sort
         for sort_key, label in sort_items:
@@ -470,8 +468,8 @@ class MainWindow(wx.Frame):
             name=_("Search"),
             style=wx.TE_PROCESS_ENTER,
         )
-        # Translators: Placeholder in the search field.
         self._search_text.SetHint(
+            # Translators: Placeholder in the search field.
             _("Type to filter...")
         )
 
@@ -918,8 +916,8 @@ class MainWindow(wx.Frame):
         self.SetStatusText(f"{pos} / {dur}", 1)
 
     def _update_volume_display(self) -> None:
-        # Translators: Volume in status bar.
         self.SetStatusText(
+            # Translators: Volume in status bar.
             _("Vol: {volume}%").format(
                 volume=self._player.volume,
             ),
@@ -969,48 +967,33 @@ class MainWindow(wx.Frame):
             if context:
                 # Translators: Track count with context.
                 # {n} = count, {name} = parent name.
-                return ngettext(
-                    "{n} track in {name}",
-                    "{n} tracks in {name}",
-                    n,
-                ).format(n=n, name=context)
+                fmt = ngettext("{n} track in {name}",
+                               "{n} tracks in {name}", n)
+                return fmt.format(n=n, name=context)
             # Translators: Track count.
-            return ngettext(
-                "{n} track", "{n} tracks", n,
-            ).format(n=n)
+            return ngettext("{n} track", "{n} tracks", n).format(n=n)
 
         if level_type == "artists":
             # Translators: Artist count.
-            return ngettext(
-                "{n} artist", "{n} artists", n,
-            ).format(n=n)
+            return ngettext("{n} artist", "{n} artists", n).format(n=n)
 
         if level_type == "album_artists":
             # Translators: Album artist count.
-            return ngettext(
-                "{n} album artist",
-                "{n} album artists",
-                n,
-            ).format(n=n)
+            fmt = ngettext("{n} album artist", "{n} album artists", n)
+            return fmt.format(n=n)
 
         if level_type == "albums":
             if context:
                 # Translators: Album count with context.
-                return ngettext(
-                    "{n} album by {name}",
-                    "{n} albums by {name}",
-                    n,
-                ).format(n=n, name=context)
+                fmt = ngettext("{n} album by {name}",
+                               "{n} albums by {name}", n)
+                return fmt.format(n=n, name=context)
             # Translators: Album count.
-            return ngettext(
-                "{n} album", "{n} albums", n,
-            ).format(n=n)
+            return ngettext("{n} album", "{n} albums", n).format(n=n)
 
         if level_type == "playlists":
             # Translators: Playlist count.
-            return ngettext(
-                "{n} playlist", "{n} playlists", n,
-            ).format(n=n)
+            return ngettext("{n} playlist", "{n} playlists", n).format(n=n)
 
         return str(n)
 
@@ -1027,8 +1010,8 @@ class MainWindow(wx.Frame):
             else None
         )
         if not server or not server.id:
-            # Translators: No server configured.
             self._update_status(
+                # Translators: No server configured.
                 _("Not connected to server")
             )
             return
@@ -1069,8 +1052,8 @@ class MainWindow(wx.Frame):
         self._switch_to_section(
             self._section_choice.GetSelection(),
         )
-        # Translators: Showing cached library.
         self._update_status(
+            # Translators: Showing cached library.
             _("Library loaded from cache, updating...")
         )
 
@@ -1118,8 +1101,8 @@ class MainWindow(wx.Frame):
         self._switch_to_section(
             self._section_choice.GetSelection(),
         )
-        # Translators: First time loading.
         self._update_status(
+            # Translators: First time loading.
             _("Loading library from server...")
         )
 
@@ -1238,10 +1221,9 @@ class MainWindow(wx.Frame):
         loaded = sum(self._lib_loaded_counts.values())
         total = sum(self._lib_track_counts.values())
         # Translators: Cold load progress in status bar.
-        self._update_status(
-            _("Loading: {loaded} of {total} tracks"
-              ).format(loaded=loaded, total=total),
-        )
+        # {loaded} = tracks loaded so far, {total} = total tracks.
+        fmt = ngettext("Loading: {loaded} of {total} track", "Loading: {loaded} of {total} tracks", total)
+        self._update_status(fmt.format(loaded=loaded, total=total))
 
     def _on_initial_load_done(
         self,
@@ -1333,9 +1315,8 @@ class MainWindow(wx.Frame):
             # Translators: Loading progress label.
             # {loaded} = tracks loaded so far,
             # {total} = total tracks on server.
-            label = _(
-                "{loaded} of {total} tracks"
-            ).format(loaded=loaded, total=total)
+            fmt = ngettext("{loaded} of {total} track", "{loaded} of {total} tracks", total)
+            label = fmt.format(loaded=loaded, total=total)
             self._list_label.SetLabel(label)
             self._list.SetName(label)
         else:
@@ -1867,8 +1848,8 @@ class MainWindow(wx.Frame):
             default_desc = devices[0].get(
                 "description", "",
             )
-            # Translators: Default audio device with name.
             choices.append(
+                # Translators: Default audio device with name.
                 _("Default ({name})").format(
                     name=default_desc,
                 )
@@ -1989,17 +1970,15 @@ class MainWindow(wx.Frame):
         )
         if artist:
             # Translators: Now-playing with artist.
-            np = _(
-                "Now playing: {title} - {artist}"
-            ).format(title=title, artist=artist)
+            np = _("Now playing: {title} - {artist}").format(
+                title=title, artist=artist,
+            )
         else:
             # Translators: Now-playing without artist.
-            np = _(
-                "Now playing: {title}"
-            ).format(title=title)
+            np = _("Now playing: {title}").format(title=title)
         self._now_playing_label.SetLabel(np)
-        # Translators: Status bar when playing.
         self._update_status(
+            # Translators: Status bar when playing.
             _("Playing: {title}").format(title=title)
         )
         self._update_volume_display()
@@ -2552,9 +2531,9 @@ class MainWindow(wx.Frame):
         if self._server_menu_items:
             self._servers_submenu.AppendSeparator()
 
-        # Translators: Menu item to open server manager.
         manage_item = self._servers_submenu.Append(
             wx.ID_ANY,
+            # Translators: Menu item to open server manager.
             _("Manage Servers..."),
         )
         self.Bind(
@@ -2797,12 +2776,11 @@ class MainWindow(wx.Frame):
 
             if info is None:
                 if not silent:
+                    # Translators: Shown when no update available.
+                    msg = _("You are running the latest version"
+                            " ({version}).").format(version=__version__)
                     wx.MessageBox(
-                        # Translators: Shown when no update available.
-                        _(
-                            "You are running the latest "
-                            "version ({version})."
-                        ).format(version=__version__),
+                        msg,
                         # Translators: Title for the update check
                         # result dialog.
                         _("Check for Updates"),
@@ -2824,9 +2802,10 @@ class MainWindow(wx.Frame):
         import urllib.error
 
         if isinstance(error, urllib.error.HTTPError):
-            detail = _(
-                "The server returned HTTP {code}."
-            ).format(code=error.code)
+            # Translators: HTTP error detail in update check.
+            detail = _("The server returned HTTP {code}.").format(
+                code=error.code,
+            )
         elif isinstance(error, urllib.error.URLError):
             detail = str(error.reason)
         else:
@@ -2856,14 +2835,13 @@ class MainWindow(wx.Frame):
         panel = wx.Panel(dlg)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Translators: Heading shown when a new version is found.
         sizer.Add(
             wx.StaticText(
                 panel,
-                label=_(
-                    "A new version of {app_name} is "
-                    "available!"
-                ).format(app_name=__app_name__),
+                # Translators: Heading shown when a new version is found.
+                label=_("A new version of {app_name} is available!").format(
+                    app_name=__app_name__,
+                ),
             ),
             flag=wx.ALL,
             border=10,
@@ -2871,16 +2849,18 @@ class MainWindow(wx.Frame):
 
         # Version info
         ver_sizer = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
-        # Translators: Label for current version in update dialog.
         ver_sizer.Add(wx.StaticText(
-            panel, label=_("Current version:"),
+            panel,
+            # Translators: Label for current version in update dialog.
+            label=_("Current version:"),
         ))
         ver_sizer.Add(wx.StaticText(
             panel, label=info.current_version,
         ))
-        # Translators: Label for new version in update dialog.
         ver_sizer.Add(wx.StaticText(
-            panel, label=_("New version:"),
+            panel,
+            # Translators: Label for new version in update dialog.
+            label=_("New version:"),
         ))
         ver_sizer.Add(wx.StaticText(
             panel, label=info.new_version,
@@ -2893,10 +2873,11 @@ class MainWindow(wx.Frame):
 
         # Changelog
         if info.changelog:
-            # Translators: Label above the changelog text.
             sizer.Add(
                 wx.StaticText(
-                    panel, label=_("What's new:"),
+                    panel,
+                    # Translators: Label above the changelog text.
+                    label=_("What's new:"),
                 ),
                 flag=wx.LEFT | wx.RIGHT | wx.TOP,
                 border=10,
@@ -2919,10 +2900,10 @@ class MainWindow(wx.Frame):
                 border=10,
             )
 
-        # Translators: Prompt asking user to confirm the update.
         sizer.Add(
             wx.StaticText(
                 panel,
+                # Translators: Prompt asking user to confirm the update.
                 label=_("Would you like to update now?"),
             ),
             flag=wx.ALL,
@@ -3260,8 +3241,8 @@ class MainWindow(wx.Frame):
                 wx.TextDataObject(url),
             )
             wx.TheClipboard.Close()
-            # Translators: After copying link.
             self._notify_toggle(
+                # Translators: After copying link.
                 _("Link copied to clipboard")
             )
 
@@ -3280,8 +3261,8 @@ class MainWindow(wx.Frame):
                 wx.TextDataObject(url),
             )
             wx.TheClipboard.Close()
-            # Translators: After copying stream link.
             self._notify_toggle(
+                # Translators: After copying stream link.
                 _("Stream link copied to clipboard")
             )
 
@@ -3455,10 +3436,7 @@ class MainWindow(wx.Frame):
             if not has_timing:
                 wx.MessageBox(
                     # Translators: No synced lyrics message.
-                    _(
-                        "Synced lyrics are not available "
-                        "for this track."
-                    ),
+                    _("Synced lyrics are not available for this track."),
                     # Translators: Synced lyrics title.
                     _("Synced Lyrics"),
                     wx.OK | wx.ICON_INFORMATION,
@@ -3490,9 +3468,9 @@ class MainWindow(wx.Frame):
             def vol_down_cb() -> None:
                 self._player.volume_down()
 
-            # Translators: Synced lyrics dialog title.
             dlg = SyncedLyricsDialog(
                 self,
+                # Translators: Synced lyrics dialog title.
                 _("Lyrics - {title}").format(
                     title=name,
                 ),
@@ -3636,9 +3614,9 @@ class MainWindow(wx.Frame):
         self, event: wx.CommandEvent,
     ) -> None:
         """Show dialog to create a new playlist."""
-        # Translators: New playlist dialog prompt.
         dlg = wx.TextEntryDialog(
             self,
+            # Translators: New playlist dialog prompt.
             _("Enter playlist name:"),
             # Translators: New playlist dialog title.
             _("New Playlist"),
@@ -3656,8 +3634,8 @@ class MainWindow(wx.Frame):
             return
         srv_id = server.id
 
-        # Translators: Creating playlist status.
         self._update_status(
+            # Translators: Creating playlist status.
             _("Creating playlist...")
         )
 
@@ -3679,8 +3657,8 @@ class MainWindow(wx.Frame):
     ) -> None:
         """Handle create-playlist completion."""
         if not playlist_id:
-            # Translators: Create playlist failed.
             self._update_status(
+                # Translators: Create playlist failed.
                 _("Failed to create playlist")
             )
             return
@@ -3704,8 +3682,8 @@ class MainWindow(wx.Frame):
                 "playlists", None,
             )
 
-        # Translators: Playlist created notification.
         self._notify_toggle(
+            # Translators: Playlist created notification.
             _("Playlist \"{name}\" created").format(
                 name=name,
             )
@@ -3720,9 +3698,9 @@ class MainWindow(wx.Frame):
         if not pl_id:
             return
 
-        # Translators: Rename playlist dialog prompt.
         dlg = wx.TextEntryDialog(
             self,
+            # Translators: Rename playlist dialog prompt.
             _("Enter new name:"),
             # Translators: Rename playlist dialog title.
             _("Rename Playlist"),
@@ -3760,8 +3738,8 @@ class MainWindow(wx.Frame):
             lambda ok: None,
         )
 
-        # Translators: Playlist renamed notification.
         self._notify_toggle(
+            # Translators: Playlist renamed notification.
             _("Playlist renamed to \"{name}\"").format(
                 name=new_name,
             )
@@ -3776,8 +3754,8 @@ class MainWindow(wx.Frame):
         if not pl_id:
             return
 
-        # Translators: Confirm delete playlist.
         result = wx.MessageBox(
+            # Translators: Confirm delete playlist.
             _("Delete playlist \"{name}\"?").format(
                 name=pl_name,
             ),
@@ -3817,8 +3795,8 @@ class MainWindow(wx.Frame):
         # Fire async server request
         self._client.delete_playlist_async(pl_id)
 
-        # Translators: Playlist deleted notification.
         self._notify_toggle(
+            # Translators: Playlist deleted notification.
             _("Playlist \"{name}\" deleted").format(
                 name=pl_name,
             )
@@ -3857,8 +3835,8 @@ class MainWindow(wx.Frame):
                 track, pl_id, pl_name,
             )
 
-        # Translators: Status when adding to playlist.
         self._update_status(
+            # Translators: Status when adding to playlist.
             _("Adding to {name}...").format(
                 name=pl_name,
             )
@@ -3878,8 +3856,8 @@ class MainWindow(wx.Frame):
     ) -> None:
         """Handle add-to-playlist completion."""
         if not success:
-            # Translators: Add to playlist failed.
             self._update_status(
+                # Translators: Add to playlist failed.
                 _("Failed to add to playlist")
             )
             return
@@ -3892,8 +3870,8 @@ class MainWindow(wx.Frame):
             track_id, track_id,
         )
 
-        # Translators: Track added to playlist.
         self._notify_toggle(
+            # Translators: Track added to playlist.
             _("Added to {name}").format(
                 name=playlist_name,
             )
@@ -3917,8 +3895,8 @@ class MainWindow(wx.Frame):
             "PlaylistItemId", item.get("Id", ""),
         )
 
-        # Translators: Confirm remove from playlist.
         result = wx.MessageBox(
+            # Translators: Confirm remove from playlist.
             _("Remove \"{name}\" from the playlist?")
             .format(name=track_name),
             # Translators: Confirm remove dialog title.
@@ -4033,8 +4011,8 @@ class MainWindow(wx.Frame):
                 break
 
         if not target:
-            # Translators: Artist not found status.
             self._update_status(
+                # Translators: Artist not found status.
                 _("Artist not found")
             )
             return
@@ -4058,8 +4036,8 @@ class MainWindow(wx.Frame):
                 break
 
         if not target:
-            # Translators: Album artist not found status.
             self._update_status(
+                # Translators: Album artist not found status.
                 _("Album artist not found")
             )
             return
@@ -4073,8 +4051,8 @@ class MainWindow(wx.Frame):
         """Navigate to the album of a track."""
         album_id = item.get("AlbumId")
         if not album_id:
-            # Translators: Album not found status.
             self._update_status(
+                # Translators: Album not found status.
                 _("Album not found")
             )
             return
@@ -4086,8 +4064,8 @@ class MainWindow(wx.Frame):
                 break
 
         if not target:
-            # Translators: Album not found status.
             self._update_status(
+                # Translators: Album not found status.
                 _("Album not found")
             )
             return
@@ -4135,8 +4113,8 @@ class MainWindow(wx.Frame):
         h = self._countdown_seconds // 3600
         m = (self._countdown_seconds % 3600) // 60
         s = self._countdown_seconds % 60
-        # Translators: Sleep timer countdown shown in the status bar.
         self.SetStatusText(
+            # Translators: Sleep timer countdown shown in the status bar.
             _("Timer: {h:02d}:{m:02d}:{s:02d}").format(h=h, m=m, s=s),
             3,
         )
