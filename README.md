@@ -13,8 +13,9 @@ ChordCut is a portable, accessible music client for [Jellyfin](https://jellyfin.
 - Filter by music library if your server has more than one.
 - Playback queue with next/previous track, repeat, and shuffle.
 - Create, rename, delete playlists and reorder tracks in them. Add or remove tracks from playlists.
+- Select multiple tracks to build a custom playback queue, bulk-add to playlists, bulk-download, and more.
 - View plain and synced (timed) lyrics. Jump to any line in synced lyrics to seek to that moment.
-- Download individual tracks to a configurable folder.
+- Download individual tracks or multiple selected tracks at once to a configurable folder.
 - View detailed properties for tracks (including bitrate, format, and file size), albums, artists, and playlists.
 - Copy a Jellyfin web link for any item or a direct stream link for tracks.
 - Sleep timer with three actions: close the program, shut down, or put the computer to sleep.
@@ -75,6 +76,26 @@ If your server has multiple music libraries (e.g. "Music" and "Soundtracks"), us
 - **Add a track**: open the context menu on any track, choose Add to Playlist, and pick a playlist from the submenu. The track is added to the top.
 - **Remove a track**: inside a playlist, select a track and press Delete, or use the context menu.
 - **Reorder tracks**: inside a playlist, use Alt+Up and Alt+Down to move the selected track, or use the context menu.
+
+### Multi-Track Selection
+
+You can select multiple tracks from any track list to build a custom playback queue or perform bulk actions.
+
+- **Add a track to the selection**: press Space on any track in a track list. The track is appended to the selection in the order you select it. Pressing Space on an already-selected track does nothing.
+- **Selected tracks area**: once at least one track is selected, a new area appears in the tab order between the main list and the output device selector. It shows the number of selected tracks and contains its own list. A "Clear selection" button removes all selected tracks.
+- **Remove a track from the selection**: press Space on a track inside the selected tracks list. If the last track is removed, the area disappears and focus returns to the main list.
+- **Play from selection**: press Enter or double-click a track in the selected tracks list to start playback using the selection as the queue.
+- **Reorder**: use Alt+Up and Alt+Down inside the selected tracks list to change the playback order.
+- **Bulk actions**: when the focus is inside the selected tracks list, hotkeys and the context menu apply to all selected tracks:
+  - Ctrl+Shift+Enter — download all selected tracks one by one.
+  - Ctrl+C — copy Jellyfin web links for all selected tracks (one per line).
+  - Ctrl+Shift+C — copy stream links for all selected tracks (one per line).
+  - Context menu > Add All to Playlist — add all selected tracks to a chosen playlist, skipping those already present.
+  - Context menu > Remove All from Playlist — available only when viewing a specific playlist; removes selected tracks that belong to that playlist.
+  - Delete key — same as Remove All from Playlist when available.
+- **Persistence**: the selection is preserved when navigating between sections and lists. It is cleared only when you press "Clear selection" or close the application.
+
+**Note:** when the focus is on the main track list, all actions (Enter, context menu, hotkeys) still apply to the single track under the cursor, regardless of whether a selection exists.
 
 ### Lyrics
 
@@ -142,6 +163,11 @@ Press F8 or go to File > Settings to configure:
 | Delete | Delete playlist / Remove track from playlist |
 | Alt+Up | Move track up in playlist |
 | Alt+Down | Move track down in playlist |
+| Space | Add track to selection (track lists only) |
+| Space (in selection) | Remove track from selection |
+| Enter (in selection) | Play from selection queue |
+| Alt+Up/Down (in selection) | Reorder tracks in selection |
+| Delete (in selection) | Remove selected tracks from playlist |
 | Alt+Enter | Properties |
 | Ctrl+C | Copy Jellyfin link |
 | Ctrl+Shift+C | Copy stream link (tracks only) |

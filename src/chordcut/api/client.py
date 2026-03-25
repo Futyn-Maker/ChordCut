@@ -793,6 +793,145 @@ class JellyfinClient:
 
         self._executor.submit(task)
 
+    def add_tracks_to_playlist_top(
+        self,
+        playlist_id: str,
+        track_ids: list[str],
+    ) -> bool:
+        """Add tracks to the top of a playlist.
+
+        1. Batch-add all tracks in one request (server
+           appends them at the end).
+        2. Fetch playlist items to obtain PlaylistItemIds.
+        3. Move each added track to positions 0, 1, 2, …
+           so the order matches *track_ids*.
+
+        Cost: 1 add + 1 fetch + N moves = N+2 requests.
+        """
+        if not self._user_id or not track_ids:
+            return False
+        try:
+            # 1. Batch add
+            url = "Playlists/{pid}/Items".format(
+                pid=playlist_id,
+            )
+            self._client.jellyfin._post(
+                url,
+                params={
+                    "ids": ",".join(track_ids),
+                    "userId": self._user_id,
+                },
+            )
+
+            # 2. Fetch items to get PlaylistItemIds
+            items = self.get_playlist_items(playlist_id)
+            id_to_pid: dict[str, str] = {}
+            for it in items:
+                tid = it.get("Id", "")
+                pid = it.get("PlaylistItemId", "")
+                if tid in id_to_pid:
+                    # Duplicate track — keep the last
+                    # occurrence (the newly added one).
+                    pass
+                id_to_pid[tid] = pid
+
+            # 3. Move each to position 0 in reverse order.
+            # Moving an item to 0 pushes everything down,
+            # so processing [A, B, C] reversed gives:
+            #   move C→0  => [C, …]
+            #   move B→0  => [B, C, …]
+            #   move A→0  => [A, B, C, …]
+            for tid in reversed(track_ids):
+                pid = id_to_pid.get(tid)
+                if pid:
+                    move_url = (
+                        "Playlists/{plid}/Items/{pid}"
+                        "/Move/{idx}"
+                    ).format(
+                        plid=playlist_id,
+                        pid=pid,
+                        idx=0,
+                    )
+                    self._client.jellyfin._post(move_url)
+
+            return True
+        except Exception:
+            return False
+
+    def add_tracks_to_playlist_top_async(
+        self,
+        playlist_id: str,
+        track_ids: list[str],
+        callback: Callable[[bool], None],
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Add tracks to playlist top asynchronously."""
+        def task() -> None:
+            try:
+                result = (
+                    self.add_tracks_to_playlist_top(
+                        playlist_id, track_ids,
+                    )
+                )
+                callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
+    def remove_tracks_from_playlist(
+        self,
+        playlist_id: str,
+        playlist_item_ids: list[str],
+    ) -> bool:
+        """Remove multiple tracks from a playlist.
+
+        Uses a single API call with comma-separated entry IDs.
+        """
+        if not playlist_item_ids:
+            return False
+        try:
+            url = "Playlists/{pid}/Items".format(
+                pid=playlist_id,
+            )
+            self._client.jellyfin._delete(
+                url,
+                params={
+                    "entryIds": ",".join(
+                        playlist_item_ids,
+                    ),
+                },
+            )
+            return True
+        except Exception:
+            return False
+
+    def remove_tracks_from_playlist_async(
+        self,
+        playlist_id: str,
+        playlist_item_ids: list[str],
+        callback: Callable[[bool], None] | None = None,
+        error_callback: (
+            Callable[[Exception], None] | None
+        ) = None,
+    ) -> None:
+        """Remove multiple tracks from a playlist async."""
+        def task() -> None:
+            try:
+                result = self.remove_tracks_from_playlist(
+                    playlist_id, playlist_item_ids,
+                )
+                if callback:
+                    callback(result)
+            except Exception as e:
+                if error_callback:
+                    error_callback(e)
+
+        self._executor.submit(task)
+
     # --- Images ---
 
     def get_image_url(

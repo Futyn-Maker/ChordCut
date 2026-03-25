@@ -38,13 +38,15 @@ There are no automated tests. The app is tested manually on Windows with a real 
 `src/chordcut/__main__.py` → `app.py:ChordCutApp` (wx.App). Enforces single instance via `wx.SingleInstanceChecker` + Windows named event for focus signaling. On init: loads Settings → Database → JellyfinClient → Player → authenticates → creates MainWindow → loads library.
 
 ### Core Components (all passed into MainWindow)
-- **JellyfinClient** (`api/client.py`) — Wrapper around jellyfin-apiclient-python. All calls run in `ThreadPoolExecutor(max_workers=2)`. Bulk operations (per-library pagination, playlist items) use inner pools with up to 4 workers.
+- **JellyfinClient** (`api/client.py`) — Wrapper around jellyfin-apiclient-python. All calls run in `ThreadPoolExecutor(max_workers=2)`. Bulk operations (per-library pagination, playlist items) use inner pools with up to 4 workers. Batch playlist mutations: `add_tracks_to_playlist_top` (batch add + fetch + move to top, N+2 requests) and `remove_tracks_from_playlist` (comma-separated entry IDs).
 - **Player** (`player/mpv_player.py`) — Thin MPV wrapper. Audio-only (`video=False`). Property observers for position/duration, event callback for track end.
 - **Database** (`db/database.py`) — SQLite with normalized schema: servers, libraries, tracks, artists, album_artists, albums, playlists, playlist_tracks, plus junction tables. All query methods accept optional `library_ids: set[str]` for library filtering. Schema versioned via `PRAGMA user_version`; migrations live in `db/migrations.py`.
 - **Settings** (`settings.py`) — JSON file persistence for user preferences (volume, seek step, sort order, check for updates, active server, etc.). Unknown keys in `settings.json` are silently ignored on load; missing keys fall back to `_DEFAULTS`.
 
 ### MainWindow (`ui/main_window.py` — largest file)
-Central controller orchestrating all UI and logic. Key state: `_queue` (playback queue snapshot), `_nav_stack` (drill-in/out navigation), `_all_items`/`_filtered_items` (current view), per-type library caches (`_lib_tracks`, `_lib_albums`, etc.).
+Central controller orchestrating all UI and logic. Key state: `_queue` (playback queue snapshot), `_nav_stack` (drill-in/out navigation), `_all_items`/`_filtered_items` (current view), per-type library caches (`_lib_tracks`, `_lib_albums`, etc.), `_selected_tracks`/`_selected_track_ids` (multi-track selection, persists across navigation).
+
+Multi-track selection adds a secondary `LibraryListBox` and a "Clear selection" button, shown only when tracks are selected. Action methods (`_copy_link`, `_copy_stream_link`, `_download_tracks`, `_add_to_playlist`, `_remove_from_playlist`) are unified to accept `list[dict]` — single-item callers pass `[item]`. Adding to a playlist always places tracks at the top via `add_tracks_to_playlist_top` (batch add + fetch + N moves = N+2 requests). Bulk removal uses `remove_tracks_from_playlist` (single `DELETE` with comma-separated entry IDs). The selection context menu is built by `build_selection_context_menu()` in `ui/context_menu.py`.
 
 **Library loading has two modes:**
 - **Cold load** (<100 cached tracks): sequential paginated fetch, batches of 200, progressive UI updates

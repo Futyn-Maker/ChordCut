@@ -23,6 +23,16 @@ ID_MOVE_DOWN = wx.NewIdRef()
 ID_RENAME_PLAYLIST = wx.NewIdRef()
 ID_DELETE_PLAYLIST = wx.NewIdRef()
 
+# Selection area context menu IDs
+ID_SEL_PLAY = wx.NewIdRef()
+ID_SEL_REMOVE = wx.NewIdRef()
+ID_SEL_DOWNLOAD_ALL = wx.NewIdRef()
+ID_SEL_COPY_LINKS = wx.NewIdRef()
+ID_SEL_COPY_STREAM_LINKS = wx.NewIdRef()
+ID_SEL_REMOVE_FROM_PLAYLIST = wx.NewIdRef()
+ID_SEL_MOVE_UP = wx.NewIdRef()
+ID_SEL_MOVE_DOWN = wx.NewIdRef()
+
 
 def build_context_menu(
     level_type: str,
@@ -183,6 +193,99 @@ def build_context_menu(
         ID_PROPERTIES,
         # Translators: Context menu: properties.
         _("P&roperties\tAlt+Enter"),
+    )
+
+    return menu, playlist_id_map
+
+
+def build_selection_context_menu(
+    *,
+    playlists: list[dict] | None = None,
+    all_in_playlists: dict[str, bool] | None = None,
+    can_remove_from_playlist: bool = False,
+    item_index: int = 0,
+    total_items: int = 0,
+) -> tuple[wx.Menu, dict[int, dict]]:
+    """Build context menu for the selected-tracks area.
+
+    Returns ``(menu, playlist_id_map)`` like
+    :func:`build_context_menu`.
+    """
+    menu = wx.Menu()
+    playlist_id_map: dict[int, dict] = {}
+
+    # Translators: Selection context menu: play track.
+    menu.Append(ID_SEL_PLAY, _("&Play"))
+    menu.AppendSeparator()
+
+    # "Add All to Playlist" submenu
+    if playlists:
+        sub = wx.Menu()
+        all_in = all_in_playlists or {}
+        for pl in playlists:
+            mid = wx.NewIdRef()
+            mi = sub.Append(
+                mid, pl.get("Name", ""),
+            )
+            playlist_id_map[int(mid)] = pl
+            if all_in.get(pl.get("Id", "")):
+                mi.Enable(False)
+        menu.AppendSubMenu(
+            sub,
+            # Translators: Selection context menu:
+            # add all to playlist.
+            _("Add &All to Playlist"),
+        )
+
+    if can_remove_from_playlist:
+        menu.Append(
+            ID_SEL_REMOVE_FROM_PLAYLIST,
+            # Translators: Selection context menu:
+            # remove from playlist.
+            _("&Remove All from Playlist"),
+        )
+
+    menu.AppendSeparator()
+    menu.Append(
+        ID_SEL_DOWNLOAD_ALL,
+        # Translators: Selection context menu: download all.
+        _("&Download All\tCtrl+Shift+Enter"),
+    )
+    menu.AppendSeparator()
+    menu.Append(
+        ID_SEL_COPY_LINKS,
+        # Translators: Selection context menu: copy all links.
+        _("&Copy All Links\tCtrl+C"),
+    )
+    menu.Append(
+        ID_SEL_COPY_STREAM_LINKS,
+        # Translators: Selection context menu:
+        # copy all stream links.
+        _("Copy All &Stream Links\tCtrl+Shift+C"),
+    )
+    menu.AppendSeparator()
+
+    mi_up = menu.Append(
+        ID_SEL_MOVE_UP,
+        # Translators: Selection context menu: move up.
+        _("Move &Up\tAlt+Up"),
+    )
+    mi_down = menu.Append(
+        ID_SEL_MOVE_DOWN,
+        # Translators: Selection context menu: move down.
+        _("Move Dow&n\tAlt+Down"),
+    )
+    if item_index <= 0:
+        mi_up.Enable(False)
+    if item_index >= total_items - 1:
+        mi_down.Enable(False)
+
+    menu.AppendSeparator()
+    menu.Append(
+        ID_SEL_REMOVE,
+        # Translators: Selection context menu:
+        # remove from selection.
+        _("Remove from Se&lection\tSpace"),
     )
 
     return menu, playlist_id_map

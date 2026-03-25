@@ -6,7 +6,7 @@ from pathlib import Path
 
 import wx
 
-from chordcut.i18n import _
+from chordcut.i18n import _, ngettext
 from chordcut.utils.paths import get_app_dir
 
 
@@ -167,6 +167,214 @@ class DownloadDialog(wx.Dialog):
             self,
         )
         self.EndModal(wx.ID_CANCEL)
+
+    def _on_cancel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        self._cancelled = True
+
+    def _on_key(self, event: wx.KeyEvent) -> None:
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self._cancelled = True
+            return
+        event.Skip()
+
+    def _on_close(self, event: wx.CloseEvent) -> None:
+        self._cancelled = True
+        event.Skip()
+
+
+class BulkDownloadDialog(wx.Dialog):
+    """Dialog that downloads multiple tracks sequentially.
+
+    Shows a single window with the title updated for each
+    track and the progress bar reset between downloads.
+    ``completed`` holds the number of successful downloads
+    after the dialog closes.
+    """
+
+    def __init__(
+        self,
+        parent: wx.Window,
+        items: list[tuple[str, str, str]],
+        download_dir: Path | None = None,
+    ):
+        """
+        Parameters
+        ----------
+        items:
+            List of ``(url, filename, display_name)``
+            tuples in download order.
+        """
+        super().__init__(
+            parent,
+            title="",
+            style=wx.DEFAULT_DIALOG_STYLE,
+            size=(400, 150),
+        )
+
+        self._items = items
+        self._download_dir = (
+            download_dir
+            if download_dir is not None
+            else get_app_dir() / "music"
+        )
+        self._download_dir.mkdir(
+            parents=True, exist_ok=True,
+        )
+        self.completed: int = 0
+        self._cancelled = False
+        self._current_dest: Path | None = None
+
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self._label = wx.StaticText(
+            panel,
+            # Translators: Download progress label.
+            label=_("Downloading..."),
+        )
+        sizer.Add(self._label, 0, wx.ALL, 10)
+
+        self._gauge = wx.Gauge(
+            panel,
+            range=100,
+            # Translators: Download progress bar name.
+            name=_("Download progress"),
+        )
+        sizer.Add(
+            self._gauge, 0,
+            wx.EXPAND | wx.LEFT | wx.RIGHT, 10,
+        )
+
+        # Translators: Cancel download button.
+        self._cancel_btn = wx.Button(
+            panel, wx.ID_CANCEL, _("Cancel"),
+        )
+        sizer.Add(
+            self._cancel_btn, 0,
+            wx.ALIGN_CENTER | wx.ALL, 10,
+        )
+
+        panel.SetSizer(sizer)
+
+        self._cancel_btn.Bind(
+            wx.EVT_BUTTON, self._on_cancel,
+        )
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+        self._thread = threading.Thread(
+            target=self._run, daemon=True,
+        )
+        self._thread.start()
+
+    def _run(self) -> None:
+        """Download all items sequentially."""
+        total = len(self._items)
+        for i, (url, filename, name) in enumerate(
+            self._items, 1,
+        ):
+            if self._cancelled:
+                break
+
+            # Translators: Bulk download dialog title.
+            # {i} = current, {total} = total count,
+            # {title} = track name.
+            title = _(
+                "Download ({i}/{total}): {title}"
+            ).format(i=i, total=total, title=name)
+            wx.CallAfter(self._begin_item, title)
+
+            try:
+                self._download_one(url, filename)
+            except Exception:
+                # Skip failed downloads, continue
+                if (
+                    self._current_dest
+                    and self._current_dest.exists()
+                ):
+                    self._current_dest.unlink(
+                        missing_ok=True,
+                    )
+                continue
+
+        if self._cancelled:
+            wx.CallAfter(
+                self.EndModal, wx.ID_CANCEL,
+            )
+        else:
+            wx.CallAfter(self.EndModal, wx.ID_OK)
+
+    def _begin_item(self, title: str) -> None:
+        """Update UI for the next download item."""
+        if not self.IsShown():
+            return
+        self.SetTitle(title)
+        self._gauge.SetValue(0)
+        self._label.SetLabel(
+            # Translators: Download progress label.
+            _("Downloading..."),
+        )
+
+    def _download_one(
+        self, url: str, filename: str,
+    ) -> None:
+        """Download a single file."""
+        req = urllib.request.urlopen(url)
+        total_bytes = int(
+            req.headers.get("Content-Length", 0),
+        )
+
+        ct = req.headers.get("Content-Type", "")
+        ext = ""
+        if "flac" in ct:
+            ext = ".flac"
+        elif "mpeg" in ct or "mp3" in ct:
+            ext = ".mp3"
+        elif "ogg" in ct:
+            ext = ".ogg"
+        elif "wav" in ct:
+            ext = ".wav"
+        elif "aac" in ct:
+            ext = ".aac"
+        elif "mp4" in ct or "m4a" in ct:
+            ext = ".m4a"
+
+        dest = self._download_dir / (filename + ext)
+        self._current_dest = dest
+        downloaded = 0
+
+        with open(dest, "wb") as f:
+            while not self._cancelled:
+                chunk = req.read(65536)
+                if not chunk:
+                    break
+                f.write(chunk)
+                downloaded += len(chunk)
+                if total_bytes > 0:
+                    pct = int(
+                        downloaded * 100 / total_bytes,
+                    )
+                    wx.CallAfter(
+                        self._update_progress, pct,
+                    )
+
+        if self._cancelled:
+            dest.unlink(missing_ok=True)
+        else:
+            self.completed += 1
+
+    def _update_progress(self, pct: int) -> None:
+        if self.IsShown():
+            self._gauge.SetValue(min(pct, 100))
+            self._label.SetLabel(
+                # Translators: Download progress with
+                # percent.
+                _("Downloading... {pct}%").format(
+                    pct=pct,
+                )
+            )
 
     def _on_cancel(
         self, event: wx.CommandEvent,
