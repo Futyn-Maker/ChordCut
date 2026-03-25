@@ -131,12 +131,12 @@ def build_context_menu(
         menu.Append(
             ID_VIEW_LYRICS,
             # Translators: Context menu: view lyrics.
-            _("View &Lyrics"),
+            _("View &Lyrics\tCtrl+Alt+Enter"),
         )
         menu.Append(
             ID_SYNCED_LYRICS,
             # Translators: Context menu: synced lyrics.
-            _("&Synced Lyrics"),
+            _("&Synced Lyrics\tAlt+Shift+Enter"),
         )
         menu.AppendSeparator()
         menu.Append(

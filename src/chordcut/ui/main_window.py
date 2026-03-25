@@ -817,6 +817,8 @@ class MainWindow(wx.Frame):
         self._id_copy_link = wx.NewIdRef()
         self._id_copy_stream = wx.NewIdRef()
         self._id_download = wx.NewIdRef()
+        self._id_lyrics_plain = wx.NewIdRef()
+        self._id_lyrics_synced = wx.NewIdRef()
 
         self.Bind(
             wx.EVT_MENU, self._on_properties_accel,
@@ -833,6 +835,14 @@ class MainWindow(wx.Frame):
         self.Bind(
             wx.EVT_MENU, self._on_download_accel,
             id=self._id_download,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_lyrics_plain_accel,
+            id=self._id_lyrics_plain,
+        )
+        self.Bind(
+            wx.EVT_MENU, self._on_lyrics_synced_accel,
+            id=self._id_lyrics_synced,
         )
 
         accel = wx.AcceleratorTable([
@@ -877,6 +887,16 @@ class MainWindow(wx.Frame):
             (
                 wx.ACCEL_ALT, wx.WXK_RETURN,
                 self._id_properties,
+            ),
+            (
+                wx.ACCEL_CTRL | wx.ACCEL_ALT,
+                wx.WXK_RETURN,
+                self._id_lyrics_plain,
+            ),
+            (
+                wx.ACCEL_ALT | wx.ACCEL_SHIFT,
+                wx.WXK_RETURN,
+                self._id_lyrics_synced,
             ),
             # Ctrl+C for copy link handled in _on_char_hook
             (
@@ -3128,6 +3148,8 @@ class MainWindow(wx.Frame):
             "  Ctrl+Left      - Seek backward\n\n"
             "Context:\n"
             "  Alt+Enter        - Properties\n"
+            "  Ctrl+Alt+Enter   - View lyrics\n"
+            "  Alt+Shift+Enter  - View synced lyrics\n"
             "  Ctrl+C           - Copy link\n"
             "  Ctrl+Shift+C     - Copy stream link\n"
             "  Ctrl+Shift+Enter - Download track\n\n"
@@ -3672,6 +3694,20 @@ class MainWindow(wx.Frame):
         item = self._list.get_selected_item()
         if item and self._current_level_type == "tracks":
             self._download_tracks([item])
+
+    def _on_lyrics_plain_accel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        item = self._list.get_selected_item()
+        if item and self._current_level_type == "tracks":
+            self._show_lyrics(item, synced=False)
+
+    def _on_lyrics_synced_accel(
+        self, event: wx.CommandEvent,
+    ) -> None:
+        item = self._list.get_selected_item()
+        if item and self._current_level_type == "tracks":
+            self._show_lyrics(item, synced=True)
 
     def _copy_link(self, items: list[dict]) -> None:
         """Copy Jellyfin web URLs to clipboard.

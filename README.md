@@ -99,7 +99,7 @@ You can select multiple tracks from any track list to build a custom playback qu
 
 ### Lyrics
 
-Open the context menu on a track and choose View Lyrics for plain text, or Synced Lyrics for timed lyrics. In the synced lyrics dialog, press Enter on any line to seek to that timestamp. Ctrl+Up/Down adjusts volume and Ctrl+Right/Left seeks within the dialog, as in the main window. Press Backspace to close the dialog, or Escape to pause/resume playback. Use Ctrl+C to copy the selected line, or the Copy All button to copy all lyrics.
+Press **Ctrl+Alt+Enter** on a track to view plain lyrics, or **Alt+Shift+Enter** to open synced (timed) lyrics. You can also use the context menu: View Lyrics for plain text, or Synced Lyrics for timed lyrics. In the synced lyrics dialog, press Enter on any line to seek to that timestamp. Ctrl+Up/Down adjusts volume and Ctrl+Right/Left seeks within the dialog, as in the main window. Press Backspace to close the dialog, or Escape to pause/resume playback. Use Ctrl+C to copy the selected line, or the Copy All button to copy all lyrics.
 
 ### Downloading Tracks
 
@@ -169,6 +169,8 @@ Press F8 or go to File > Settings to configure:
 | Alt+Up/Down (in selection) | Reorder tracks in selection |
 | Delete (in selection) | Remove selected tracks from playlist |
 | Alt+Enter | Properties |
+| Ctrl+Alt+Enter | View lyrics (tracks only) |
+| Alt+Shift+Enter | View synced lyrics (tracks only) |
 | Ctrl+C | Copy Jellyfin link |
 | Ctrl+Shift+C | Copy stream link (tracks only) |
 | Ctrl+Shift+Enter | Download track |
