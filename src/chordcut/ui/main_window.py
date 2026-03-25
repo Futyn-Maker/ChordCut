@@ -2695,6 +2695,9 @@ class MainWindow(wx.Frame):
             ID_SEL_REMOVE_FROM_PLAYLIST,
             ID_SEL_MOVE_UP,
             ID_SEL_MOVE_DOWN,
+            ID_VIEW_LYRICS,
+            ID_SYNCED_LYRICS,
+            ID_PROPERTIES,
         )
 
         item_index = self._selection_list.GetSelection()
@@ -2761,6 +2764,15 @@ class MainWindow(wx.Frame):
             ),
             ID_SEL_MOVE_DOWN: lambda e: (
                 self._move_selection_item(1)
+            ),
+            ID_VIEW_LYRICS: lambda e: (
+                self._show_lyrics(item, synced=False)
+            ),
+            ID_SYNCED_LYRICS: lambda e: (
+                self._show_lyrics(item, synced=True)
+            ),
+            ID_PROPERTIES: lambda e: (
+                self._show_properties(item)
             ),
         }
 
@@ -3654,10 +3666,25 @@ class MainWindow(wx.Frame):
         self._list.PopupMenu(menu)
         menu.Destroy()
 
+    def _focused_track_item(self) -> dict | None:
+        """Return the focused track from the active list.
+
+        If the selection list has focus, return its item.
+        Otherwise return the main list item (only if in
+        a tracks view).
+        """
+        if self.FindFocus() is self._selection_list:
+            return (
+                self._selection_list.get_selected_item()
+            )
+        if self._current_level_type == "tracks":
+            return self._list.get_selected_item()
+        return None
+
     def _on_properties_accel(
         self, event: wx.CommandEvent,
     ) -> None:
-        item = self._list.get_selected_item()
+        item = self._focused_track_item()
         if item:
             self._show_properties(item)
 
@@ -3698,15 +3725,15 @@ class MainWindow(wx.Frame):
     def _on_lyrics_plain_accel(
         self, event: wx.CommandEvent,
     ) -> None:
-        item = self._list.get_selected_item()
-        if item and self._current_level_type == "tracks":
+        item = self._focused_track_item()
+        if item:
             self._show_lyrics(item, synced=False)
 
     def _on_lyrics_synced_accel(
         self, event: wx.CommandEvent,
     ) -> None:
-        item = self._list.get_selected_item()
-        if item and self._current_level_type == "tracks":
+        item = self._focused_track_item()
+        if item:
             self._show_lyrics(item, synced=True)
 
     def _copy_link(self, items: list[dict]) -> None:

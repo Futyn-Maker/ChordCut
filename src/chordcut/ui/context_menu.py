@@ -34,6 +34,30 @@ ID_SEL_MOVE_UP = wx.NewIdRef()
 ID_SEL_MOVE_DOWN = wx.NewIdRef()
 
 
+def _append_playlist_submenu(
+    menu: wx.Menu,
+    playlist_id_map: dict[int, dict],
+    playlists: list[dict],
+    label: str,
+    disabled_ids: set[str],
+) -> None:
+    """Append an "Add to Playlist" submenu to *menu*.
+
+    Entries whose playlist ID is in *disabled_ids* are
+    greyed out.  *playlist_id_map* is updated in place.
+    """
+    sub = wx.Menu()
+    for pl in playlists:
+        mid = wx.NewIdRef()
+        mi = sub.Append(
+            mid, pl.get("Name", ""),
+        )
+        playlist_id_map[int(mid)] = pl
+        if pl.get("Id", "") in disabled_ids:
+            mi.Enable(False)
+    menu.AppendSubMenu(sub, label)
+
+
 def build_context_menu(
     level_type: str,
     item: dict,
@@ -85,20 +109,11 @@ def build_context_menu(
 
         # "Add to Playlist" submenu
         if playlists:
-            sub = wx.Menu()
-            track_pls = track_in_playlists or set()
-            for pl in playlists:
-                mid = wx.NewIdRef()
-                mi = sub.Append(
-                    mid, pl.get("Name", ""),
-                )
-                playlist_id_map[int(mid)] = pl
-                if pl.get("Id", "") in track_pls:
-                    mi.Enable(False)
-            menu.AppendSubMenu(
-                sub,
+            _append_playlist_submenu(
+                menu, playlist_id_map, playlists,
                 # Translators: Context menu: add to playlist.
                 _("Add to &Playlist"),
+                track_in_playlists or set(),
             )
 
         # Playlist-specific actions
@@ -220,21 +235,16 @@ def build_selection_context_menu(
 
     # "Add All to Playlist" submenu
     if playlists:
-        sub = wx.Menu()
         all_in = all_in_playlists or {}
-        for pl in playlists:
-            mid = wx.NewIdRef()
-            mi = sub.Append(
-                mid, pl.get("Name", ""),
-            )
-            playlist_id_map[int(mid)] = pl
-            if all_in.get(pl.get("Id", "")):
-                mi.Enable(False)
-        menu.AppendSubMenu(
-            sub,
+        disabled = {
+            pid for pid, v in all_in.items() if v
+        }
+        _append_playlist_submenu(
+            menu, playlist_id_map, playlists,
             # Translators: Selection context menu:
             # add all to playlist.
             _("Add &All to Playlist"),
+            disabled,
         )
 
     if can_remove_from_playlist:
@@ -280,6 +290,23 @@ def build_selection_context_menu(
     if item_index >= total_items - 1:
         mi_down.Enable(False)
 
+    menu.AppendSeparator()
+    menu.Append(
+        ID_VIEW_LYRICS,
+        # Translators: Context menu: view lyrics.
+        _("View &Lyrics\tCtrl+Alt+Enter"),
+    )
+    menu.Append(
+        ID_SYNCED_LYRICS,
+        # Translators: Context menu: synced lyrics.
+        _("&Synced Lyrics\tAlt+Shift+Enter"),
+    )
+    menu.AppendSeparator()
+    menu.Append(
+        ID_PROPERTIES,
+        # Translators: Context menu: properties.
+        _("P&roperties\tAlt+Enter"),
+    )
     menu.AppendSeparator()
     menu.Append(
         ID_SEL_REMOVE,
