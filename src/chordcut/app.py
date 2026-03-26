@@ -1,15 +1,17 @@
 """Main application class for ChordCut."""
 
 import ctypes
+import locale
 import threading
 import wx
 
 from chordcut.api import JellyfinClient
 from chordcut.db import Database, ServerCredentials
-from chordcut.i18n import _
+from chordcut.i18n import _, current_language
 from chordcut.player import Player
 from chordcut.settings import Settings
 from chordcut.ui import LoginDialog, MainWindow
+from chordcut.utils.paths import get_locale_dir
 
 # Named Windows Event used to signal the first instance to activate.
 _ACTIVATE_EVENT_NAME = "Global\\ChordCut_ActivateWindow"
@@ -28,6 +30,7 @@ class ChordCutApp(wx.App):
         self._instance_checker: wx.SingleInstanceChecker | None = None
         # Win32 HANDLE to the named activation event (first instance only).
         self._activate_event: int = 0
+        self._wx_locale: wx.Locale | None = None
 
         super().__init__(redirect=False)
 
@@ -57,6 +60,17 @@ class ChordCutApp(wx.App):
         self._activate_event = kernel32.CreateEventW(
             None, False, False, _ACTIVATE_EVENT_NAME,
         )
+
+        # Activate wxWidgets' built-in translations (OK, Cancel, etc.)
+        # for standard dialogs based on the detected language.
+        # Point wx at the app's locale dir so it can find wxstd.mo
+        # (PyInstaller does not bundle wx locale catalogs by default).
+        wx.Locale.AddCatalogLookupPathPrefix(str(get_locale_dir()))
+        lang_info = wx.Locale.FindLanguageInfo(current_language)
+        if lang_info:
+            self._wx_locale = wx.Locale(lang_info.Language)
+        # wx.Locale changes LC_NUMERIC; MPV requires it to stay "C".
+        locale.setlocale(locale.LC_NUMERIC, 'C')
 
         # Initialize core components
         self._settings = Settings()

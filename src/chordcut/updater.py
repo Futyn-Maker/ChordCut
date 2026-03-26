@@ -185,7 +185,6 @@ def apply_update(update_dir: Path, temp_root: Path) -> None:
         ":: Remove directories that must be fully replaced\r\n"
         f'cd /d "{app_dir}"\r\n'
         'if exist "_internal" rmdir /S /Q "_internal"\r\n'
-        'if exist "locale" rmdir /S /Q "locale"\r\n'
         "\r\n"
         ":: Copy new files (data/, settings.json, music/ are not in\r\n"
         ":: the ZIP so they are preserved automatically)\r\n"

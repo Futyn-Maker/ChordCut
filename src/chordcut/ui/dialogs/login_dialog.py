@@ -84,12 +84,7 @@ class LoginDialog(wx.Dialog):
             # Translators: Label for the connect button in the login dialog.
             _("&Connect"),
         )
-        self._cancel_btn = wx.Button(
-            self,
-            wx.ID_CANCEL,
-            # Translators: Label for the cancel button in the login dialog.
-            _("Cancel"),
-        )
+        self._cancel_btn = wx.Button(self, wx.ID_CANCEL)
 
         self._connect_btn.SetDefault()
 

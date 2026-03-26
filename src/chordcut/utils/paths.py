@@ -68,7 +68,9 @@ def get_locale_dir() -> Path:
     """Get the locale directory containing translation files.
 
     When running as a frozen executable (PyInstaller), returns the
-    locale/ subfolder next to the executable. When running from source,
+    locale/ subfolder inside _internal/. When running from source,
     returns the locale/ folder in the project root.
     """
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).parent / "_internal" / "locale"
     return get_app_dir() / "locale"

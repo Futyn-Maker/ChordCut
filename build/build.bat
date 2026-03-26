@@ -115,18 +115,21 @@ echo.
 echo Creating data folder...
 if not exist "dist\ChordCut\data" mkdir "dist\ChordCut\data"
 
-REM Copy locale folder (translations - only .mo files)
-echo Copying translations...
-if exist "locale" (
+REM Copy wxWidgets built-in translations (wxstd.mo) for standard button labels
+REM (app translations are bundled by PyInstaller via the spec's datas)
+echo Copying wx translations...
+for /f "delims=" %%W in ('python -c "import wx, os; print(os.path.join(os.path.dirname(wx.__file__), 'locale'))"') do set WX_LOCALE=%%W
+if exist "%WX_LOCALE%" (
     for /d %%l in (locale\*) do (
-        if exist "%%l\LC_MESSAGES\chordcut.mo" (
-            if not exist "dist\ChordCut\locale\%%~nxl\LC_MESSAGES" mkdir "dist\ChordCut\locale\%%~nxl\LC_MESSAGES"
-            copy /Y "%%l\LC_MESSAGES\chordcut.mo" "dist\ChordCut\locale\%%~nxl\LC_MESSAGES\" >nul
-            echo   Copied %%~nxl translation
+        set LANG_CODE=%%~nxl
+        if exist "%WX_LOCALE%\!LANG_CODE!\LC_MESSAGES\wxstd.mo" (
+            if not exist "dist\ChordCut\_internal\locale\!LANG_CODE!\LC_MESSAGES" mkdir "dist\ChordCut\_internal\locale\!LANG_CODE!\LC_MESSAGES"
+            copy /Y "%WX_LOCALE%\!LANG_CODE!\LC_MESSAGES\wxstd.mo" "dist\ChordCut\_internal\locale\!LANG_CODE!\LC_MESSAGES\" >nul
+            echo   Copied wx translation for !LANG_CODE!
         )
     )
 ) else (
-    echo   No locale folder found, skipping.
+    echo   WARNING: wx locale directory not found, standard buttons may not be translated.
 )
 
 echo.

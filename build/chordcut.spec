@@ -1,11 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec file for ChordCut."""
 
+import glob
 import os
 import sys
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(SPECPATH, '..', 'src'))
+
+# Collect compiled translation catalogs (.mo files only).
+locale_root = os.path.join(SPECPATH, '..', 'locale')
+locale_datas = []
+for mo in glob.glob(os.path.join(locale_root, '*', 'LC_MESSAGES', '*.mo')):
+    # Preserve the relative path under locale/, e.g. locale/ru/LC_MESSAGES/
+    rel = os.path.relpath(os.path.dirname(mo), os.path.join(SPECPATH, '..'))
+    locale_datas.append((mo, rel))
 
 # Find the libmpv DLL
 libmpv_path = None
@@ -32,7 +41,7 @@ a = Analysis(
     binaries=binaries,
     datas=[
         (os.path.join(SPECPATH, '..', 'resources', 'chordcut.ico'), '.'),
-    ],
+    ] + locale_datas,
     hiddenimports=[
         'wx',
         'wx._core',

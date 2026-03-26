@@ -27,7 +27,7 @@ def format_track(track: dict) -> str:
 
     if artist:
         # Translators: Track format: {artist} \u2014 {title}  {duration}
-        return _("{artist} \u2014 {title}  {duration}").format(
+        return _("{artist} — {title}  {duration}").format(
             artist=artist, title=name, duration=dur,
         )
     # Translators: Track format without artist.

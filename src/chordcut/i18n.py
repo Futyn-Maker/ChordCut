@@ -65,6 +65,8 @@ def _get_system_language() -> str | None:
         # Set locale to user's default to get correct values
         locale.setlocale(locale.LC_ALL, '')
         lang = locale.getlocale()[0]
+        # Restore LC_NUMERIC to "C" — MPV requires it.
+        locale.setlocale(locale.LC_NUMERIC, 'C')
         if lang:
             # Extract just the language part (e.g., 'ru' from 'ru_RU')
             result = lang.split('_')[0].lower()

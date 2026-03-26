@@ -77,12 +77,7 @@ class ServersDialog(wx.Dialog):
             # Translators: Button to delete the selected server.
             _("&Delete"),
         )
-        self._close_btn = wx.Button(
-            self,
-            wx.ID_CLOSE,
-            # Translators: Button to close the dialog.
-            _("Close"),
-        )
+        self._close_btn = wx.Button(self, wx.ID_CLOSE)
         self._close_btn.SetDefault()
 
     def _do_layout(self) -> None:

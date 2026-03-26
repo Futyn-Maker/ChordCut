@@ -357,9 +357,9 @@ class MainWindow(wx.Frame):
         self._sort_menu_ids: dict[int, str] = {}
         sort_items = [
             # Translators: Sort option: alphabetical A-Z.
-            ("alpha_asc", _("Alphabetical A\u2013Z")),
+            ("alpha_asc", _("Alphabetical A–Z")),
             # Translators: Sort option: alphabetical Z-A.
-            ("alpha_desc", _("Alphabetical Z\u2013A")),
+            ("alpha_desc", _("Alphabetical Z–A")),
             # Translators: Sort option: newest first.
             ("date_desc", _("By date added (newest first)")),
             # Translators: Sort option: oldest first.
@@ -3378,11 +3378,9 @@ class MainWindow(wx.Frame):
 
         # Buttons
         btn_sizer = wx.StdDialogButtonSizer()
-        # Translators: Button to accept the update.
-        yes_btn = wx.Button(panel, wx.ID_YES, _("Yes"))
+        yes_btn = wx.Button(panel, wx.ID_YES)
         yes_btn.SetDefault()
-        # Translators: Button to decline the update.
-        no_btn = wx.Button(panel, wx.ID_NO, _("No"))
+        no_btn = wx.Button(panel, wx.ID_NO)
         btn_sizer.AddButton(yes_btn)
         btn_sizer.AddButton(no_btn)
         btn_sizer.Realize()

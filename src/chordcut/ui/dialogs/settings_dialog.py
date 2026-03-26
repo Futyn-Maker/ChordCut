@@ -185,10 +185,7 @@ class SettingsDialog(wx.Dialog):
             _("Save"),
         )
         self._save_btn.SetDefault()
-        # Translators: Cancel button in settings dialog.
-        cancel_btn = wx.Button(
-            panel, wx.ID_CANCEL, _("Cancel"),
-        )
+        cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         btn_sizer.AddButton(self._save_btn)
         btn_sizer.AddButton(cancel_btn)
         btn_sizer.Realize()

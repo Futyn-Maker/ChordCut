@@ -49,10 +49,7 @@ class DownloadDialog(wx.Dialog):
             wx.EXPAND | wx.LEFT | wx.RIGHT, 10,
         )
 
-        # Translators: Cancel download button.
-        self._cancel_btn = wx.Button(
-            panel, wx.ID_CANCEL, _("Cancel"),
-        )
+        self._cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         sizer.Add(
             self._cancel_btn, 0,
             wx.ALIGN_CENTER | wx.ALL, 10,
@@ -247,10 +244,7 @@ class BulkDownloadDialog(wx.Dialog):
             wx.EXPAND | wx.LEFT | wx.RIGHT, 10,
         )
 
-        # Translators: Cancel download button.
-        self._cancel_btn = wx.Button(
-            panel, wx.ID_CANCEL, _("Cancel"),
-        )
+        self._cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         sizer.Add(
             self._cancel_btn, 0,
             wx.ALIGN_CENTER | wx.ALL, 10,

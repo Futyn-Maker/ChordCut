@@ -12,7 +12,7 @@ ChordCut is a portable, accessible Jellyfin music client for Windows, built for 
 
 ```bash
 # Run the app (from repo root)
-python -m chordcut
+python run.py
 
 # Install dependencies
 pip install -r requirements.txt
@@ -35,7 +35,7 @@ There are no automated tests. The app is tested manually on Windows with a real 
 ## Architecture
 
 ### Entry Point & App Lifecycle
-`src/chordcut/__main__.py` → `app.py:ChordCutApp` (wx.App). Enforces single instance via `wx.SingleInstanceChecker` + Windows named event for focus signaling. On init: loads Settings → Database → JellyfinClient → Player → authenticates → creates MainWindow → loads library.
+`src/chordcut/__main__.py` → `app.py:ChordCutApp` (wx.App). The entry point sets up the dev environment when running from source (adds `resources/libmpv/` to PATH so `import mpv` can find the DLL). Enforces single instance via `wx.SingleInstanceChecker` + Windows named event for focus signaling. On init: sets up `wx.Locale` for standard widget translations → loads Settings → Database → JellyfinClient → Player → authenticates → creates MainWindow → loads library.
 
 ### Core Components (all passed into MainWindow)
 - **JellyfinClient** (`api/client.py`) — Wrapper around jellyfin-apiclient-python. All calls run in `ThreadPoolExecutor(max_workers=2)`. Bulk operations (per-library pagination, playlist items) use inner pools with up to 4 workers. Batch playlist mutations: `add_tracks_to_playlist_top` (batch add + fetch + move to top, N+2 requests) and `remove_tracks_from_playlist` (comma-separated entry IDs).
@@ -70,6 +70,10 @@ Detects frozen (PyInstaller) vs source execution. Data stored next to executable
 ### i18n (`i18n.py`)
 GNU gettext. All user-facing strings use `_()`. Translations live in `locale/<lang>/LC_MESSAGES/`. The module exposes `current_language` (a two-letter code like `'ru'` or `'en'`) used by the Help → Documentation menu item to open the matching localized HTML documentation (`readme_<lang>.html`) in the default browser, falling back to `readme_en.html`.
 
+Standard wx widget labels (OK, Cancel, Yes, No, Close, etc.) are translated separately by `wx.Locale`, initialized in `app.py`. This requires `wxstd.mo` catalog files — PyInstaller does not bundle these automatically, so the build script copies them from the wxPython package into `_internal/locale/`. Buttons that use standard IDs (`wx.ID_OK`, `wx.ID_CANCEL`, etc.) should **not** have custom labels that duplicate the standard text; omit the label and let `wx.Locale` handle it. Custom labels are only appropriate when the text is intentionally different (e.g. `_("&Connect")` for `wx.ID_OK`).
+
+**Important:** `LC_NUMERIC` must remain `"C"` at all times — MPV crashes otherwise. Both `i18n.py` and `app.py` restore it after any locale-changing calls.
+
 ### Auto-Updates (`updater.py`)
 Checks for new releases via the GitHub API (`GET /repos/{owner}/{repo}/releases/latest`). The target repository is defined by `__repo__` in `src/chordcut/__init__.py` — change it there for forks.
 
@@ -77,7 +81,7 @@ Checks for new releases via the GitHub API (`GET /repos/{owner}/{repo}/releases/
 
 **Manual check:** Help → Check for Updates. Shows errors (with HTTP code), "up to date", or the update dialog.
 
-**Update flow:** download ZIP to temp dir → extract → write a batch script (`chordcut_update.bat`) → launch it detached → close the app. The batch script waits for the process to exit, removes `_internal/` and `locale/` (which must be fully replaced), copies new files via `xcopy` (preserving `data/`, `settings.json`, `music/`), starts the new executable, and self-deletes.
+**Update flow:** download ZIP to temp dir → extract → write a batch script (`chordcut_update.bat`) → launch it detached → close the app. The batch script waits for the process to exit, removes `_internal/` (which includes locale files and must be fully replaced), copies new files via `xcopy` (preserving `data/`, `settings.json`, `music/`), starts the new executable, and self-deletes.
 
 ## Versioning
 

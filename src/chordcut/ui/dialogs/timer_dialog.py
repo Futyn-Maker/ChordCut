@@ -127,8 +127,7 @@ class TimerDialog(wx.Dialog):
         # Translators: Button to enable the sleep timer.
         self._ok_btn = wx.Button(panel, wx.ID_OK, _("Enable Timer"))
         self._ok_btn.SetDefault()
-        # Translators: Cancel button in timer dialog.
-        cancel_btn = wx.Button(panel, wx.ID_CANCEL, _("Cancel"))
+        cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         btn_sizer.AddButton(self._ok_btn)
         btn_sizer.AddButton(cancel_btn)
         btn_sizer.Realize()
