@@ -217,10 +217,8 @@ class ServersDialog(wx.Dialog):
 
             wx.MessageBox(
                 # Translators: Error when adding server fails.
-                _(
-                    "Failed to connect to the server.\n\n"
-                    "Please check the URL and credentials."
-                ),
+                _("Failed to connect to the server.\n\n"
+                  "Please check the URL and credentials."),
                 # Translators: Title of connection error dialog.
                 _("Connection Failed"),
                 wx.OK | wx.ICON_ERROR,
@@ -263,10 +261,8 @@ class ServersDialog(wx.Dialog):
         if not ok:
             wx.MessageBox(
                 # Translators: Error when editing server fails.
-                _(
-                    "Failed to connect to the server.\n\n"
-                    "The previous connection data will be kept."
-                ),
+                _("Failed to connect to the server.\n\n"
+                  "The previous connection data will be kept."),
                 # Translators: Title of connection error dialog.
                 _("Connection Failed"),
                 wx.OK | wx.ICON_ERROR,
@@ -322,10 +318,9 @@ class ServersDialog(wx.Dialog):
         result = wx.MessageBox(
             # Translators: Confirmation message for server deletion.
             # {server} is the server label.
-            _(
-                "Delete server \"{server}\"?\n\n"
-                "All cached data for this server will be removed."
-            ).format(server=label),
+            _("Delete server \"{server}\"?\n\n"
+              "All cached data for this server will be"
+              " removed.").format(server=label),
             # Translators: Title of the delete confirmation dialog.
             _("Confirm Delete"),
             wx.YES_NO | wx.ICON_WARNING,

@@ -2594,10 +2594,8 @@ class MainWindow(wx.Frame):
         n = len(self._selected_tracks)
         # Translators: Label for the selected tracks area.
         # {n} = number of tracks selected.
-        label = ngettext(
-            "{n} track selected",
-            "{n} tracks selected", n,
-        ).format(n=n)
+        fmt = ngettext("{n} track selected", "{n} tracks selected", n)
+        label = fmt.format(n=n)
         self._selection_label.SetLabel(label)
         self._selection_list.SetName(label)
         self._selection_list.set_items(
@@ -3057,10 +3055,8 @@ class MainWindow(wx.Frame):
         if not ok:
             wx.MessageBox(
                 # Translators: Error when switching servers.
-                _(
-                    "Failed to connect to the server.\n\n"
-                    "The previous server remains active."
-                ),
+                _("Failed to connect to the server.\n\n"
+                  "The previous server remains active."),
                 # Translators: Server switch error title.
                 _("Connection Failed"),
                 wx.OK | wx.ICON_ERROR,
@@ -3139,8 +3135,7 @@ class MainWindow(wx.Frame):
 
     def _on_shortcuts(self, event: wx.CommandEvent):
         # Translators: Keyboard shortcuts help text.
-        shortcuts = _(
-            "Keyboard Shortcuts:\n\n"
+        shortcuts = _("Keyboard Shortcuts:\n\n"
             "Navigation:\n"
             "  Tab            - Move between controls\n"
             "  Up/Down        - Navigate items\n"
@@ -3286,9 +3281,8 @@ class MainWindow(wx.Frame):
         wx.MessageBox(
             # Translators: Error message when update check fails.
             # {detail} is the technical error description.
-            _(
-                "Could not check for updates.\n\n{detail}"
-            ).format(detail=detail),
+            _("Could not check for updates.\n\n"
+              "{detail}").format(detail=detail),
             # Translators: Title for the update error dialog.
             _("Update Error"),
             wx.OK | wx.ICON_ERROR,
@@ -3460,10 +3454,8 @@ class MainWindow(wx.Frame):
                 wx.MessageBox(
                     # Translators: Error downloading update.
                     # {error} is the error description.
-                    _(
-                        "Failed to download the "
-                        "update.\n\n{error}"
-                    ).format(error=str(r)),
+                    _("Failed to download the update.\n\n"
+                      "{error}").format(error=str(r)),
                     # Translators: Title for download error.
                     _("Update Error"),
                     wx.OK | wx.ICON_ERROR,
@@ -3477,10 +3469,9 @@ class MainWindow(wx.Frame):
             except Exception as exc:
                 wx.MessageBox(
                     # Translators: Error applying update.
-                    _(
-                        "Failed to apply the "
-                        "update.\n\n{error}"
-                    ).format(error=str(exc)),
+                    # {error} is the error description.
+                    _("Failed to apply the update.\n\n"
+                      "{error}").format(error=str(exc)),
                     _("Update Error"),
                     wx.OK | wx.ICON_ERROR,
                     self,
@@ -3526,13 +3517,11 @@ class MainWindow(wx.Frame):
     def _on_about(self, event: wx.CommandEvent):
         wx.MessageBox(
             # Translators: About dialog text.
-            _(
-                "{app_name} v{version}\n\n"
-                "An accessible Jellyfin music client."
-                "\n\n"
-                "Designed for keyboard and "
-                "screen reader users."
-            ).format(
+            # {app_name} = app name, {version} = version string.
+            _("{app_name} v{version}\n\n"
+              "An accessible Jellyfin music client.\n\n"
+              "Designed for keyboard and"
+              " screen reader users.").format(
                 app_name=__app_name__,
                 version=__version__,
             ),
@@ -3767,10 +3756,8 @@ class MainWindow(wx.Frame):
             n = len(urls)
             # Translators: Link(s) copied notification.
             # {n} = count.
-            fmt = ngettext(
-                "{n} link copied to clipboard",
-                "{n} links copied to clipboard", n,
-            )
+            fmt = ngettext("{n} link copied to clipboard",
+                           "{n} links copied to clipboard", n)
             self._notify_toggle(fmt.format(n=n))
 
     def _copy_stream_link(
@@ -3801,11 +3788,9 @@ class MainWindow(wx.Frame):
             n = len(urls)
             # Translators: Stream link(s) copied.
             # {n} = count.
-            fmt = ngettext(
-                "{n} stream link copied to clipboard",
-                "{n} stream links copied to clipboard",
-                n,
-            )
+            fmt = ngettext("{n} stream link copied to clipboard",
+                           "{n} stream links copied to clipboard",
+                           n)
             self._notify_toggle(fmt.format(n=n))
 
     def _show_properties(self, item: dict) -> None:
@@ -4148,10 +4133,8 @@ class MainWindow(wx.Frame):
             if result == wx.ID_OK:
                 # Translators: Download complete notification.
                 # {n} = count.
-                fmt = ngettext(
-                    "{n} track downloaded",
-                    "{n} tracks downloaded", 1,
-                )
+                fmt = ngettext("{n} track downloaded",
+                               "{n} tracks downloaded", 1)
                 self._notify_toggle(fmt.format(n=1))
             return
 
@@ -4178,11 +4161,8 @@ class MainWindow(wx.Frame):
         if completed > 0:
             # Translators: Download complete notification.
             # {n} = count.
-            fmt = ngettext(
-                "{n} track downloaded",
-                "{n} tracks downloaded",
-                completed,
-            )
+            fmt = ngettext("{n} track downloaded",
+                           "{n} tracks downloaded", completed)
             self._notify_toggle(fmt.format(n=completed))
 
     # ------------------------------------------------------------------
@@ -4487,10 +4467,8 @@ class MainWindow(wx.Frame):
         n = len(tracks)
         # Translators: Track(s) added to playlist.
         # {n} = count, {name} = playlist name.
-        fmt = ngettext(
-            "Added {n} track to {name}",
-            "Added {n} tracks to {name}", n,
-        )
+        fmt = ngettext("Added {n} track to {name}",
+                       "Added {n} tracks to {name}", n)
         self._notify_toggle(
             fmt.format(n=n, name=playlist_name)
         )
@@ -4514,19 +4492,17 @@ class MainWindow(wx.Frame):
         n = len(items)
         if n == 1:
             track_name = items[0].get("Name", "")
-            # Translators: Confirm remove from playlist.
             msg = (
+                # Translators: Confirm remove from playlist.
                 _("Remove \"{name}\" from the playlist?")
                 .format(name=track_name)
             )
         else:
-            # Translators: Confirm bulk remove from
-            # playlist. {n} = count.
-            msg = ngettext(
-                "Remove {n} track from the playlist?",
-                "Remove {n} tracks from the playlist?",
-                n,
-            ).format(n=n)
+            # Translators: Confirm bulk remove from playlist.
+            # {n} = count.
+            msg = ngettext("Remove {n} track from the playlist?",
+                           "Remove {n} tracks from the"
+                           " playlist?", n).format(n=n)
 
         result = wx.MessageBox(
             msg,

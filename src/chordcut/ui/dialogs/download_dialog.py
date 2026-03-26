@@ -281,9 +281,8 @@ class BulkDownloadDialog(wx.Dialog):
             # Translators: Bulk download dialog title.
             # {i} = current, {total} = total count,
             # {title} = track name.
-            title = _(
-                "Download ({i}/{total}): {title}"
-            ).format(i=i, total=total, title=name)
+            title = _("Download ({i}/{total}): {title}"
+                      ).format(i=i, total=total, title=name)
             wx.CallAfter(self._begin_item, title)
 
             try:
