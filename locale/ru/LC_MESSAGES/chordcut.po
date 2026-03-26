@@ -1,0 +1,1762 @@
+# Russian translation for ChordCut.
+# Copyright (C) 2026 Andrey Yakuboy
+# This file is distributed under the same license as the ChordCut package.
+# Andrey Yakuboy <andrey@yakuboy.me>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ChordCut\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-27 00:00+0300\n"
+"PO-Revision-Date: 2026-03-26 16:20+0300\n"
+"Last-Translator: Andrey Yakuboy <andrey@yakuboy.me>\n"
+"Language-Team: Russian <andrey@yakuboy.me>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#. Translators: Busy dialog message shown while connecting to the Jellyfin server.
+#. Translators: Busy dialog shown while connecting.
+#: src/chordcut/app.py:174 src/chordcut/ui/dialogs/servers_dialog.py:189
+#: src/chordcut/ui/dialogs/servers_dialog.py:252
+#: src/chordcut/ui/dialogs/servers_dialog.py:339
+#: src/chordcut/ui/main_window.py:3045
+msgid "Connecting to server..."
+msgstr "Подключение к серверу..."
+
+#. Translators: Error message shown when the server connection fails.
+#: src/chordcut/app.py:197
+msgid ""
+"Failed to connect to the server.\n"
+"\n"
+"Please check the server URL and your credentials."
+msgstr ""
+"Не удалось подключиться к серверу.\n"
+"\n"
+"Пожалуйста, проверьте адрес сервера и учётные данные."
+
+#. Translators: Title of the connection error dialog.
+#. Translators: Title of connection error dialog.
+#. Translators: Server switch error title.
+#: src/chordcut/app.py:200 src/chordcut/ui/dialogs/servers_dialog.py:218
+#: src/chordcut/ui/dialogs/servers_dialog.py:262
+#: src/chordcut/ui/main_window.py:3061
+msgid "Connection Failed"
+msgstr "Ошибка подключения"
+
+#. Translators: Context menu: play track.
+#. Translators: Selection context menu: play track.
+#. Translators: Menu item to play.
+#: src/chordcut/ui/context_menu.py:85 src/chordcut/ui/context_menu.py:233
+#: src/chordcut/ui/main_window.py:258
+msgid "&Play"
+msgstr "В&оспроизвести"
+
+#. Translators: Context menu: go back.
+#: src/chordcut/ui/context_menu.py:90 src/chordcut/ui/context_menu.py:170
+msgid "Go &Back\tBackspace"
+msgstr "На&зад\tBackspace"
+
+#. Translators: Context menu: go to artist.
+#: src/chordcut/ui/context_menu.py:96
+msgid "Go to &Artist"
+msgstr "Перейти к &исполнителю"
+
+#. Translators: Context menu: go to album artist.
+#. Translators: Context menu: go to album
+#. artist.
+#: src/chordcut/ui/context_menu.py:101 src/chordcut/ui/context_menu.py:179
+msgid "Go to Album A&rtist"
+msgstr "Перейти к исполнителю а&льбома"
+
+#. Translators: Context menu: go to album.
+#: src/chordcut/ui/context_menu.py:106
+msgid "Go to A&lbum"
+msgstr "Перейти к &альбому"
+
+#. Translators: Context menu: add to playlist.
+#: src/chordcut/ui/context_menu.py:115
+msgid "Add to &Playlist"
+msgstr "&Добавить в плей-лист"
+
+#. Translators: Context menu: remove track
+#. from playlist.
+#: src/chordcut/ui/context_menu.py:125
+msgid "&Remove from Playlist\tDelete"
+msgstr "&Удалить из плей-листа\tDelete"
+
+#. Translators: Context menu: move track up
+#. in playlist.
+#. Translators: Selection context menu: move up.
+#: src/chordcut/ui/context_menu.py:132 src/chordcut/ui/context_menu.py:281
+msgid "Move &Up\tAlt+Up"
+msgstr "Переместить &выше\tAlt+вверх"
+
+#. Translators: Context menu: move track down
+#. in playlist.
+#. Translators: Selection context menu: move down.
+#: src/chordcut/ui/context_menu.py:138 src/chordcut/ui/context_menu.py:286
+msgid "Move Dow&n\tAlt+Down"
+msgstr "Переместить &ниже\tAlt+вниз"
+
+#. Translators: Context menu: view lyrics.
+#: src/chordcut/ui/context_menu.py:149 src/chordcut/ui/context_menu.py:297
+msgid "View &Lyrics\tCtrl+Alt+Enter"
+msgstr "Показать &текст\tCtrl+Alt+Enter"
+
+#. Translators: Context menu: synced lyrics.
+#: src/chordcut/ui/context_menu.py:154 src/chordcut/ui/context_menu.py:302
+msgid "&Synced Lyrics\tAlt+Shift+Enter"
+msgstr "&Синхронизированный текст\tAlt+Shift+Enter"
+
+#. Translators: Context menu: download track.
+#: src/chordcut/ui/context_menu.py:160
+msgid "&Download\tCtrl+Shift+Enter"
+msgstr "Ска&чать\tCtrl+Shift+Enter"
+
+#. Translators: Context menu: open item.
+#: src/chordcut/ui/context_menu.py:165
+msgid "&Open\tEnter"
+msgstr "&Открыть\tEnter"
+
+#. Translators: Context menu: rename playlist.
+#: src/chordcut/ui/context_menu.py:187
+msgid "&Rename\tF2"
+msgstr "&Переименовать\tF2"
+
+#. Translators: Context menu: delete playlist.
+#: src/chordcut/ui/context_menu.py:192
+msgid "&Delete\tDelete"
+msgstr "У&далить\tDelete"
+
+#. Translators: Context menu: copy link.
+#: src/chordcut/ui/context_menu.py:199
+msgid "&Copy Link\tCtrl+C"
+msgstr "&Копировать ссылку\tCtrl+C"
+
+#. Translators: Context menu: copy stream link.
+#: src/chordcut/ui/context_menu.py:205
+msgid "Copy &Stream Link\tCtrl+Shift+C"
+msgstr "Копировать ссылку &потока\tCtrl+Shift+C"
+
+#. Translators: Context menu: properties.
+#: src/chordcut/ui/context_menu.py:210 src/chordcut/ui/context_menu.py:308
+msgid "P&roperties\tAlt+Enter"
+msgstr "Сво&йства\tAlt+Enter"
+
+#. Translators: Selection context menu:
+#. add all to playlist.
+#: src/chordcut/ui/context_menu.py:246
+msgid "Add &All to Playlist"
+msgstr "&Добавить всё в плей-лист"
+
+#. Translators: Selection context menu:
+#. remove from playlist.
+#: src/chordcut/ui/context_menu.py:255
+msgid "&Remove All from Playlist"
+msgstr "&Удалить всё из плей-листа"
+
+#. Translators: Selection context menu: download all.
+#: src/chordcut/ui/context_menu.py:262
+msgid "&Download All\tCtrl+Shift+Enter"
+msgstr "Ска&чать всё\tCtrl+Shift+Enter"
+
+#. Translators: Selection context menu: copy all links.
+#: src/chordcut/ui/context_menu.py:268
+msgid "&Copy All Links\tCtrl+C"
+msgstr "&Копировать все ссылки\tCtrl+C"
+
+#. Translators: Selection context menu:
+#. copy all stream links.
+#: src/chordcut/ui/context_menu.py:274
+msgid "Copy All &Stream Links\tCtrl+Shift+C"
+msgstr "Копировать все ссылки &потоков\tCtrl+Shift+C"
+
+#. Translators: Selection context menu:
+#. remove from selection.
+#: src/chordcut/ui/context_menu.py:315
+msgid "Remove from Se&lection\tSpace"
+msgstr "Убрат&ь выбор\tПробел"
+
+#. Translators: Download progress label.
+#: src/chordcut/ui/dialogs/download_dialog.py:37
+#: src/chordcut/ui/dialogs/download_dialog.py:232
+#: src/chordcut/ui/dialogs/download_dialog.py:310
+msgid "Downloading..."
+msgstr "Скачивание..."
+
+#. Translators: Download progress bar name.
+#: src/chordcut/ui/dialogs/download_dialog.py:45
+#: src/chordcut/ui/dialogs/download_dialog.py:240
+msgid "Download progress"
+msgstr "Прогресс скачивания"
+
+#. Translators: Download progress with percent.
+#. Translators: Download progress with
+#. percent.
+#: src/chordcut/ui/dialogs/download_dialog.py:148
+#: src/chordcut/ui/dialogs/download_dialog.py:367
+#, python-brace-format
+msgid "Downloading... {pct}%"
+msgstr "Скачивание... {pct}%"
+
+#. Translators: Download complete label.
+#: src/chordcut/ui/dialogs/download_dialog.py:155
+msgid "Download complete"
+msgstr "Скачивание завершено"
+
+#. Translators: Download error dialog title.
+#: src/chordcut/ui/dialogs/download_dialog.py:162
+msgid "Download Error"
+msgstr "Ошибка скачивания"
+
+#. Translators: Bulk download dialog title.
+#. {i} = current, {total} = total count,
+#. {title} = track name.
+#: src/chordcut/ui/dialogs/download_dialog.py:278
+#, python-brace-format
+msgid "Download ({i}/{total}): {title}"
+msgstr "Скачивание ({i} из {total}): {title}"
+
+#. Translators: Title of the login dialog for connecting to a Jellyfin server.
+#: src/chordcut/ui/dialogs/login_dialog.py:20
+msgid "Connect to Jellyfin Server"
+msgstr "Подключиться к серверу Jellyfin"
+
+#. Translators: Label for the server URL input field. The ampersand indicates the keyboard mnemonic.
+#: src/chordcut/ui/dialogs/login_dialog.py:44
+msgid "Server &URL:"
+msgstr "Адрес &сервера:"
+
+#. Translators: Accessible name for the server URL input field.
+#: src/chordcut/ui/dialogs/login_dialog.py:50
+msgid "Server URL"
+msgstr "Адрес сервера"
+
+#. Translators: Placeholder hint shown in the server URL field when it is empty.
+#: src/chordcut/ui/dialogs/login_dialog.py:53
+msgid "https://jellyfin.example.com"
+msgstr "https://jellyfin.example.com"
+
+#. Translators: Label for the username input field. The ampersand indicates the keyboard mnemonic.
+#: src/chordcut/ui/dialogs/login_dialog.py:58
+msgid "&Username:"
+msgstr "&Имя пользователя:"
+
+#. Translators: Accessible name for the username input field.
+#: src/chordcut/ui/dialogs/login_dialog.py:64
+msgid "Username"
+msgstr "Имя пользователя"
+
+#. Translators: Label for the password input field. The ampersand indicates the keyboard mnemonic.
+#: src/chordcut/ui/dialogs/login_dialog.py:70
+msgid "&Password:"
+msgstr "&Пароль:"
+
+#. Translators: Accessible name for the password input field.
+#: src/chordcut/ui/dialogs/login_dialog.py:77
+msgid "Password"
+msgstr "Пароль"
+
+#. Translators: Label for the connect button in the login dialog.
+#: src/chordcut/ui/dialogs/login_dialog.py:85
+msgid "&Connect"
+msgstr "По&дключиться"
+
+#. Translators: Validation error when the server URL field is empty.
+#: src/chordcut/ui/dialogs/login_dialog.py:147
+msgid "Please enter the server URL."
+msgstr "Пожалуйста, введите адрес сервера."
+
+#. Translators: Validation error when the username field is empty.
+#: src/chordcut/ui/dialogs/login_dialog.py:153
+msgid "Please enter your username."
+msgstr "Пожалуйста, введите имя пользователя."
+
+#. Translators: Title of the input validation error dialog.
+#: src/chordcut/ui/dialogs/login_dialog.py:174
+msgid "Input Error"
+msgstr "Неверный ввод"
+
+#. Translators: Copy button in lyrics dialog.
+#: src/chordcut/ui/dialogs/lyrics_dialog.py:50
+msgid "&Copy"
+msgstr "&Копировать"
+
+#. Translators: Copy all button in synced lyrics.
+#: src/chordcut/ui/dialogs/lyrics_dialog.py:152
+msgid "Copy &All"
+msgstr "Копировать &всё"
+
+#. Translators: Track property: title.
+#: src/chordcut/ui/dialogs/properties_dialog.py:103
+#, python-brace-format
+msgid "Title: {value}"
+msgstr "Название: {value}"
+
+#. Translators: Track property: artist.
+#. Translators: Album property: artist.
+#: src/chordcut/ui/dialogs/properties_dialog.py:109
+#: src/chordcut/ui/dialogs/properties_dialog.py:227
+#, python-brace-format
+msgid "Artist: {value}"
+msgstr "Исполнитель: {value}"
+
+#. Translators: Track property: album artist.
+#: src/chordcut/ui/dialogs/properties_dialog.py:115
+#, python-brace-format
+msgid "Album Artist: {value}"
+msgstr "Исполнитель альбома: {value}"
+
+#. Translators: Track property: album.
+#: src/chordcut/ui/dialogs/properties_dialog.py:121
+#, python-brace-format
+msgid "Album: {value}"
+msgstr "Альбом: {value}"
+
+#. Translators: Track property: duration.
+#: src/chordcut/ui/dialogs/properties_dialog.py:130
+#, python-brace-format
+msgid "Duration: {value}"
+msgstr "Продолжительность: {value}"
+
+#. Translators: Track property: track number.
+#: src/chordcut/ui/dialogs/properties_dialog.py:141
+#, python-brace-format
+msgid "Track Number: {value}"
+msgstr "Номер композиции: {value}"
+
+#. Translators: Track property: format.
+#: src/chordcut/ui/dialogs/properties_dialog.py:155
+#, python-brace-format
+msgid "Format: {value}"
+msgstr "Формат: {value}"
+
+#. Translators: Track property: bitrate.
+#: src/chordcut/ui/dialogs/properties_dialog.py:163
+#, python-brace-format
+msgid "Bitrate: {value}"
+msgstr "Битрейт: {value}"
+
+#. Translators: Track property: file size.
+#: src/chordcut/ui/dialogs/properties_dialog.py:171
+#, python-brace-format
+msgid "File Size: {value}"
+msgstr "Размер файла: {value}"
+
+#. Translators: Track property: date added.
+#: src/chordcut/ui/dialogs/properties_dialog.py:182
+#, python-brace-format
+msgid "Date Added: {value}"
+msgstr "Добавлено: {value}"
+
+#. Translators: Artist property: name.
+#. Translators: Album property: name.
+#. Translators: Playlist property: name.
+#: src/chordcut/ui/dialogs/properties_dialog.py:197
+#: src/chordcut/ui/dialogs/properties_dialog.py:221
+#: src/chordcut/ui/dialogs/properties_dialog.py:256
+#, python-brace-format
+msgid "Name: {value}"
+msgstr "Название: {value}"
+
+#. Translators: Artist property: album count.
+#. Translators: Album count.
+#: src/chordcut/ui/dialogs/properties_dialog.py:204
+#: src/chordcut/ui/main_window.py:1081
+#, python-brace-format
+msgid "{n} album"
+msgid_plural "{n} albums"
+msgstr[0] "{n} альбом"
+msgstr[1] "{n} альбома"
+msgstr[2] "{n} альбомов"
+
+#. Translators: Artist property: track count.
+#. Translators: Album property: track count.
+#. Translators: Playlist property: track count.
+#. Translators: Track count.
+#: src/chordcut/ui/dialogs/properties_dialog.py:209
+#: src/chordcut/ui/dialogs/properties_dialog.py:234
+#: src/chordcut/ui/dialogs/properties_dialog.py:263
+#: src/chordcut/ui/main_window.py:485 src/chordcut/ui/main_window.py:1063
+#: src/chordcut/ui/main_window.py:3126
+#, python-brace-format
+msgid "{n} track"
+msgid_plural "{n} tracks"
+msgstr[0] "{n} композиция"
+msgstr[1] "{n} композиции"
+msgstr[2] "{n} композиций"
+
+#. Translators: Album property: total duration.
+#. Translators: Playlist property: total duration.
+#: src/chordcut/ui/dialogs/properties_dialog.py:240
+#: src/chordcut/ui/dialogs/properties_dialog.py:269
+#, python-brace-format
+msgid "Total Duration: {value}"
+msgstr "Общая продолжительность: {value}"
+
+#. Translators: Title of the server management dialog.
+#: src/chordcut/ui/dialogs/servers_dialog.py:29
+msgid "Manage Servers"
+msgstr "Управление серверами"
+
+#. Translators: Label for the server list.
+#: src/chordcut/ui/dialogs/servers_dialog.py:53
+msgid "&Servers:"
+msgstr "&Серверы:"
+
+#. Translators: Accessible name for the server list.
+#: src/chordcut/ui/dialogs/servers_dialog.py:59
+msgid "Servers"
+msgstr "Серверы"
+
+#. Translators: Button to add a new server.
+#: src/chordcut/ui/dialogs/servers_dialog.py:66
+msgid "&Add..."
+msgstr "&Добавить..."
+
+#. Translators: Button to edit the selected server.
+#: src/chordcut/ui/dialogs/servers_dialog.py:72
+msgid "&Edit..."
+msgstr "&Изменить..."
+
+#. Translators: Button to delete the selected server.
+#: src/chordcut/ui/dialogs/servers_dialog.py:78
+msgid "&Delete"
+msgstr "&Удалить"
+
+#. Translators: Error when adding server fails.
+#: src/chordcut/ui/dialogs/servers_dialog.py:215
+msgid ""
+"Failed to connect to the server.\n"
+"\n"
+"Please check the URL and credentials."
+msgstr ""
+"Не удалось подключиться к серверу.\n"
+"\n"
+"Пожалуйста, проверьте URL и учётные данные."
+
+#. Translators: Error when editing server fails.
+#: src/chordcut/ui/dialogs/servers_dialog.py:259
+msgid ""
+"Failed to connect to the server.\n"
+"\n"
+"The previous connection data will be kept."
+msgstr ""
+"Не удалось подключиться к серверу.\n"
+"\n"
+"Данные текущего сервера не изменятся."
+
+#. Translators: Error shown when deleting the last server.
+#: src/chordcut/ui/dialogs/servers_dialog.py:301
+msgid "Cannot delete the last server."
+msgstr "Невозможно удалить единственный сервер."
+
+#. Translators: Error dialog title.
+#: src/chordcut/ui/dialogs/servers_dialog.py:303
+msgid "Cannot Delete"
+msgstr "Ошибка удаления"
+
+#. Translators: Confirmation message for server deletion.
+#. {server} is the server label.
+#: src/chordcut/ui/dialogs/servers_dialog.py:316
+#, python-brace-format
+msgid ""
+"Delete server \"{server}\"?\n"
+"\n"
+"All cached data for this server will be removed."
+msgstr ""
+"Удалить сервер «{server}»?\n"
+"\n"
+"Все локально сохранённые данные этого сервера будут удалены."
+
+#. Translators: Title of the delete confirmation dialog.
+#: src/chordcut/ui/dialogs/servers_dialog.py:320
+msgid "Confirm Delete"
+msgstr "Подтвердить удаления"
+
+#. Translators: Title of the settings dialog.
+#: src/chordcut/ui/dialogs/settings_dialog.py:16
+msgid "Settings"
+msgstr "Настройки"
+
+#. Translators: Label for download folder picker.
+#: src/chordcut/ui/dialogs/settings_dialog.py:30
+msgid "Download &folder:"
+msgstr "Папка для &загрузок:"
+
+#. Translators: Folder browser dialog prompt.
+#: src/chordcut/ui/dialogs/settings_dialog.py:44
+msgid "Select download folder"
+msgstr "Выберите папку для загрузки"
+
+#. Translators: Accessible name for download folder picker.
+#: src/chordcut/ui/dialogs/settings_dialog.py:46
+msgid "Download folder"
+msgstr "Папка для загрузок"
+
+#. Translators: Label for the player settings group box.
+#: src/chordcut/ui/dialogs/settings_dialog.py:63
+msgid "Player settings"
+msgstr "Воспроизведение"
+
+#. Translators: Label for volume step spin control.
+#: src/chordcut/ui/dialogs/settings_dialog.py:74
+msgid "&Volume step (%):"
+msgstr "&Шаг громкости (%):"
+
+#. Translators: Accessible name for volume step field.
+#: src/chordcut/ui/dialogs/settings_dialog.py:82
+msgid "Volume step"
+msgstr "Шаг громкости"
+
+#. Translators: Label for seek step spin control.
+#: src/chordcut/ui/dialogs/settings_dialog.py:97
+msgid "&Seek step (seconds):"
+msgstr "Шаг &перемотки (в секундах):"
+
+#. Translators: Accessible name for seek step field.
+#: src/chordcut/ui/dialogs/settings_dialog.py:105
+msgid "Seek step"
+msgstr "Шаг перемотки"
+
+#. Translators: Checkbox to save volume on exit.
+#: src/chordcut/ui/dialogs/settings_dialog.py:119
+msgid "Remember &volume level on exit"
+msgstr "Запоминать &громкость при выходе"
+
+#. Translators: Checkbox to save audio device on exit.
+#: src/chordcut/ui/dialogs/settings_dialog.py:130
+msgid "Remember output &device on exit"
+msgstr "Запоминать &устройство вывода при выходе"
+
+#. Translators: Label for the behavior settings group box.
+#: src/chordcut/ui/dialogs/settings_dialog.py:147
+msgid "Behavior"
+msgstr "Поведение"
+
+#. Translators: Checkbox to minimize to tray on close.
+#: src/chordcut/ui/dialogs/settings_dialog.py:156
+msgid "&Close button minimizes to tray instead of exiting"
+msgstr "&Кнопка закрытия сворачивает в трей вместо выхода"
+
+#. Translators: Checkbox to enable automatic update checks.
+#: src/chordcut/ui/dialogs/settings_dialog.py:166
+msgid "Check for &updates on startup"
+msgstr "Проверять о&бновления при запуске"
+
+#. Translators: Save button in settings dialog.
+#: src/chordcut/ui/dialogs/settings_dialog.py:185
+msgid "Save"
+msgstr "Сохранить"
+
+#. Translators: Title of the sleep timer dialog.
+#: src/chordcut/ui/dialogs/timer_dialog.py:20
+msgid "Sleep Timer"
+msgstr "Таймер сна"
+
+#. Translators: Group box label for timer duration fields.
+#: src/chordcut/ui/dialogs/timer_dialog.py:31
+msgid "Timer duration"
+msgstr "Продолжительность"
+
+#. Translators: Label for hours field in timer dialog.
+#: src/chordcut/ui/dialogs/timer_dialog.py:37
+msgid "&Hours:"
+msgstr "&Часы:"
+
+#. Translators: Accessible name for hours spin control.
+#: src/chordcut/ui/dialogs/timer_dialog.py:44
+msgid "Hours"
+msgstr "Часы"
+
+#. Translators: Label for minutes field in timer dialog.
+#: src/chordcut/ui/dialogs/timer_dialog.py:55
+msgid "&Minutes:"
+msgstr "&Минуты:"
+
+#. Translators: Accessible name for minutes spin control.
+#: src/chordcut/ui/dialogs/timer_dialog.py:62
+msgid "Minutes"
+msgstr "Минуты"
+
+#. Translators: Label for seconds field in timer dialog.
+#: src/chordcut/ui/dialogs/timer_dialog.py:73
+msgid "&Seconds:"
+msgstr "&Секунды:"
+
+#. Translators: Accessible name for seconds spin control.
+#: src/chordcut/ui/dialogs/timer_dialog.py:80
+msgid "Seconds"
+msgstr "Секунды"
+
+#. Translators: Label for the action dropdown in the timer dialog.
+#: src/chordcut/ui/dialogs/timer_dialog.py:98
+msgid "&Select action:"
+msgstr "В&ыберите действие:"
+
+#. Translators: Timer action — exit the application.
+#: src/chordcut/ui/dialogs/timer_dialog.py:103
+msgid "Close the program"
+msgstr "Закрыть программу"
+
+#. Translators: Timer action — shut down Windows.
+#: src/chordcut/ui/dialogs/timer_dialog.py:105
+msgid "Shut down the computer"
+msgstr "Выключить компьютер"
+
+#. Translators: Timer action — sleep/suspend Windows.
+#: src/chordcut/ui/dialogs/timer_dialog.py:107
+msgid "Put the computer to sleep"
+msgstr "Перевести компьютер в спящий режим"
+
+#. Translators: Accessible name for action selector.
+#: src/chordcut/ui/dialogs/timer_dialog.py:110
+msgid "Select action"
+msgstr "Выберите действие"
+
+#. Translators: Button to enable the sleep timer.
+#: src/chordcut/ui/dialogs/timer_dialog.py:128
+msgid "Enable Timer"
+msgstr "&Включить таймер"
+
+#. Translators: Error when timer duration is zero.
+#: src/chordcut/ui/dialogs/timer_dialog.py:151
+msgid "Please enter a duration greater than zero."
+msgstr "Пожалуйста, введите продолжительность больше нуля."
+
+#. Translators: Title of the validation error dialog.
+#: src/chordcut/ui/dialogs/timer_dialog.py:153
+msgid "Invalid Duration"
+msgstr "Недопустимая продолжительность"
+
+#. Translators: Fallback when a track has no title.
+#. Translators: Fallback when an artist has no name.
+#. Translators: Fallback when an album has no title.
+#. Translators: Fallback when a playlist has no name.
+#. Translators: Fallback when a track has no title.
+#: src/chordcut/ui/library_list.py:24 src/chordcut/ui/library_list.py:42
+#: src/chordcut/ui/library_list.py:53 src/chordcut/ui/library_list.py:62
+#: src/chordcut/ui/main_window.py:1024 src/chordcut/ui/main_window.py:2073
+#: src/chordcut/ui/main_window.py:3947 src/chordcut/ui/main_window.py:4066
+#: src/chordcut/ui/tray_icon.py:70
+msgid "Untitled"
+msgstr "Без названия"
+
+#. Translators: Track format: {artist} \u2014 {title}  {duration}
+#: src/chordcut/ui/library_list.py:30
+#, python-brace-format
+msgid "{artist} — {title}  {duration}"
+msgstr "{artist} — {title}  {duration}"
+
+#. Translators: Track format without artist.
+#: src/chordcut/ui/library_list.py:34
+#, python-brace-format
+msgid "{title}  {duration}"
+msgstr "{title}  {duration}"
+
+#. Translators: Accessible name for the library list.
+#: src/chordcut/ui/library_list.py:87
+msgid "Library"
+msgstr "Медиатека"
+
+#. Translators: Section selector: all tracks.
+#: src/chordcut/ui/main_window.py:41
+msgid "Tracks"
+msgstr "Композиции"
+
+#. Translators: Section selector: playlists.
+#: src/chordcut/ui/main_window.py:43
+msgid "Playlists"
+msgstr "Плей-листы"
+
+#. Translators: Section selector: artists.
+#: src/chordcut/ui/main_window.py:45
+msgid "Artists"
+msgstr "Исполнители"
+
+#. Translators: Section selector: album artists.
+#: src/chordcut/ui/main_window.py:47
+msgid "Album Artists"
+msgstr "Исполнители альбома"
+
+#. Translators: Section selector: albums.
+#: src/chordcut/ui/main_window.py:49
+msgid "Albums"
+msgstr "Альбомы"
+
+#. Translators: Initial status bar message.
+#. Translators: Ready status.
+#: src/chordcut/ui/main_window.py:184 src/chordcut/ui/main_window.py:3882
+#: src/chordcut/ui/main_window.py:4029
+msgid "Ready"
+msgstr "Готово"
+
+#. Translators: Menu item to create playlist.
+#: src/chordcut/ui/main_window.py:215
+msgid "&New Playlist...\tCtrl+N"
+msgstr "Новый &плей-лист...\tCtrl+N"
+
+#. Translators: Help text for New Playlist.
+#: src/chordcut/ui/main_window.py:217
+msgid "Create a new playlist"
+msgstr "Создать новый плей-лист"
+
+#. Translators: Submenu label for switching servers.
+#: src/chordcut/ui/main_window.py:224
+msgid "Change &Server"
+msgstr "Сменить с&ервер"
+
+#. Translators: Menu item to open settings.
+#: src/chordcut/ui/main_window.py:230
+msgid "Se&ttings...\tF8"
+msgstr "&Настройки...\tF8"
+
+#. Translators: Help text for Settings.
+#: src/chordcut/ui/main_window.py:232
+msgid "Configure application settings"
+msgstr "Настроить параметры приложения"
+
+#. Translators: Menu item to set up (or cancel) the sleep timer.
+#: src/chordcut/ui/main_window.py:238
+msgid "Sleep &Timer..."
+msgstr "&Таймер сна..."
+
+#. Translators: Help text for Sleep Timer.
+#: src/chordcut/ui/main_window.py:240
+msgid "Set a timer to close or shut down after a delay"
+msgstr "Установить таймер для закрытия программы или выключения компьютера"
+
+#. Translators: Menu item to exit.
+#: src/chordcut/ui/main_window.py:246
+msgid "E&xit"
+msgstr "&Выход"
+
+#. Translators: Help text for Exit.
+#: src/chordcut/ui/main_window.py:248
+msgid "Exit the application"
+msgstr "Закрыть программу"
+
+#. Translators: File menu label.
+#: src/chordcut/ui/main_window.py:251
+msgid "&File"
+msgstr "&Файл"
+
+#. Translators: Help text for Play.
+#: src/chordcut/ui/main_window.py:260
+msgid "Play selected track"
+msgstr "Воспроизвести выбранную композицию"
+
+#. Translators: Menu item to pause/resume.
+#: src/chordcut/ui/main_window.py:265
+msgid "P&ause/Resume\tEscape"
+msgstr "П&ауза/Продолжить\tEscape"
+
+#. Translators: Help text for Pause/Resume.
+#: src/chordcut/ui/main_window.py:267
+msgid "Pause or resume playback"
+msgstr "Приостановить или продолжить воспроизведение"
+
+#. Translators: Menu item to stop.
+#: src/chordcut/ui/main_window.py:272
+msgid "&Stop\tCtrl+Alt+Q"
+msgstr "О&становить\tCtrl+Alt+Q"
+
+#. Translators: Help text for Stop.
+#: src/chordcut/ui/main_window.py:274
+msgid "Stop playback"
+msgstr "Остановить воспроизведение"
+
+#. Translators: Menu item for volume up.
+#: src/chordcut/ui/main_window.py:280
+msgid "Volume &Up\tCtrl+Up"
+msgstr "&Громче\tCtrl+вверх"
+
+#. Translators: Help text for Volume Up.
+#: src/chordcut/ui/main_window.py:282
+msgid "Increase volume"
+msgstr "Увеличить громкость"
+
+#. Translators: Menu item for volume down.
+#: src/chordcut/ui/main_window.py:287
+msgid "Volume &Down\tCtrl+Down"
+msgstr "Т&ише\tCtrl+вниз"
+
+#. Translators: Help text for Volume Down.
+#: src/chordcut/ui/main_window.py:289
+msgid "Decrease volume"
+msgstr "Уменьшить громкость"
+
+#. Translators: Menu item to seek forward.
+#: src/chordcut/ui/main_window.py:295
+msgid "Seek &Forward\tCtrl+Right"
+msgstr "Перемотка в&перёд\tCtrl+вправо"
+
+#. Translators: Help text for Seek Forward.
+#: src/chordcut/ui/main_window.py:297
+msgid "Seek forward 10 seconds"
+msgstr "Перемотать вперёд на 10 секунд"
+
+#. Translators: Menu item to seek backward.
+#: src/chordcut/ui/main_window.py:302
+msgid "Seek &Backward\tCtrl+Left"
+msgstr "Перемотка на&зад\tCtrl+влево"
+
+#. Translators: Help text for Seek Backward.
+#: src/chordcut/ui/main_window.py:304
+msgid "Seek backward 10 seconds"
+msgstr "Перемотать назад на 10 секунд"
+
+#. Translators: Menu item for next track.
+#: src/chordcut/ui/main_window.py:310
+msgid "&Next Track\tShift+Right"
+msgstr "С&ледующая композиция\tShift+вправо"
+
+#. Translators: Help text for Next Track.
+#: src/chordcut/ui/main_window.py:312
+msgid "Play next track in queue"
+msgstr "Следующая композиция в очереди"
+
+#. Translators: Menu item for previous track.
+#: src/chordcut/ui/main_window.py:317
+msgid "Pre&vious Track\tShift+Left"
+msgstr "Пр&едыдущая композиция\tShift+влево"
+
+#. Translators: Help text for Previous Track.
+#: src/chordcut/ui/main_window.py:319
+msgid "Play previous track in queue"
+msgstr "Предыдущая композиция в очереди"
+
+#. Translators: Menu item to restart current track.
+#: src/chordcut/ui/main_window.py:324
+msgid "R&estart Track\tCtrl+Alt+X"
+msgstr "&Начать сначала\tCtrl+Alt+X"
+
+#. Translators: Help text for Restart Track.
+#: src/chordcut/ui/main_window.py:326
+msgid "Replay current track from beginning"
+msgstr "Воспроизвести текущую композицию сначала"
+
+#. Translators: Menu item for repeat mode.
+#: src/chordcut/ui/main_window.py:332
+msgid "&Repeat\tCtrl+Alt+R"
+msgstr "Пов&тор\tCtrl+Alt+R"
+
+#. Translators: Help text for Repeat.
+#: src/chordcut/ui/main_window.py:334
+msgid "Toggle repeat mode"
+msgstr "Переключить режим повтора"
+
+#. Translators: Menu item for shuffle mode.
+#: src/chordcut/ui/main_window.py:339
+msgid "S&huffle\tCtrl+Alt+S"
+msgstr "Пере&мешать\tCtrl+Alt+S"
+
+#. Translators: Help text for Shuffle.
+#: src/chordcut/ui/main_window.py:341
+msgid "Toggle shuffle mode"
+msgstr "Переключить режим перемешивания"
+
+#. Translators: Playback menu label.
+#: src/chordcut/ui/main_window.py:344
+msgid "&Playback"
+msgstr "&Воспроизведение"
+
+#. Translators: Menu item to refresh library.
+#: src/chordcut/ui/main_window.py:351
+msgid "&Refresh Library\tF5"
+msgstr "О&бновить медиатеку\tF5"
+
+#. Translators: Help text for Refresh Library.
+#: src/chordcut/ui/main_window.py:353
+msgid "Reload library from server"
+msgstr "Обновить медиатеку с сервера"
+
+#. Translators: Sort option: alphabetical A-Z.
+#: src/chordcut/ui/main_window.py:360
+msgid "Alphabetical A–Z"
+msgstr "По алфавиту А–Я"
+
+#. Translators: Sort option: alphabetical Z-A.
+#: src/chordcut/ui/main_window.py:362
+msgid "Alphabetical Z–A"
+msgstr "По алфавиту Я–А"
+
+#. Translators: Sort option: newest first.
+#: src/chordcut/ui/main_window.py:364
+msgid "By date added (newest first)"
+msgstr "По дате добавления (сначала новые)"
+
+#. Translators: Sort option: oldest first.
+#: src/chordcut/ui/main_window.py:366
+msgid "By date added (oldest first)"
+msgstr "По дате добавления (сначала старые)"
+
+#. Translators: Sorting submenu label.
+#: src/chordcut/ui/main_window.py:384
+msgid "&Sorting"
+msgstr "&Сортировка"
+
+#. Translators: Menu item to shuffle the
+#. currently visible list.
+#: src/chordcut/ui/main_window.py:390
+msgid "&Shuffle List"
+msgstr "&Перемешать список"
+
+#. Translators: Help text for Shuffle List.
+#: src/chordcut/ui/main_window.py:392
+msgid "Shuffle the visible list order"
+msgstr "Перемешать порядок элементов в списке"
+
+#. Translators: Libraries submenu label.
+#: src/chordcut/ui/main_window.py:404
+msgid "&Libraries"
+msgstr "&Медиатеки"
+
+#. Translators: View menu label.
+#: src/chordcut/ui/main_window.py:407
+msgid "&View"
+msgstr "В&ид"
+
+#. Translators: Menu item for shortcuts.
+#: src/chordcut/ui/main_window.py:414
+msgid "&Keyboard Shortcuts\tF1"
+msgstr "&Горячие клавиши\tF1"
+
+#. Translators: Help text for Keyboard Shortcuts.
+#: src/chordcut/ui/main_window.py:416
+msgid "Show keyboard shortcuts"
+msgstr "Показать горячие клавиши"
+
+#. Translators: Menu item for opening documentation.
+#: src/chordcut/ui/main_window.py:421
+msgid "&Documentation"
+msgstr "&Справка"
+
+#. Translators: Help text for Documentation.
+#: src/chordcut/ui/main_window.py:423
+msgid "Open ChordCut documentation in the browser"
+msgstr "Открыть справку ChordCut в браузере"
+
+#. Translators: Menu item for checking updates.
+#: src/chordcut/ui/main_window.py:429
+msgid "Check for &Updates..."
+msgstr "Проверить о&бновления..."
+
+#. Translators: Help text for Check for Updates.
+#: src/chordcut/ui/main_window.py:431
+msgid "Check for a newer version of ChordCut"
+msgstr "Проверить наличие новой версии ChordCut"
+
+#. Translators: Menu item for About.
+#: src/chordcut/ui/main_window.py:437
+msgid "&About"
+msgstr "&О программе"
+
+#. Translators: Help text for About.
+#: src/chordcut/ui/main_window.py:439
+msgid "About ChordCut"
+msgstr "О программе ChordCut"
+
+#. Translators: Help menu label.
+#: src/chordcut/ui/main_window.py:442
+msgid "&Help"
+msgstr "&Справка"
+
+#. Translators: Label for the section selector.
+#: src/chordcut/ui/main_window.py:454
+msgid "&Section:"
+msgstr "&Раздел:"
+
+#. Translators: Accessible name for section selector.
+#: src/chordcut/ui/main_window.py:460
+msgid "Section"
+msgstr "Раздел"
+
+#. Translators: Label for the search field.
+#: src/chordcut/ui/main_window.py:468
+msgid "S&earch:"
+msgstr "По&иск:"
+
+#. Translators: Accessible name for search field.
+#: src/chordcut/ui/main_window.py:473
+msgid "Search"
+msgstr "Поиск"
+
+#. Translators: Placeholder in the search field.
+#: src/chordcut/ui/main_window.py:478
+msgid "Type to filter..."
+msgstr "Введите для поиска..."
+
+#. Translators: Button to clear the track selection.
+#: src/chordcut/ui/main_window.py:501
+msgid "C&lear selection"
+msgstr "О&чистить выбор"
+
+#. Translators: Label for audio device selector.
+#: src/chordcut/ui/main_window.py:512
+msgid "&Output device:"
+msgstr "&Устройство вывода:"
+
+#. Translators: Accessible name for device selector.
+#: src/chordcut/ui/main_window.py:517
+msgid "Output device"
+msgstr "Устройство вывода"
+
+#. Translators: Label when nothing is playing.
+#: src/chordcut/ui/main_window.py:537 src/chordcut/ui/main_window.py:2205
+#: src/chordcut/ui/main_window.py:2858 src/chordcut/ui/main_window.py:3131
+msgid "Not playing"
+msgstr "Ничего не воспроизводится"
+
+#. Translators: Accessible name for now-playing.
+#: src/chordcut/ui/main_window.py:539
+msgid "Now playing"
+msgstr "Сейчас играет"
+
+#. Translators: Volume in status bar.
+#: src/chordcut/ui/main_window.py:1010
+#, python-brace-format
+msgid "Vol: {volume}%"
+msgstr "Громкость: {volume}%"
+
+#. Translators: Track count with context.
+#. {n} = count, {name} = parent name.
+#: src/chordcut/ui/main_window.py:1059
+#, python-brace-format
+msgid "{n} track in {name}"
+msgid_plural "{n} tracks in {name}"
+msgstr[0] "{n} композиция в {name}"
+msgstr[1] "{n} композиции в {name}"
+msgstr[2] "{n} композиций в {name}"
+
+#. Translators: Artist count.
+#: src/chordcut/ui/main_window.py:1067
+#, python-brace-format
+msgid "{n} artist"
+msgid_plural "{n} artists"
+msgstr[0] "{n} исполнитель"
+msgstr[1] "{n} исполнителя"
+msgstr[2] "{n} исполнителей"
+
+#. Translators: Album artist count.
+#: src/chordcut/ui/main_window.py:1071
+#, python-brace-format
+msgid "{n} album artist"
+msgid_plural "{n} album artists"
+msgstr[0] "{n} исполнитель альбома"
+msgstr[1] "{n} исполнителя альбома"
+msgstr[2] "{n} исполнителей альбома"
+
+#. Translators: Album count with context.
+#: src/chordcut/ui/main_window.py:1077
+#, python-brace-format
+msgid "{n} album by {name}"
+msgid_plural "{n} albums by {name}"
+msgstr[0] "{n} альбом {name}"
+msgstr[1] "{n} альбома {name}"
+msgstr[2] "{n} альбомов {name}"
+
+#. Translators: Playlist count.
+#: src/chordcut/ui/main_window.py:1085
+#, python-brace-format
+msgid "{n} playlist"
+msgid_plural "{n} playlists"
+msgstr[0] "{n} плей-лист"
+msgstr[1] "{n} плей-листа"
+msgstr[2] "{n} плей-листов"
+
+#. Translators: No server configured.
+#: src/chordcut/ui/main_window.py:1104
+msgid "Not connected to server"
+msgstr "Нет подключения к серверу"
+
+#. Translators: Showing cached library.
+#: src/chordcut/ui/main_window.py:1146
+msgid "Library loaded from cache, updating..."
+msgstr "Медиатека загружена из кеша, обновление..."
+
+#. Translators: Background refresh error.
+#: src/chordcut/ui/main_window.py:1164
+#, python-brace-format
+msgid "Error refreshing: {error}"
+msgstr "Ошибка обновления: {error}"
+
+#. Translators: First time loading.
+#: src/chordcut/ui/main_window.py:1195
+msgid "Loading library from server..."
+msgstr "Загрузка медиатеки с сервера..."
+
+#. Translators: Cold load error.
+#: src/chordcut/ui/main_window.py:1226
+#, python-brace-format
+msgid "Error loading: {error}"
+msgstr "Ошибка загрузки: {error}"
+
+#. Translators: Cold load progress in status bar.
+#. {loaded} = tracks loaded so far, {total} = total tracks.
+#: src/chordcut/ui/main_window.py:1314
+#, python-brace-format
+msgid "Loading: {loaded} of {total} track"
+msgid_plural "Loading: {loaded} of {total} tracks"
+msgstr[0] "Загрузка: {loaded} из {total} композиции"
+msgstr[1] "Загрузка: {loaded} из {total} композиций"
+msgstr[2] "Загрузка: {loaded} из {total} композиций"
+
+#. Translators: Library updated status.
+#: src/chordcut/ui/main_window.py:1342 src/chordcut/ui/main_window.py:1501
+msgid "Library updated"
+msgstr "Медиатека обновлена"
+
+#. Translators: Loading progress label.
+#. {loaded} = tracks loaded so far,
+#. {total} = total tracks on server.
+#: src/chordcut/ui/main_window.py:1407
+#, python-brace-format
+msgid "{loaded} of {total} track"
+msgid_plural "{loaded} of {total} tracks"
+msgstr[0] "{loaded} из {total} композиции"
+msgstr[1] "{loaded} из {total} композиций"
+msgstr[2] "{loaded} из {total} композиций"
+
+#. Translators: Default audio device with name.
+#: src/chordcut/ui/main_window.py:1942
+#, python-brace-format
+msgid "Default ({name})"
+msgstr "По умолчанию ({name})"
+
+#. Translators: Default audio device.
+#: src/chordcut/ui/main_window.py:1948
+msgid "Default"
+msgstr "По умолчанию"
+
+#. Translators: No audio device (mute output).
+#: src/chordcut/ui/main_window.py:1960
+msgid "No device"
+msgstr "Нет устройства"
+
+#. Translators: Now-playing with artist.
+#: src/chordcut/ui/main_window.py:2081
+#, python-brace-format
+msgid "Now playing: {title} - {artist}"
+msgstr "Сейчас играет: {title} — {artist}"
+
+#. Translators: Now-playing without artist.
+#: src/chordcut/ui/main_window.py:2086
+#, python-brace-format
+msgid "Now playing: {title}"
+msgstr "Сейчас играет: {title}"
+
+#. Translators: Status bar when playing.
+#: src/chordcut/ui/main_window.py:2090 src/chordcut/ui/main_window.py:4069
+#, python-brace-format
+msgid "Playing: {title}"
+msgstr "Воспроизведение: {title}"
+
+#. Translators: Playback finished status.
+#: src/chordcut/ui/main_window.py:2208
+msgid "Playback finished"
+msgstr "Воспроизведение завершено"
+
+#. Translators: Label for the selected tracks area.
+#. {n} = number of tracks selected.
+#: src/chordcut/ui/main_window.py:2597
+#, python-brace-format
+msgid "{n} track selected"
+msgid_plural "{n} tracks selected"
+msgstr[0] "Выбрана {n} композиция"
+msgstr[1] "Выбрано {n} композиции"
+msgstr[2] "Выбрано {n} композиций"
+
+#. Translators: Playing status.
+#: src/chordcut/ui/main_window.py:2846
+msgid "Playing"
+msgstr "Воспроизведение"
+
+#. Translators: Paused status.
+#: src/chordcut/ui/main_window.py:2849
+msgid "Paused"
+msgstr "Пауза"
+
+#. Translators: Stopped status.
+#: src/chordcut/ui/main_window.py:2861
+msgid "Stopped"
+msgstr "Остановлено"
+
+#. Translators: Repeat mode on notification.
+#: src/chordcut/ui/main_window.py:2907 src/chordcut/ui/main_window.py:2933
+msgid "Repeat on"
+msgstr "Повтор включён"
+
+#. Translators: Repeat mode off notification.
+#: src/chordcut/ui/main_window.py:2910 src/chordcut/ui/main_window.py:2936
+msgid "Repeat off"
+msgstr "Повтор выключен"
+
+#. Translators: Shuffle mode on notification.
+#: src/chordcut/ui/main_window.py:2920 src/chordcut/ui/main_window.py:2946
+msgid "Shuffle on"
+msgstr "Перемешивание включено"
+
+#. Translators: Shuffle mode off notification.
+#: src/chordcut/ui/main_window.py:2925 src/chordcut/ui/main_window.py:2951
+msgid "Shuffle off"
+msgstr "Перемешивание выключено"
+
+#. Translators: Menu item to open server manager.
+#: src/chordcut/ui/main_window.py:2993
+msgid "Manage Servers..."
+msgstr "Управление серверами..."
+
+#. Translators: Error when switching servers.
+#: src/chordcut/ui/main_window.py:3058
+msgid ""
+"Failed to connect to the server.\n"
+"\n"
+"The previous server remains active."
+msgstr ""
+"Не удалось подключиться к серверу.\n"
+"\n"
+"Предыдущий сервер остаётся активным."
+
+#. Translators: Keyboard shortcuts help text.
+#: src/chordcut/ui/main_window.py:3138
+msgid ""
+"Keyboard Shortcuts:\n"
+"\n"
+"Navigation:\n"
+"  Tab            - Move between controls\n"
+"  Up/Down        - Navigate items\n"
+"  Enter          - Play track / open item\n"
+"  Backspace      - Go back one level\n"
+"\n"
+"Playback:\n"
+"  Escape         - Pause/Resume\n"
+"  Ctrl+Alt+Q     - Stop\n"
+"  Shift+Right    - Next track\n"
+"  Shift+Left     - Previous track\n"
+"  Ctrl+Alt+X     - Restart track\n"
+"  Ctrl+Alt+R     - Toggle repeat\n"
+"  Ctrl+Alt+S     - Toggle shuffle\n"
+"  Ctrl+Up        - Volume up\n"
+"  Ctrl+Down      - Volume down\n"
+"  Ctrl+Right     - Seek forward\n"
+"  Ctrl+Left      - Seek backward\n"
+"\n"
+"Context:\n"
+"  Alt+Enter        - Properties\n"
+"  Ctrl+Alt+Enter   - View lyrics\n"
+"  Alt+Shift+Enter  - View synced lyrics\n"
+"  Ctrl+C           - Copy link\n"
+"  Ctrl+Shift+C     - Copy stream link\n"
+"  Ctrl+Shift+Enter - Download track\n"
+"\n"
+"Selection:\n"
+"  Space          - Add track to selection\n"
+"  Space (in sel) - Remove from selection\n"
+"  Enter (in sel) - Play from selection\n"
+"  Alt+Up/Down    - Reorder in selection\n"
+"  Delete (in sel)- Remove from playlist\n"
+"\n"
+"Playlists:\n"
+"  Ctrl+N         - New playlist\n"
+"  F2             - Rename playlist\n"
+"  Delete         - Delete playlist / remove track\n"
+"  Alt+Up/Down    - Reorder tracks\n"
+"\n"
+"Other:\n"
+"  F5             - Refresh library\n"
+"  F8             - Settings\n"
+"  F1             - Show this help\n"
+"  Alt+F4         - Minimize to tray (if enabled) / Exit"
+msgstr ""
+"Горячие клавиши:\n"
+"\n"
+"Навигация:\n"
+"  Tab            - Перемещение между элементами\n"
+"  Стрелки вверх/вниз        - Навигация по списку\n"
+"  Enter          - Воспроизвести / открыть элемент\n"
+"  Backspace      - Вернуться назад\n"
+"\n"
+"Воспроизведение:\n"
+"  Escape         - Пауза/Продолжить\n"
+"  Ctrl+Alt+Q     - Остановить\n"
+"  Shift+вправо    - Следующая композиция\n"
+"  Shift+влево     - Предыдущая композиция\n"
+"  Ctrl+Alt+X     - Начать сначала\n"
+"  Ctrl+Alt+R     - Повтор\n"
+"  Ctrl+Alt+S     - Перемешать\n"
+"  Ctrl+вверх        - Громче\n"
+"  Ctrl+вниз      - Тише\n"
+"  Ctrl+вправо     - Перемотка вперёд\n"
+"  Ctrl+влево      - Перемотка назад\n"
+"\n"
+"Информация:\n"
+"  Alt+Enter        - Свойства\n"
+"  Ctrl+Alt+Enter   - Показать текст\n"
+"  Alt+Shift+Enter  - Синхронизированный текст\n"
+"  Ctrl+C           - Копировать ссылку\n"
+"  Ctrl+Shift+C     - Копировать ссылку потока\n"
+"  Ctrl+Shift+Enter - Скачать композицию\n"
+"\n"
+"Выделение:\n"
+"  Пробел          - Добавить композицию в список выбранных\n"
+"  Пробел (в списке выбранных) - Убрать из списка выбранных\n"
+"  Enter (в списке выбранных) - Воспроизвести выбранное\n"
+"  Alt+вверх/вниз    - Изменить порядок\n"
+"  Delete (в списке выбранных)- Удалить из плей-листа\n"
+"\n"
+"Плей-листы:\n"
+"  Ctrl+N         - Новый плей-лист\n"
+"  F2             - Переименовать\n"
+"  Delete         - Удалить плей-лист / композицию\n"
+"  Alt+вверх/вниз    - Изменить порядок\n"
+"\n"
+"Прочее:\n"
+"  F5             - Обновить медиатеку\n"
+"  F8             - Настройки\n"
+"  F1             - Показать эту справку\n"
+"  Alt+F4         - Свернуть в трей (если включено) / Выход"
+
+#. Translators: Shortcuts dialog title.
+#: src/chordcut/ui/main_window.py:3190
+msgid "Keyboard Shortcuts"
+msgstr "Горячие клавиши"
+
+#. Translators: Shown when no update available.
+#: src/chordcut/ui/main_window.py:3247
+#, python-brace-format
+msgid "You are running the latest version ({version})."
+msgstr "У вас последняя версия ({version})."
+
+#. Translators: Title for the update check
+#. result dialog.
+#: src/chordcut/ui/main_window.py:3253
+msgid "Check for Updates"
+msgstr "Проверка обновлений"
+
+#. Translators: HTTP error detail in update check.
+#: src/chordcut/ui/main_window.py:3273
+#, python-brace-format
+msgid "The server returned HTTP {code}."
+msgstr "Сервер вернул HTTP {code}."
+
+#. Translators: Error message when update check fails.
+#. {detail} is the technical error description.
+#: src/chordcut/ui/main_window.py:3284
+#, python-brace-format
+msgid ""
+"Could not check for updates.\n"
+"\n"
+"{detail}"
+msgstr ""
+"Не удалось проверить обновления.\n"
+"\n"
+"{detail}"
+
+#. Translators: Title for the update error dialog.
+#. Translators: Title for download error.
+#: src/chordcut/ui/main_window.py:3287 src/chordcut/ui/main_window.py:3458
+#: src/chordcut/ui/main_window.py:3473
+msgid "Update Error"
+msgstr "Ошибка обновления"
+
+#. Translators: Title of the update available dialog.
+#: src/chordcut/ui/main_window.py:3297
+msgid "Update Available"
+msgstr "Доступно обновление"
+
+#. Translators: Heading shown when a new version is found.
+#: src/chordcut/ui/main_window.py:3308
+#, python-brace-format
+msgid "A new version of {app_name} is available!"
+msgstr "Доступна новая версия {app_name}!"
+
+#. Translators: Label for current version in update dialog.
+#: src/chordcut/ui/main_window.py:3321
+msgid "Current version:"
+msgstr "Текущая версия:"
+
+#. Translators: Label for new version in update dialog.
+#: src/chordcut/ui/main_window.py:3329
+msgid "New version:"
+msgstr "Новая версия:"
+
+#. Translators: Label above the changelog text.
+#: src/chordcut/ui/main_window.py:3346
+msgid "What's new:"
+msgstr "Что нового:"
+
+#. Translators: Accessible name for changelog field.
+#: src/chordcut/ui/main_window.py:3360
+msgid "Changelog"
+msgstr "Список изменений"
+
+#. Translators: Prompt asking user to confirm the update.
+#: src/chordcut/ui/main_window.py:3373
+msgid "Would you like to update now?"
+msgstr "Обновить сейчас?"
+
+#. Translators: Title of the download progress dialog.
+#: src/chordcut/ui/main_window.py:3419
+msgid "Updating"
+msgstr "Обновление"
+
+#. Translators: Message shown while downloading update.
+#: src/chordcut/ui/main_window.py:3421
+msgid "Downloading update..."
+msgstr "Загрузка обновления..."
+
+#. Translators: Error downloading update.
+#. {error} is the error description.
+#: src/chordcut/ui/main_window.py:3455
+#, python-brace-format
+msgid ""
+"Failed to download the update.\n"
+"\n"
+"{error}"
+msgstr ""
+"Не удалось загрузить обновление.\n"
+"\n"
+"{error}"
+
+#. Translators: Error applying update.
+#. {error} is the error description.
+#: src/chordcut/ui/main_window.py:3471
+#, python-brace-format
+msgid ""
+"Failed to apply the update.\n"
+"\n"
+"{error}"
+msgstr ""
+"Не удалось установить обновление.\n"
+"\n"
+"{error}"
+
+#. Translators: Shown when documentation file is missing.
+#: src/chordcut/ui/main_window.py:3508
+msgid "Documentation file not found."
+msgstr "Файл справки не найден."
+
+#. Translators: Title of documentation error dialog.
+#: src/chordcut/ui/main_window.py:3510
+msgid "Documentation"
+msgstr "Справка"
+
+#. Translators: About dialog text.
+#. {app_name} = app name, {version} = version string.
+#: src/chordcut/ui/main_window.py:3519
+#, python-brace-format
+msgid ""
+"{app_name} v{version}\n"
+"\n"
+"An accessible Jellyfin music client.\n"
+"\n"
+"Designed for keyboard and screen reader users."
+msgstr ""
+"{app_name} v{version}\n"
+"\n"
+"Доступный музыкальный клиент для Jellyfin.\n"
+"\n"
+"Разработан для пользователей клавиатуры и программ экранного доступа."
+
+#. Translators: About dialog title.
+#: src/chordcut/ui/main_window.py:3527
+#, python-brace-format
+msgid "About {app_name}"
+msgstr "О {app_name}"
+
+#. Translators: Link(s) copied notification.
+#. {n} = count.
+#: src/chordcut/ui/main_window.py:3757
+#, python-brace-format
+msgid "{n} link copied to clipboard"
+msgid_plural "{n} links copied to clipboard"
+msgstr[0] "{n} ссылка скопирована в буфер обмена"
+msgstr[1] "{n} ссылки скопированы в буфер обмена"
+msgstr[2] "{n} ссылок скопировано в буфер обмена"
+
+#. Translators: Stream link(s) copied.
+#. {n} = count.
+#: src/chordcut/ui/main_window.py:3789
+#, python-brace-format
+msgid "{n} stream link copied to clipboard"
+msgid_plural "{n} stream links copied to clipboard"
+msgstr[0] "{n} ссылка потока скопирована в буфер обмена"
+msgstr[1] "{n} ссылки потоков скопированы в буфер обмена"
+msgstr[2] "{n} ссылок потоков скопировано в буфер обмена"
+
+#. Translators: Artist properties dialog title.
+#: src/chordcut/ui/main_window.py:3821
+msgid "Artist Properties"
+msgstr "Свойства исполнителя"
+
+#. Translators: Album properties dialog title.
+#: src/chordcut/ui/main_window.py:3828
+msgid "Album Properties"
+msgstr "Свойства альбома"
+
+#. Translators: Playlist properties title.
+#: src/chordcut/ui/main_window.py:3837
+msgid "Playlist Properties"
+msgstr "Свойства плей-листа"
+
+#. Translators: Fetching details status.
+#: src/chordcut/ui/main_window.py:3853
+msgid "Fetching details..."
+msgstr "Загрузка сведений..."
+
+#. Translators: Track properties dialog title.
+#: src/chordcut/ui/main_window.py:3877
+msgid "Track Properties"
+msgstr "Свойства композиции"
+
+#. Translators: No lyrics available message.
+#: src/chordcut/ui/main_window.py:3897 src/chordcut/ui/main_window.py:3935
+msgid "No lyrics available for this track."
+msgstr "Для этой композиции нет текста."
+
+#. Translators: Lyrics dialog title.
+#: src/chordcut/ui/main_window.py:3899 src/chordcut/ui/main_window.py:3937
+msgid "Lyrics"
+msgstr "Текст"
+
+#. Translators: Fetching lyrics status.
+#: src/chordcut/ui/main_window.py:3911
+msgid "Fetching lyrics..."
+msgstr "Загрузка текста..."
+
+#. Translators: No synced lyrics message.
+#: src/chordcut/ui/main_window.py:3964
+msgid "Synced lyrics are not available for this track."
+msgstr "Для этой композиции нет синхронизированного текста."
+
+#. Translators: Synced lyrics title.
+#: src/chordcut/ui/main_window.py:3966
+msgid "Synced Lyrics"
+msgstr "Синхронизированный текст"
+
+#. Translators: Synced lyrics dialog title.
+#: src/chordcut/ui/main_window.py:3999 src/chordcut/ui/main_window.py:4016
+#, python-brace-format
+msgid "Lyrics - {title}"
+msgstr "Текст — {title}"
+
+#. Translators: Download dialog title.
+#: src/chordcut/ui/main_window.py:4122
+#, python-brace-format
+msgid "Download: {title}"
+msgstr "Скачивание: {title}"
+
+#. Translators: Download complete notification.
+#. {n} = count.
+#: src/chordcut/ui/main_window.py:4134 src/chordcut/ui/main_window.py:4162
+#, python-brace-format
+msgid "{n} track downloaded"
+msgid_plural "{n} tracks downloaded"
+msgstr[0] "Скачана {n} композиция"
+msgstr[1] "Скачано {n} композиции"
+msgstr[2] "Скачано {n} композиций"
+
+#. Translators: New playlist dialog prompt.
+#: src/chordcut/ui/main_window.py:4177
+msgid "Enter playlist name:"
+msgstr "Введите название плей-листа:"
+
+#. Translators: New playlist dialog title.
+#: src/chordcut/ui/main_window.py:4179
+msgid "New Playlist"
+msgstr "Новый плей-лист"
+
+#. Translators: Creating playlist status.
+#: src/chordcut/ui/main_window.py:4196
+msgid "Creating playlist..."
+msgstr "Создание плей-листа..."
+
+#. Translators: Create playlist failed.
+#: src/chordcut/ui/main_window.py:4219
+msgid "Failed to create playlist"
+msgstr "Не удалось создать плей-лист"
+
+#. Translators: Playlist created notification.
+#: src/chordcut/ui/main_window.py:4244
+#, python-brace-format
+msgid "Playlist \"{name}\" created"
+msgstr "Плей-лист «{name}» создан"
+
+#. Translators: Rename playlist dialog prompt.
+#: src/chordcut/ui/main_window.py:4261
+msgid "Enter new name:"
+msgstr "Введите новое название:"
+
+#. Translators: Rename playlist dialog title.
+#: src/chordcut/ui/main_window.py:4263
+msgid "Rename Playlist"
+msgstr "Переименовать плей-лист"
+
+#. Translators: Playlist renamed notification.
+#: src/chordcut/ui/main_window.py:4300
+#, python-brace-format
+msgid "Playlist renamed to \"{name}\""
+msgstr "Плей-лист переименован в «{name}»"
+
+#. Translators: Confirm delete playlist.
+#: src/chordcut/ui/main_window.py:4316
+#, python-brace-format
+msgid "Delete playlist \"{name}\"?"
+msgstr "Удалить плей-лист «{name}»?"
+
+#. Translators: Confirm delete dialog title.
+#: src/chordcut/ui/main_window.py:4320
+msgid "Delete Playlist"
+msgstr "Удалить плей-лист"
+
+#. Translators: Playlist deleted notification.
+#: src/chordcut/ui/main_window.py:4357
+#, python-brace-format
+msgid "Playlist \"{name}\" deleted"
+msgstr "Плей-лист «{name}» удалён"
+
+#. Translators: All selected tracks
+#. already in the playlist.
+#: src/chordcut/ui/main_window.py:4408
+#, python-brace-format
+msgid "All selected tracks are already in {name}"
+msgstr "Все выбранные композиции уже в {name}"
+
+#. Translators: Status when adding to playlist.
+#: src/chordcut/ui/main_window.py:4424
+#, python-brace-format
+msgid "Adding to {name}..."
+msgstr "Добавление в {name}..."
+
+#. Translators: Add to playlist failed.
+#: src/chordcut/ui/main_window.py:4454
+msgid "Failed to add to playlist"
+msgstr "Не удалось добавить в плей-лист"
+
+#. Translators: Track(s) added to playlist.
+#. {n} = count, {name} = playlist name.
+#: src/chordcut/ui/main_window.py:4468
+#, python-brace-format
+msgid "Added {n} track to {name}"
+msgid_plural "Added {n} tracks to {name}"
+msgstr[0] "Добавлена {n} композиция в {name}"
+msgstr[1] "Добавлено {n} композиции в {name}"
+msgstr[2] "Добавлено {n} композиций в {name}"
+
+#. Translators: Confirm remove from playlist.
+#: src/chordcut/ui/main_window.py:4495
+#, python-brace-format
+msgid "Remove \"{name}\" from the playlist?"
+msgstr "Удалить «{name}» из плей-листа?"
+
+#. Translators: Confirm bulk remove from playlist.
+#. {n} = count.
+#: src/chordcut/ui/main_window.py:4501
+#, python-brace-format
+msgid "Remove {n} track from the playlist?"
+msgid_plural "Remove {n} tracks from the playlist?"
+msgstr[0] "Удалить {n} композицию из плей-листа?"
+msgstr[1] "Удалить {n} композиции из плей-листа?"
+msgstr[2] "Удалить {n} композиций из плей-листа?"
+
+#. Translators: Confirm remove dialog title.
+#: src/chordcut/ui/main_window.py:4508
+msgid "Remove from Playlist"
+msgstr "Удалить из плей-листа"
+
+#. Translators: Artist not found status.
+#: src/chordcut/ui/main_window.py:4641
+msgid "Artist not found"
+msgstr "Исполнитель не найден"
+
+#. Translators: Album artist not found status.
+#: src/chordcut/ui/main_window.py:4666
+msgid "Album artist not found"
+msgstr "Исполнитель альбома не найден"
+
+#. Translators: Album not found status.
+#: src/chordcut/ui/main_window.py:4681 src/chordcut/ui/main_window.py:4694
+msgid "Album not found"
+msgstr "Альбом не найден"
+
+#. Translators: Sleep timer countdown shown in the status bar.
+#: src/chordcut/ui/main_window.py:4743
+#, python-brace-format
+msgid "Timer: {h:02d}:{m:02d}:{s:02d}"
+msgstr "Таймер: {h:02d}:{m:02d}:{s:02d}"
+
+#. Translators: Tooltip shown when hovering over the tray icon.
+#. Translators: Tray tooltip when nothing is playing.
+#: src/chordcut/ui/tray_icon.py:52 src/chordcut/ui/tray_icon.py:81
+msgid "ChordCut"
+msgstr "ChordCut"
+
+#. Translators: Tray context menu: hide window to tray.
+#: src/chordcut/ui/tray_icon.py:93
+msgid "&Minimize to Tray"
+msgstr "&Свернуть в трей"
+
+#. Translators: Tray context menu: restore window from tray.
+#: src/chordcut/ui/tray_icon.py:96
+msgid "&Restore"
+msgstr "&Восстановить"
+
+#. Translators: Tray context menu: pause playback.
+#: src/chordcut/ui/tray_icon.py:103
+msgid "&Pause"
+msgstr "&Пауза"
+
+#. Translators: Tray context menu: resume playback.
+#: src/chordcut/ui/tray_icon.py:106
+msgid "&Resume"
+msgstr "&Продолжить"
+
+#. Translators: Tray context menu: previous track.
+#: src/chordcut/ui/tray_icon.py:114
+msgid "Pre&vious Track"
+msgstr "Пр&едыдущая композиция"
+
+#. Translators: Tray context menu: next track.
+#: src/chordcut/ui/tray_icon.py:119
+msgid "&Next Track"
+msgstr "С&ледующая композиция"
+
+#. Translators: Tray context menu: raise volume.
+#: src/chordcut/ui/tray_icon.py:127
+msgid "Volume &Up"
+msgstr "&Громче"
+
+#. Translators: Tray context menu: lower volume.
+#: src/chordcut/ui/tray_icon.py:132
+msgid "Volume &Down"
+msgstr "&Тише"
+
+#. Translators: Tray context menu: seek forward.
+#: src/chordcut/ui/tray_icon.py:140
+msgid "Seek &Forward"
+msgstr "Впе&рёд"
+
+#. Translators: Tray context menu: seek backward.
+#: src/chordcut/ui/tray_icon.py:145
+msgid "Seek &Backward"
+msgstr "На&зад"
+
+#. Translators: Tray context menu: toggle repeat mode.
+#: src/chordcut/ui/tray_icon.py:153
+msgid "&Repeat"
+msgstr "Повт&ор"
+
+#. Translators: Tray context menu: toggle shuffle mode.
+#: src/chordcut/ui/tray_icon.py:160
+msgid "S&huffle"
+msgstr "Пере&мешать"
+
+#. Translators: Tray context menu: close the application.
+#: src/chordcut/ui/tray_icon.py:169
+msgid "&Close"
+msgstr "&Закрыть"
