@@ -30,7 +30,7 @@ find src/chordcut -name "*.py" | sort | xargs xgettext \
   --package-name=ChordCut -o locale/chordcut.pot
 ```
 
-There are no automated tests. The app is tested manually on Windows with a real Jellyfin server. Development/editing can happen in WSL but building and running requires Windows.
+There are no automated tests. The app is tested manually on Windows with a real Jellyfin server. Building and running requires Windows.
 
 ## Architecture
 
@@ -149,7 +149,7 @@ All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals)
    ```bash
    msgmerge -U locale/<lang>/LC_MESSAGES/chordcut.po locale/chordcut.pot
    ```
-   This preserves existing translations and marks new/changed strings as untranslated (fuzzy).
+   This preserves existing translations and marks new/changed strings as untranslated (fuzzy). `msgmerge -U` saves a backup of the original as `chordcut.po~` — delete it once you've verified the updated file is correct.
 3. **Translate** any new or fuzzy entries in the `.po` file.
 4. **Recompile** to `.mo` (same as step 4 above).
 
