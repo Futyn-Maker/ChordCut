@@ -53,12 +53,6 @@ jobs:
         run: |
           sed -i "s/__version__ = .*/__version__ = \"${{ steps.version.outputs.py_version }}\"/" src/chordcut/__init__.py
 
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-
       - name: Download libmpv
         shell: pwsh
         run: |
@@ -80,50 +74,9 @@ jobs:
             --package-version="${{ steps.version.outputs.py_version }}" \
             -o locale/chordcut.pot
 
-      - name: Compile translations (.po → .mo)
+      - name: Build application
         shell: cmd
-        run: |
-          if exist "locale" (
-            for /d %%l in (locale\*) do (
-              if exist "%%l\LC_MESSAGES\chordcut.po" (
-                echo Compiling %%~nl...
-                msgfmt -o "%%l\LC_MESSAGES\chordcut.mo" "%%l\LC_MESSAGES\chordcut.po"
-              )
-            )
-          )
-
-      - name: Build with PyInstaller
-        run: pyinstaller --clean --noconfirm build/chordcut.spec
-
-      - name: Prepare distribution
-        shell: cmd
-        run: |
-          if not exist "dist\ChordCut\data" mkdir "dist\ChordCut\data"
-          if exist "locale" (
-            for /d %%l in (locale\*) do (
-              if exist "%%l\LC_MESSAGES\chordcut.mo" (
-                if not exist "dist\ChordCut\locale\%%~nxl\LC_MESSAGES" mkdir "dist\ChordCut\locale\%%~nxl\LC_MESSAGES"
-                copy /Y "%%l\LC_MESSAGES\chordcut.mo" "dist\ChordCut\locale\%%~nxl\LC_MESSAGES\" >nul
-              )
-            )
-          )
-
-      - name: Convert README files to HTML documentation
-        shell: bash
-        run: |
-          for f in README*.md; do
-            [ -f "$f" ] || continue
-            base="${f%.md}"
-            lang="${base#README}"
-            lang="${lang:-en}"
-            lang=$(echo "$lang" | tr '[:upper:]' '[:lower:]')
-            pandoc --standalone --embed-resources \
-              --css=build/docs.css \
-              --metadata title="ChordCut" \
-              --metadata lang="$lang" \
-              -o "dist/ChordCut/readme_${lang}.html" \
-              "$f"
-          done
+        run: build\build.bat
 
       - name: Create ZIP archive
         shell: pwsh

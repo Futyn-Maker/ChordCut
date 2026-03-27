@@ -1,6 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 
+REM Detect CI environment (GitHub Actions sets CI=true automatically)
+if defined CI (set "INTERACTIVE=0") else (set "INTERACTIVE=1")
+
 echo ============================================
 echo    ChordCut Build Script
 echo ============================================
@@ -16,7 +19,7 @@ if errorlevel 1 (
     echo ERROR: Python not found in PATH
     echo Please install Python 3.13+ from https://python.org
     echo Make sure to check "Add Python to PATH" during installation
-    pause
+    if !INTERACTIVE!==1 pause
     exit /b 1
 )
 
@@ -30,13 +33,13 @@ pip install --upgrade pip >nul 2>&1
 pip install --upgrade -r requirements.txt
 if errorlevel 1 (
     echo ERROR: Failed to install dependencies from requirements.txt
-    pause
+    if !INTERACTIVE!==1 pause
     exit /b 1
 )
 pip install --upgrade pyinstaller
 if errorlevel 1 (
     echo ERROR: Failed to install pyinstaller
-    pause
+    if !INTERACTIVE!==1 pause
     exit /b 1
 )
 echo Dependencies installed successfully.
@@ -51,6 +54,11 @@ if exist "resources\libmpv\mpv-1.dll" set LIBMPV_FOUND=1
 
 if %LIBMPV_FOUND%==0 (
     echo.
+    if !INTERACTIVE!==0 (
+        echo ERROR: libmpv DLL not found in resources\libmpv\
+        echo Run build\download_libmpv.ps1 before calling this script.
+        exit /b 1
+    )
     echo libmpv DLL not found in resources\libmpv\
     echo.
     set /p DOWNLOAD_MPV="Would you like to download it automatically? (Y/N): "
@@ -106,7 +114,7 @@ pyinstaller --clean --noconfirm build/chordcut.spec
 if errorlevel 1 (
     echo.
     echo ERROR: Build failed!
-    pause
+    if !INTERACTIVE!==1 pause
     exit /b 1
 )
 
@@ -132,6 +140,38 @@ if exist "%WX_LOCALE%" (
     echo   WARNING: wx locale directory not found, standard buttons may not be translated.
 )
 
+REM Generate documentation
+echo.
+echo Generating documentation...
+
+REM Copy any existing HTML docs as a baseline (may be overwritten by pandoc below)
+set DOCS_AVAILABLE=0
+for %%f in (readme*.html) do (
+    echo   Copying existing %%f...
+    copy /Y "%%f" "dist\ChordCut\" >nul
+    set DOCS_AVAILABLE=1
+)
+
+REM Try to build fresh docs with pandoc (overwrites any copied files if successful)
+pandoc --version >nul 2>&1
+if not errorlevel 1 (
+    for %%f in (README*.md) do (
+        set "BASE=%%~nf"
+        set "DOCLANG=!BASE:README=!"
+        if "!DOCLANG!"=="" set "DOCLANG=en"
+        echo   Converting %%f to readme_!DOCLANG!.html...
+        pandoc --standalone --embed-resources --css=build/docs.css --metadata title="ChordCut" --metadata lang=!DOCLANG! -o "dist\ChordCut\readme_!DOCLANG!.html" "%%f"
+        if not errorlevel 1 set DOCS_AVAILABLE=1
+    )
+) else (
+    echo   WARNING: Pandoc not found - documentation will not be rebuilt.
+    echo   Install from https://pandoc.org/installing.html to generate docs.
+)
+
+if !DOCS_AVAILABLE!==0 (
+    echo   WARNING: No HTML documentation available in output.
+)
+
 echo.
 echo ============================================
 echo    Build Complete!
@@ -143,4 +183,4 @@ echo.
 echo To run: double-click dist\ChordCut\ChordCut.exe
 echo.
 
-pause
+if !INTERACTIVE!==1 pause
