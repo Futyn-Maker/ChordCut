@@ -111,7 +111,7 @@ The release is built by a GitHub Actions workflow (`.github/workflows/release.ym
    gh release list --limit=1
    ```
 
-The workflow automatically: calculates a `v{YYYY.MM.DD}[.N]` tag, bumps `__version__` in `src/chordcut/__init__.py`, builds the Windows executable, converts all `README*.md` files to standalone HTML documentation via pandoc (using `build/docs.css` for styling, embedded into each file) and places them in the release root as `readme_<lang>.html` (`README.md` → `readme_en.html`, `READMEru.md` → `readme_ru.html`, etc.), packages everything as `ChordCut-Windows.zip`, commits the version bump, tags, pushes, and creates a GitHub Release with the ZIP and `.pot` template attached.
+The workflow automatically: calculates a `v{YYYY.MM.DD}[.N]` tag, bumps `__version__` in `src/chordcut/__init__.py`, builds the Windows executable, converts all `README*.md` files to standalone HTML documentation via pandoc (using `build/docs.css` for styling, embedded into each file) and places them in the release root as `readme_<lang>.html` (`README.md` → `readme_en.html`, `README_ru.md` → `readme_ru.html`, etc.), packages everything as `ChordCut-Windows.zip`, commits the version bump, tags, pushes, and creates a GitHub Release with the ZIP and `.pot` template attached.
 
 **After the release**, pull the version bump commit locally:
 ```bash

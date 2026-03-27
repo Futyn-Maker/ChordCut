@@ -159,6 +159,7 @@ if not errorlevel 1 (
         set "BASE=%%~nf"
         set "DOCLANG=!BASE:README=!"
         if "!DOCLANG!"=="" set "DOCLANG=en"
+        if "!DOCLANG:~0,1!"=="_" set "DOCLANG=!DOCLANG:~1!"
         echo   Converting %%f to readme_!DOCLANG!.html...
         pandoc --standalone --embed-resources --css=build/docs.css --metadata title="ChordCut" --metadata lang=!DOCLANG! -o "dist\ChordCut\readme_!DOCLANG!.html" "%%f"
         if not errorlevel 1 set DOCS_AVAILABLE=1
