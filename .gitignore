@@ -29,6 +29,7 @@ MANIFEST
 # PyInstaller
 *.manifest
 *.spec.bak
+build/chordcut/
 build/version_info.txt
 
 # Installer logs
