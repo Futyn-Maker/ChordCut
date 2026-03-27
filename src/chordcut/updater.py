@@ -179,7 +179,7 @@ def apply_update(update_dir: Path, temp_root: Path) -> None:
         ":: Wait for the running instance to exit\r\n"
         ":wait_loop\r\n"
         "timeout /t 1 /nobreak >nul\r\n"
-        f'tasklist /fi "PID eq {pid}" 2>nul | find "{pid}" >nul\r\n'
+        f'tasklist /FO CSV /fi "PID eq {pid}" 2>nul | findstr "{pid}" >nul\r\n'
         "if not errorlevel 1 goto wait_loop\r\n"
         "\r\n"
         ":: Remove directories that must be fully replaced\r\n"
@@ -205,6 +205,6 @@ def apply_update(update_dir: Path, temp_root: Path) -> None:
     logger.info("Launching update script: %s", bat_path)
     subprocess.Popen(
         ["cmd.exe", "/c", str(bat_path)],
-        creationflags=0x00000008 | 0x08000000,  # DETACHED_PROCESS | CREATE_NO_WINDOW
+        creationflags=0x08000000,  # CREATE_NO_WINDOW
         close_fds=True,
     )
