@@ -58,11 +58,12 @@ jobs:
         run: |
           & build/download_libmpv.ps1 -OutputDir "resources\libmpv"
 
-      - name: Install gettext tools
+      - name: Install gettext and pandoc
         shell: pwsh
         run: |
-          choco install gettext -y --no-progress
+          choco install gettext pandoc -y --no-progress
           echo "C:\Program Files\gettext-iconv\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\Program Files\Pandoc" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Generate translation template (.pot)
         shell: bash

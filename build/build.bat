@@ -184,3 +184,5 @@ echo To run: double-click dist\ChordCut\ChordCut.exe
 echo.
 
 if !INTERACTIVE!==1 pause
+
+exit /b 0
