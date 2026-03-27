@@ -123,6 +123,13 @@ class ServersDialog(wx.Dialog):
         self._server_list.Bind(
             wx.EVT_KEY_DOWN, self._on_list_key,
         )
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
+
+    def _on_key(self, event: wx.KeyEvent) -> None:
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CLOSE)
+            return
+        event.Skip()
 
     def _on_list_key(self, event: wx.KeyEvent) -> None:
         """Handle Delete key in the list."""

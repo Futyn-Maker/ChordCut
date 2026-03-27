@@ -36,18 +36,40 @@ class PropertiesDialog(wx.Dialog):
 
         sizer.Add(self._list, 1, wx.EXPAND | wx.ALL, 10)
 
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Translators: Button to copy the selected property value to the clipboard.
+        copy_btn = wx.Button(panel, wx.ID_ANY, _("&Copy"))
         close_btn = wx.Button(panel, wx.ID_CLOSE)
+        btn_sizer.Add(copy_btn, 0, wx.RIGHT, 5)
+        btn_sizer.Add(close_btn, 0)
         sizer.Add(
-            close_btn, 0,
+            btn_sizer, 0,
             wx.ALIGN_CENTER | wx.BOTTOM, 10,
         )
 
         panel.SetSizer(sizer)
 
+        copy_btn.Bind(
+            wx.EVT_BUTTON, lambda e: self._copy_selected(),
+        )
         close_btn.Bind(
             wx.EVT_BUTTON, lambda e: self.Close(),
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
+
+    def _copy_selected(self) -> None:
+        """Copy the selected property value to the clipboard."""
+        idx = self._list.GetSelection()
+        if idx != wx.NOT_FOUND:
+            text = self._list.GetString(idx)
+            # Copy only the value (after ": ")
+            if ": " in text:
+                text = text.split(": ", 1)[1]
+            if wx.TheClipboard.Open():
+                wx.TheClipboard.SetData(
+                    wx.TextDataObject(text),
+                )
+                wx.TheClipboard.Close()
 
     def _on_key(self, event: wx.KeyEvent) -> None:
         code = event.GetKeyCode()
@@ -55,17 +77,7 @@ class PropertiesDialog(wx.Dialog):
             self.Close()
             return
         if event.ControlDown() and code == ord("C"):
-            idx = self._list.GetSelection()
-            if idx != wx.NOT_FOUND:
-                text = self._list.GetString(idx)
-                # Copy only the value (after ": ")
-                if ": " in text:
-                    text = text.split(": ", 1)[1]
-                if wx.TheClipboard.Open():
-                    wx.TheClipboard.SetData(
-                        wx.TextDataObject(text),
-                    )
-                    wx.TheClipboard.Close()
+            self._copy_selected()
             return
         event.Skip()
 

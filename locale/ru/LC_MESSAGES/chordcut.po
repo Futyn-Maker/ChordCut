@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ChordCut\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-27 00:00+0300\n"
+"POT-Creation-Date: 2026-03-27 12:39+0300\n"
 "PO-Revision-Date: 2026-03-26 16:20+0300\n"
 "Last-Translator: Andrey Yakuboy <andrey@yakuboy.me>\n"
 "Language-Team: Russian <andrey@yakuboy.me>\n"
@@ -20,9 +20,9 @@ msgstr ""
 
 #. Translators: Busy dialog message shown while connecting to the Jellyfin server.
 #. Translators: Busy dialog shown while connecting.
-#: src/chordcut/app.py:174 src/chordcut/ui/dialogs/servers_dialog.py:189
-#: src/chordcut/ui/dialogs/servers_dialog.py:252
-#: src/chordcut/ui/dialogs/servers_dialog.py:339
+#: src/chordcut/app.py:174 src/chordcut/ui/dialogs/servers_dialog.py:196
+#: src/chordcut/ui/dialogs/servers_dialog.py:259
+#: src/chordcut/ui/dialogs/servers_dialog.py:346
 #: src/chordcut/ui/main_window.py:3045
 msgid "Connecting to server..."
 msgstr "Подключение к серверу..."
@@ -41,8 +41,8 @@ msgstr ""
 #. Translators: Title of the connection error dialog.
 #. Translators: Title of connection error dialog.
 #. Translators: Server switch error title.
-#: src/chordcut/app.py:200 src/chordcut/ui/dialogs/servers_dialog.py:218
-#: src/chordcut/ui/dialogs/servers_dialog.py:262
+#: src/chordcut/app.py:200 src/chordcut/ui/dialogs/servers_dialog.py:225
+#: src/chordcut/ui/dialogs/servers_dialog.py:269
 #: src/chordcut/ui/main_window.py:3061
 msgid "Connection Failed"
 msgstr "Ошибка подключения"
@@ -282,7 +282,9 @@ msgid "Input Error"
 msgstr "Неверный ввод"
 
 #. Translators: Copy button in lyrics dialog.
+#. Translators: Button to copy the selected property value to the clipboard.
 #: src/chordcut/ui/dialogs/lyrics_dialog.py:50
+#: src/chordcut/ui/dialogs/properties_dialog.py:41
 msgid "&Copy"
 msgstr "&Копировать"
 
@@ -292,63 +294,63 @@ msgid "Copy &All"
 msgstr "Копировать &всё"
 
 #. Translators: Track property: title.
-#: src/chordcut/ui/dialogs/properties_dialog.py:103
+#: src/chordcut/ui/dialogs/properties_dialog.py:115
 #, python-brace-format
 msgid "Title: {value}"
 msgstr "Название: {value}"
 
 #. Translators: Track property: artist.
 #. Translators: Album property: artist.
-#: src/chordcut/ui/dialogs/properties_dialog.py:109
-#: src/chordcut/ui/dialogs/properties_dialog.py:227
+#: src/chordcut/ui/dialogs/properties_dialog.py:121
+#: src/chordcut/ui/dialogs/properties_dialog.py:239
 #, python-brace-format
 msgid "Artist: {value}"
 msgstr "Исполнитель: {value}"
 
 #. Translators: Track property: album artist.
-#: src/chordcut/ui/dialogs/properties_dialog.py:115
+#: src/chordcut/ui/dialogs/properties_dialog.py:127
 #, python-brace-format
 msgid "Album Artist: {value}"
 msgstr "Исполнитель альбома: {value}"
 
 #. Translators: Track property: album.
-#: src/chordcut/ui/dialogs/properties_dialog.py:121
+#: src/chordcut/ui/dialogs/properties_dialog.py:133
 #, python-brace-format
 msgid "Album: {value}"
 msgstr "Альбом: {value}"
 
 #. Translators: Track property: duration.
-#: src/chordcut/ui/dialogs/properties_dialog.py:130
+#: src/chordcut/ui/dialogs/properties_dialog.py:142
 #, python-brace-format
 msgid "Duration: {value}"
 msgstr "Продолжительность: {value}"
 
 #. Translators: Track property: track number.
-#: src/chordcut/ui/dialogs/properties_dialog.py:141
+#: src/chordcut/ui/dialogs/properties_dialog.py:153
 #, python-brace-format
 msgid "Track Number: {value}"
 msgstr "Номер композиции: {value}"
 
 #. Translators: Track property: format.
-#: src/chordcut/ui/dialogs/properties_dialog.py:155
+#: src/chordcut/ui/dialogs/properties_dialog.py:167
 #, python-brace-format
 msgid "Format: {value}"
 msgstr "Формат: {value}"
 
 #. Translators: Track property: bitrate.
-#: src/chordcut/ui/dialogs/properties_dialog.py:163
+#: src/chordcut/ui/dialogs/properties_dialog.py:175
 #, python-brace-format
 msgid "Bitrate: {value}"
 msgstr "Битрейт: {value}"
 
 #. Translators: Track property: file size.
-#: src/chordcut/ui/dialogs/properties_dialog.py:171
+#: src/chordcut/ui/dialogs/properties_dialog.py:183
 #, python-brace-format
 msgid "File Size: {value}"
 msgstr "Размер файла: {value}"
 
 #. Translators: Track property: date added.
-#: src/chordcut/ui/dialogs/properties_dialog.py:182
+#: src/chordcut/ui/dialogs/properties_dialog.py:194
 #, python-brace-format
 msgid "Date Added: {value}"
 msgstr "Добавлено: {value}"
@@ -356,16 +358,16 @@ msgstr "Добавлено: {value}"
 #. Translators: Artist property: name.
 #. Translators: Album property: name.
 #. Translators: Playlist property: name.
-#: src/chordcut/ui/dialogs/properties_dialog.py:197
-#: src/chordcut/ui/dialogs/properties_dialog.py:221
-#: src/chordcut/ui/dialogs/properties_dialog.py:256
+#: src/chordcut/ui/dialogs/properties_dialog.py:209
+#: src/chordcut/ui/dialogs/properties_dialog.py:233
+#: src/chordcut/ui/dialogs/properties_dialog.py:268
 #, python-brace-format
 msgid "Name: {value}"
 msgstr "Название: {value}"
 
 #. Translators: Artist property: album count.
 #. Translators: Album count.
-#: src/chordcut/ui/dialogs/properties_dialog.py:204
+#: src/chordcut/ui/dialogs/properties_dialog.py:216
 #: src/chordcut/ui/main_window.py:1081
 #, python-brace-format
 msgid "{n} album"
@@ -378,9 +380,9 @@ msgstr[2] "{n} альбомов"
 #. Translators: Album property: track count.
 #. Translators: Playlist property: track count.
 #. Translators: Track count.
-#: src/chordcut/ui/dialogs/properties_dialog.py:209
-#: src/chordcut/ui/dialogs/properties_dialog.py:234
-#: src/chordcut/ui/dialogs/properties_dialog.py:263
+#: src/chordcut/ui/dialogs/properties_dialog.py:221
+#: src/chordcut/ui/dialogs/properties_dialog.py:246
+#: src/chordcut/ui/dialogs/properties_dialog.py:275
 #: src/chordcut/ui/main_window.py:485 src/chordcut/ui/main_window.py:1063
 #: src/chordcut/ui/main_window.py:3126
 #, python-brace-format
@@ -392,8 +394,8 @@ msgstr[2] "{n} композиций"
 
 #. Translators: Album property: total duration.
 #. Translators: Playlist property: total duration.
-#: src/chordcut/ui/dialogs/properties_dialog.py:240
-#: src/chordcut/ui/dialogs/properties_dialog.py:269
+#: src/chordcut/ui/dialogs/properties_dialog.py:252
+#: src/chordcut/ui/dialogs/properties_dialog.py:281
 #, python-brace-format
 msgid "Total Duration: {value}"
 msgstr "Общая продолжительность: {value}"
@@ -429,7 +431,7 @@ msgid "&Delete"
 msgstr "&Удалить"
 
 #. Translators: Error when adding server fails.
-#: src/chordcut/ui/dialogs/servers_dialog.py:215
+#: src/chordcut/ui/dialogs/servers_dialog.py:222
 msgid ""
 "Failed to connect to the server.\n"
 "\n"
@@ -440,7 +442,7 @@ msgstr ""
 "Пожалуйста, проверьте URL и учётные данные."
 
 #. Translators: Error when editing server fails.
-#: src/chordcut/ui/dialogs/servers_dialog.py:259
+#: src/chordcut/ui/dialogs/servers_dialog.py:266
 msgid ""
 "Failed to connect to the server.\n"
 "\n"
@@ -451,18 +453,18 @@ msgstr ""
 "Данные текущего сервера не изменятся."
 
 #. Translators: Error shown when deleting the last server.
-#: src/chordcut/ui/dialogs/servers_dialog.py:301
+#: src/chordcut/ui/dialogs/servers_dialog.py:308
 msgid "Cannot delete the last server."
 msgstr "Невозможно удалить единственный сервер."
 
 #. Translators: Error dialog title.
-#: src/chordcut/ui/dialogs/servers_dialog.py:303
+#: src/chordcut/ui/dialogs/servers_dialog.py:310
 msgid "Cannot Delete"
 msgstr "Ошибка удаления"
 
 #. Translators: Confirmation message for server deletion.
 #. {server} is the server label.
-#: src/chordcut/ui/dialogs/servers_dialog.py:316
+#: src/chordcut/ui/dialogs/servers_dialog.py:323
 #, python-brace-format
 msgid ""
 "Delete server \"{server}\"?\n"
@@ -474,7 +476,7 @@ msgstr ""
 "Все локально сохранённые данные этого сервера будут удалены."
 
 #. Translators: Title of the delete confirmation dialog.
-#: src/chordcut/ui/dialogs/servers_dialog.py:320
+#: src/chordcut/ui/dialogs/servers_dialog.py:327
 msgid "Confirm Delete"
 msgstr "Подтвердить удаления"
 
