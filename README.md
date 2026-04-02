@@ -4,6 +4,16 @@
 
 ChordCut is a portable, accessible music client for [Jellyfin](https://jellyfin.org/) media servers on Windows. It is designed primarily for blind and visually impaired users and works with NVDA, JAWS, and other screen readers out of the box. All functionality is fully operable from the keyboard.
 
+## Screenshots
+
+![Main window showing the Tracks section with 951 tracks in the library list, search field, section selector, and output device selector](screenshots/screenshot_library.png)
+
+![Playing a track: the title bar and status bar show the current track name and playback time, and a Now Playing bar appears at the bottom with album art](screenshots/screenshot_playback.png)
+
+![Browsing an artist: the Artists section drilled into Green Day, showing 10 albums](screenshots/screenshot_albums.png)
+
+![Synced lyrics dialog for a track, showing timestamped lines — press Enter on any line to jump to that moment](screenshots/screenshot_synced_lyrics.png)
+
 ## Features
 
 - Stream music directly from your Jellyfin server with no transcoding — all audio formats are played natively through MPV.
