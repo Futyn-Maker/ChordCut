@@ -50,7 +50,8 @@ def _append_playlist_submenu(
     for pl in playlists:
         mid = wx.NewIdRef()
         mi = sub.Append(
-            mid, pl.get("Name", ""),
+            mid,
+            pl.get("Name", ""),
         )
         playlist_id_map[int(mid)] = pl
         if pl.get("Id", "") in disabled_ids:
@@ -110,7 +111,9 @@ def build_context_menu(
         # "Add to Playlist" submenu
         if playlists:
             _append_playlist_submenu(
-                menu, playlist_id_map, playlists,
+                menu,
+                playlist_id_map,
+                playlists,
                 # Translators: Context menu: add to playlist.
                 _("Add to &Playlist"),
                 track_in_playlists or set(),
@@ -236,11 +239,11 @@ def build_selection_context_menu(
     # "Add All to Playlist" submenu
     if playlists:
         all_in = all_in_playlists or {}
-        disabled = {
-            pid for pid, v in all_in.items() if v
-        }
+        disabled = {pid for pid, v in all_in.items() if v}
         _append_playlist_submenu(
-            menu, playlist_id_map, playlists,
+            menu,
+            playlist_id_map,
+            playlists,
             # Translators: Selection context menu:
             # add all to playlist.
             _("Add &All to Playlist"),

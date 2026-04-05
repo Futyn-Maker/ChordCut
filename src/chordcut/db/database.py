@@ -1,9 +1,10 @@
 """SQLite database manager for ChordCut."""
 
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import ClassVar
 
 from chordcut.db.migrations import MIGRATIONS, SCHEMA_VERSION
 from chordcut.db.models import SCHEMA, ServerCredentials
@@ -83,8 +84,7 @@ class Database:
 
             # Check for an existing row (same server + user)
             existing = conn.execute(
-                "SELECT id FROM servers"
-                " WHERE url = ? AND user_id = ?",
+                "SELECT id FROM servers WHERE url = ? AND user_id = ?",
                 (creds.url, creds.user_id),
             ).fetchone()
 
@@ -139,9 +139,7 @@ class Database:
     def get_all_servers(self) -> list[ServerCredentials]:
         """Get all saved server credentials ordered by id."""
         with self.connection() as conn:
-            rows = conn.execute(
-                "SELECT * FROM servers ORDER BY id"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM servers ORDER BY id").fetchall()
             return [self._row_to_creds(r) for r in rows]
 
     @staticmethod
@@ -158,14 +156,14 @@ class Database:
     def delete_server(self, server_id: int) -> None:
         """Delete a server and its cached data."""
         with self.connection() as conn:
-            conn.execute(
-                "DELETE FROM servers WHERE id = ?", (server_id,)
-            )
+            conn.execute("DELETE FROM servers WHERE id = ?", (server_id,))
 
     # --- Library caching ---
 
     def cache_libraries(
-        self, server_id: int, libraries: list[dict],
+        self,
+        server_id: int,
+        libraries: list[dict],
     ) -> None:
         """Cache the list of music libraries for a server.
 
@@ -180,13 +178,8 @@ class Database:
                 " FROM libraries WHERE server_id = ?",
                 (server_id,),
             ).fetchall()
-            enabled_states = {
-                r["id"]: r["enabled"] for r in rows
-            }
-            expected_counts = {
-                r["id"]: r["expected_track_count"]
-                for r in rows
-            }
+            enabled_states = {r["id"]: r["enabled"] for r in rows}
+            expected_counts = {r["id"]: r["expected_track_count"] for r in rows}
 
             conn.execute(
                 "DELETE FROM libraries WHERE server_id = ?",
@@ -230,9 +223,7 @@ class Database:
                     "Id": r["id"],
                     "Name": r["name"],
                     "Enabled": bool(r["enabled"]),
-                    "ExpectedTrackCount": (
-                        r["expected_track_count"]
-                    ),
+                    "ExpectedTrackCount": (r["expected_track_count"]),
                 }
                 for r in rows
             ]
@@ -266,8 +257,7 @@ class Database:
         """Persist the enabled state of a music library."""
         with self.connection() as conn:
             conn.execute(
-                "UPDATE libraries SET enabled = ?"
-                " WHERE server_id = ? AND id = ?",
+                "UPDATE libraries SET enabled = ? WHERE server_id = ? AND id = ?",
                 (int(enabled), server_id, library_id),
             )
 
@@ -275,14 +265,14 @@ class Database:
         """Count all cached tracks for a server (unfiltered)."""
         with self.connection() as conn:
             row = conn.execute(
-                "SELECT COUNT(*) FROM tracks"
-                " WHERE server_id = ?",
+                "SELECT COUNT(*) FROM tracks WHERE server_id = ?",
                 (server_id,),
             ).fetchone()
             return row[0]
 
     def clear_library_cache(
-        self, server_id: int,
+        self,
+        server_id: int,
     ) -> None:
         """Delete all library cache data for a server.
 
@@ -292,13 +282,15 @@ class Database:
         """
         with self.connection() as conn:
             for table in (
-                "track_artists", "album_album_artists",
-                "tracks", "artists",
-                "album_artists", "albums",
+                "track_artists",
+                "album_album_artists",
+                "tracks",
+                "artists",
+                "album_artists",
+                "albums",
             ):
                 conn.execute(
-                    f"DELETE FROM {table}"
-                    f" WHERE server_id = ?",
+                    f"DELETE FROM {table} WHERE server_id = ?",
                     (server_id,),
                 )
 
@@ -334,7 +326,8 @@ class Database:
             artists_list = track.get("Artists", [])
             artist_items = track.get("ArtistItems", [])
             artist_display = (
-                ", ".join(artists_list) if artists_list
+                ", ".join(artists_list)
+                if artists_list
                 else track.get("AlbumArtist", "")
             )
 
@@ -342,17 +335,15 @@ class Database:
             artist_name = track.get("AlbumArtist") or (
                 artists_list[0] if artists_list else ""
             )
-            first_artist_id = (
-                artist_items[0].get("Id")
-                if artist_items else None
-            )
+            first_artist_id = artist_items[0].get("Id") if artist_items else None
 
             # Collect unique artists
             for ai in artist_items:
                 aid = ai.get("Id")
                 if aid:
                     artists_seen.setdefault(
-                        aid, ai.get("Name", ""),
+                        aid,
+                        ai.get("Name", ""),
                     )
                     track_artist_links.append(
                         (track_id, aid),
@@ -360,13 +351,15 @@ class Database:
 
             # Collect unique album artists
             album_artists_items = track.get(
-                "AlbumArtists", [],
+                "AlbumArtists",
+                [],
             )
             for aai in album_artists_items:
                 aaid = aai.get("Id")
                 if aaid:
                     album_artists_seen.setdefault(
-                        aaid, aai.get("Name", ""),
+                        aaid,
+                        aai.get("Name", ""),
                     )
 
             # Collect unique albums and link to album artists
@@ -385,20 +378,22 @@ class Database:
                         )
 
             # Collect track row for bulk insert
-            track_rows.append((
-                track_id,
-                server_id,
-                track.get("Name", "Unknown"),
-                track.get("Album", ""),
-                artist_name,
-                artist_display,
-                album_id,
-                first_artist_id,
-                track.get("RunTimeTicks"),
-                track.get("IndexNumber"),
-                library_id,
-                track.get("DateCreated"),
-            ))
+            track_rows.append(
+                (
+                    track_id,
+                    server_id,
+                    track.get("Name", "Unknown"),
+                    track.get("Album", ""),
+                    artist_name,
+                    artist_display,
+                    album_id,
+                    first_artist_id,
+                    track.get("RunTimeTicks"),
+                    track.get("IndexNumber"),
+                    library_id,
+                    track.get("DateCreated"),
+                )
+            )
 
         # Bulk insert tracks
         conn.executemany(
@@ -414,23 +409,15 @@ class Database:
 
         # Bulk insert artists
         conn.executemany(
-            "INSERT OR IGNORE INTO artists"
-            " (id, server_id, name) VALUES (?, ?, ?)",
-            [
-                (aid, server_id, name)
-                for aid, name in artists_seen.items()
-            ],
+            "INSERT OR IGNORE INTO artists (id, server_id, name) VALUES (?, ?, ?)",
+            [(aid, server_id, name) for aid, name in artists_seen.items()],
         )
 
         # Bulk insert album artists
         conn.executemany(
             "INSERT OR IGNORE INTO album_artists"
             " (id, server_id, name) VALUES (?, ?, ?)",
-            [
-                (aaid, server_id, name)
-                for aaid, name
-                in album_artists_seen.items()
-            ],
+            [(aaid, server_id, name) for aaid, name in album_artists_seen.items()],
         )
 
         # Bulk insert albums
@@ -441,8 +428,7 @@ class Database:
             " VALUES (?, ?, ?, ?, ?)",
             [
                 (aid, server_id, aname, adisplay, lib_id)
-                for aid, (aname, adisplay, lib_id)
-                in albums_seen.items()
+                for aid, (aname, adisplay, lib_id) in albums_seen.items()
             ],
         )
 
@@ -451,10 +437,7 @@ class Database:
             "INSERT OR IGNORE INTO track_artists"
             " (track_id, artist_id, server_id)"
             " VALUES (?, ?, ?)",
-            [
-                (tid, aid, server_id)
-                for tid, aid in track_artist_links
-            ],
+            [(tid, aid, server_id) for tid, aid in track_artist_links],
         )
 
         # Bulk insert album-album_artist links
@@ -462,14 +445,13 @@ class Database:
             "INSERT OR IGNORE INTO album_album_artists"
             " (album_id, album_artist_id, server_id)"
             " VALUES (?, ?, ?)",
-            [
-                (aid, aaid, server_id)
-                for aid, aaid in album_aa_links
-            ],
+            [(aid, aaid, server_id) for aid, aaid in album_aa_links],
         )
 
     def cache_library(
-        self, server_id: int, tracks: list[dict],
+        self,
+        server_id: int,
+        tracks: list[dict],
     ) -> None:
         """Cache the full library (clear + insert).
 
@@ -479,21 +461,27 @@ class Database:
         """
         with self.connection() as conn:
             for table in (
-                "track_artists", "album_album_artists",
-                "tracks", "artists",
-                "album_artists", "albums",
+                "track_artists",
+                "album_album_artists",
+                "tracks",
+                "artists",
+                "album_artists",
+                "albums",
             ):
                 conn.execute(
-                    f"DELETE FROM {table}"
-                    f" WHERE server_id = ?",
+                    f"DELETE FROM {table} WHERE server_id = ?",
                     (server_id,),
                 )
             self._insert_library_data(
-                conn, server_id, tracks,
+                conn,
+                server_id,
+                tracks,
             )
 
     def cache_library_batch(
-        self, server_id: int, tracks: list[dict],
+        self,
+        server_id: int,
+        tracks: list[dict],
     ) -> None:
         """Insert a batch of tracks (no clear).
 
@@ -502,7 +490,9 @@ class Database:
         """
         with self.connection() as conn:
             self._insert_library_data(
-                conn, server_id, tracks,
+                conn,
+                server_id,
+                tracks,
             )
 
     def cache_playlists(
@@ -514,8 +504,7 @@ class Database:
         """Cache playlists and their track listings."""
         with self.connection() as conn:
             conn.execute(
-                "DELETE FROM playlist_tracks"
-                " WHERE server_id = ?",
+                "DELETE FROM playlist_tracks WHERE server_id = ?",
                 (server_id,),
             )
             conn.execute(
@@ -543,12 +532,14 @@ class Database:
                     " VALUES (?, ?, ?, ?, ?)",
                     [
                         (
-                            pl_id, item.get("Id"),
+                            pl_id,
+                            item.get("Id"),
                             item.get(
                                 "PlaylistItemId",
                                 item.get("Id"),
                             ),
-                            i, server_id,
+                            i,
+                            server_id,
                         )
                         for i, item in enumerate(items)
                         if item.get("Id")
@@ -565,10 +556,7 @@ class Database:
             "Name": row["name"],
             "Album": row["album_name"] or "",
             "AlbumArtist": row["artist_name"] or "",
-            "ArtistDisplay": (
-                row["artist_display"]
-                or row["artist_name"] or ""
-            ),
+            "ArtistDisplay": (row["artist_display"] or row["artist_name"] or ""),
             "AlbumId": row["album_id"],
             "RunTimeTicks": row["duration_ticks"],
             "IndexNumber": row["track_number"],
@@ -618,25 +606,17 @@ class Database:
 
     # --- Query methods ---
 
-    _TRACK_SORT_SQL: dict[str, str] = {
+    _TRACK_SORT_SQL: ClassVar[dict[str, str]] = {
         "alpha_asc": (
-            "artist_name COLLATE NOCASE,"
-            " album_name COLLATE NOCASE,"
-            " track_number"
+            "artist_name COLLATE NOCASE, album_name COLLATE NOCASE, track_number"
         ),
         "alpha_desc": (
             "artist_name COLLATE NOCASE DESC,"
             " album_name COLLATE NOCASE DESC,"
             " track_number DESC"
         ),
-        "date_desc": (
-            "date_created DESC,"
-            " name COLLATE NOCASE"
-        ),
-        "date_asc": (
-            "date_created ASC,"
-            " name COLLATE NOCASE"
-        ),
+        "date_desc": ("date_created DESC, name COLLATE NOCASE"),
+        "date_asc": ("date_created ASC, name COLLATE NOCASE"),
     }
 
     def get_all_tracks(
@@ -648,7 +628,8 @@ class Database:
         """Get all cached tracks for a server."""
         lib_sql, lib_params = self._lib_filter(library_ids)
         order = self._TRACK_SORT_SQL.get(
-            sort, self._TRACK_SORT_SQL["alpha_asc"],
+            sort,
+            self._TRACK_SORT_SQL["alpha_asc"],
         )
         with self.connection() as conn:
             rows = conn.execute(
@@ -669,7 +650,8 @@ class Database:
         """Get all cached artists sorted by name."""
         if library_ids is not None:
             lib_sql, lib_params = self._lib_filter(
-                library_ids, "t.library_id",
+                library_ids,
+                "t.library_id",
             )
             with self.connection() as conn:
                 rows = conn.execute(
@@ -707,7 +689,8 @@ class Database:
         """Get all cached album artists sorted by name."""
         if library_ids is not None:
             lib_sql, lib_params = self._lib_filter(
-                library_ids, "al.library_id",
+                library_ids,
+                "al.library_id",
             )
             with self.connection() as conn:
                 rows = conn.execute(
@@ -777,7 +760,8 @@ class Database:
     ) -> list[dict]:
         """Get albums that contain tracks by the given artist."""
         lib_sql, lib_params = self._lib_filter(
-            library_ids, "a.library_id",
+            library_ids,
+            "a.library_id",
         )
         with self.connection() as conn:
             rows = conn.execute(
@@ -804,7 +788,8 @@ class Database:
     ) -> list[dict]:
         """Get albums by the given album artist."""
         lib_sql, lib_params = self._lib_filter(
-            library_ids, "a.library_id",
+            library_ids,
+            "a.library_id",
         )
         with self.connection() as conn:
             rows = conn.execute(
@@ -843,7 +828,9 @@ class Database:
             return [self._track_to_dict(r) for r in rows]
 
     def get_playlist_tracks(
-        self, server_id: int, playlist_id: str,
+        self,
+        server_id: int,
+        playlist_id: str,
     ) -> list[dict]:
         """Get tracks in the given playlist, ordered by position."""
         with self.connection() as conn:
@@ -863,9 +850,7 @@ class Database:
             result = []
             for r in rows:
                 d = self._track_to_dict(r)
-                d["PlaylistItemId"] = (
-                    r["playlist_item_id"]
-                )
+                d["PlaylistItemId"] = r["playlist_item_id"]
                 result.append(d)
             return result
 
@@ -897,10 +882,12 @@ class Database:
         Returns ``{album_count, track_count}``.
         """
         a_lib_sql, a_lib_params = self._lib_filter(
-            library_ids, "a.library_id",
+            library_ids,
+            "a.library_id",
         )
         t_lib_sql, t_lib_params = self._lib_filter(
-            library_ids, "t.library_id",
+            library_ids,
+            "t.library_id",
         )
         with self.connection() as conn:
             if artist_type == "album_artists":
@@ -916,7 +903,8 @@ class Database:
                         {a_lib_sql}
                     """,
                     (
-                        server_id, artist_id,
+                        server_id,
+                        artist_id,
                         *a_lib_params,
                     ),
                 ).fetchone()[0]
@@ -935,7 +923,8 @@ class Database:
                         {t_lib_sql}
                     """,
                     (
-                        server_id, artist_id,
+                        server_id,
+                        artist_id,
                         *t_lib_params,
                     ),
                 ).fetchone()[0]
@@ -952,7 +941,8 @@ class Database:
                         {t_lib_sql}
                     """,
                     (
-                        server_id, artist_id,
+                        server_id,
+                        artist_id,
                         *t_lib_params,
                     ),
                 ).fetchone()[0]
@@ -967,7 +957,8 @@ class Database:
                         {t_lib_sql}
                     """,
                     (
-                        server_id, artist_id,
+                        server_id,
+                        artist_id,
                         *t_lib_params,
                     ),
                 ).fetchone()[0]
@@ -1005,7 +996,9 @@ class Database:
             }
 
     def get_playlist_stats(
-        self, server_id: int, playlist_id: str,
+        self,
+        server_id: int,
+        playlist_id: str,
     ) -> dict:
         """Get track count and total duration for a playlist.
 
@@ -1056,8 +1049,7 @@ class Database:
         """Rename a cached playlist."""
         with self.connection() as conn:
             conn.execute(
-                "UPDATE playlists SET name = ?"
-                " WHERE id = ? AND server_id = ?",
+                "UPDATE playlists SET name = ? WHERE id = ? AND server_id = ?",
                 (new_name, playlist_id, server_id),
             )
 
@@ -1069,21 +1061,20 @@ class Database:
         """Delete a playlist and its track associations."""
         with self.connection() as conn:
             conn.execute(
-                "DELETE FROM playlist_tracks"
-                " WHERE playlist_id = ?"
-                " AND server_id = ?",
+                "DELETE FROM playlist_tracks WHERE playlist_id = ? AND server_id = ?",
                 (playlist_id, server_id),
             )
             conn.execute(
-                "DELETE FROM playlists"
-                " WHERE id = ? AND server_id = ?",
+                "DELETE FROM playlists WHERE id = ? AND server_id = ?",
                 (playlist_id, server_id),
             )
 
     # --- Playlist item mutations ---
 
     def get_playlist_track_ids(
-        self, server_id: int, playlist_id: str,
+        self,
+        server_id: int,
+        playlist_id: str,
     ) -> set[str]:
         """Get track IDs present in a playlist."""
         with self.connection() as conn:
@@ -1118,8 +1109,10 @@ class Database:
                 " server_id)"
                 " VALUES (?, ?, ?, 0, ?)",
                 (
-                    playlist_id, track_id,
-                    playlist_item_id, server_id,
+                    playlist_id,
+                    track_id,
+                    playlist_item_id,
+                    server_id,
                 ),
             )
 
@@ -1137,7 +1130,8 @@ class Database:
                 " AND playlist_item_id = ?"
                 " AND server_id = ?",
                 (
-                    playlist_id, playlist_item_id,
+                    playlist_id,
+                    playlist_item_id,
                     server_id,
                 ),
             ).fetchone()
@@ -1150,7 +1144,8 @@ class Database:
                 " AND playlist_item_id = ?"
                 " AND server_id = ?",
                 (
-                    playlist_id, playlist_item_id,
+                    playlist_id,
+                    playlist_item_id,
                     server_id,
                 ),
             )
@@ -1184,8 +1179,10 @@ class Database:
                     " AND position > ?"
                     " AND position <= ?",
                     (
-                        playlist_id, server_id,
-                        old_index, new_index,
+                        playlist_id,
+                        server_id,
+                        old_index,
+                        new_index,
                     ),
                 )
             else:
@@ -1197,8 +1194,10 @@ class Database:
                     " AND position >= ?"
                     " AND position < ?",
                     (
-                        playlist_id, server_id,
-                        new_index, old_index,
+                        playlist_id,
+                        server_id,
+                        new_index,
+                        old_index,
                     ),
                 )
             conn.execute(
@@ -1208,7 +1207,9 @@ class Database:
                 " AND playlist_item_id = ?"
                 " AND server_id = ?",
                 (
-                    new_index, playlist_id,
-                    playlist_item_id, server_id,
+                    new_index,
+                    playlist_id,
+                    playlist_item_id,
+                    server_id,
                 ),
             )

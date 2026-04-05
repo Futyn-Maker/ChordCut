@@ -151,43 +151,43 @@ Press F8 or go to File > Settings to configure:
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| Tab | Cycle between section selector, search, list, and device selector |
-| Enter | Play track / drill into item |
-| Backspace | Go back one level |
-| Escape | Pause / Resume |
-| Shift+Escape | Minimize to system tray |
-| Ctrl+Alt+Q | Stop playback and destroy queue |
-| Shift+Right | Next track |
-| Shift+Left | Previous track |
-| Ctrl+Alt+X | Restart current track |
-| Ctrl+Alt+R | Toggle repeat |
-| Ctrl+Alt+S | Toggle shuffle |
-| Ctrl+Up | Volume up |
-| Ctrl+Down | Volume down |
-| Ctrl+Right | Seek forward |
-| Ctrl+Left | Seek backward |
-| Ctrl+N | Create new playlist |
-| F2 | Rename playlist |
-| Delete | Delete playlist / Remove track from playlist |
-| Alt+Up | Move track up in playlist |
-| Alt+Down | Move track down in playlist |
-| Space | Add track to selection (track lists only) |
-| Space (in selection) | Remove track from selection |
-| Enter (in selection) | Play from selection queue |
-| Alt+Up/Down (in selection) | Reorder tracks in selection |
-| Delete (in selection) | Remove selected tracks from playlist |
-| Alt+Enter | Properties |
-| Ctrl+Alt+Enter | View lyrics (tracks only) |
-| Alt+Shift+Enter | View synced lyrics (tracks only) |
-| Ctrl+C | Copy Jellyfin link |
-| Ctrl+Shift+C | Copy stream link (tracks only) |
-| Ctrl+Shift+Enter | Download track |
-| F5 | Refresh library |
-| F8 | Settings |
-| F1 | Keyboard shortcuts reference |
-| Alt+F4 | Minimize to tray (if enabled) / Exit |
+| Key                        | Action                                                            |
+| -------------------------- | ----------------------------------------------------------------- |
+| Tab                        | Cycle between section selector, search, list, and device selector |
+| Enter                      | Play track / drill into item                                      |
+| Backspace                  | Go back one level                                                 |
+| Escape                     | Pause / Resume                                                    |
+| Shift+Escape               | Minimize to system tray                                           |
+| Ctrl+Alt+Q                 | Stop playback and destroy queue                                   |
+| Shift+Right                | Next track                                                        |
+| Shift+Left                 | Previous track                                                    |
+| Ctrl+Alt+X                 | Restart current track                                             |
+| Ctrl+Alt+R                 | Toggle repeat                                                     |
+| Ctrl+Alt+S                 | Toggle shuffle                                                    |
+| Ctrl+Up                    | Volume up                                                         |
+| Ctrl+Down                  | Volume down                                                       |
+| Ctrl+Right                 | Seek forward                                                      |
+| Ctrl+Left                  | Seek backward                                                     |
+| Ctrl+N                     | Create new playlist                                               |
+| F2                         | Rename playlist                                                   |
+| Delete                     | Delete playlist / Remove track from playlist                      |
+| Alt+Up                     | Move track up in playlist                                         |
+| Alt+Down                   | Move track down in playlist                                       |
+| Space                      | Add track to selection (track lists only)                         |
+| Space (in selection)       | Remove track from selection                                       |
+| Enter (in selection)       | Play from selection queue                                         |
+| Alt+Up/Down (in selection) | Reorder tracks in selection                                       |
+| Delete (in selection)      | Remove selected tracks from playlist                              |
+| Alt+Enter                  | Properties                                                        |
+| Ctrl+Alt+Enter             | View lyrics (tracks only)                                         |
+| Alt+Shift+Enter            | View synced lyrics (tracks only)                                  |
+| Ctrl+C                     | Copy Jellyfin link                                                |
+| Ctrl+Shift+C               | Copy stream link (tracks only)                                    |
+| Ctrl+Shift+Enter           | Download track                                                    |
+| F5                         | Refresh library                                                   |
+| F8                         | Settings                                                          |
+| F1                         | Keyboard shortcuts reference                                      |
+| Alt+F4                     | Minimize to tray (if enabled) / Exit                              |
 
 ## Building from Source
 
@@ -195,12 +195,13 @@ ChordCut must be built on Windows (PyInstaller cannot cross-compile).
 
 ### Prerequisites
 
-- Python 3.13 or later. Make sure "Add Python to PATH" is checked during installation.
+- Python 3.12 or later. Make sure "Add Python to PATH" is checked during installation.
 - Git (to clone the repository).
 
 ### Steps
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/Futyn-Maker/chordcut.git
    cd chordcut
@@ -217,36 +218,40 @@ The output is a portable folder at `dist\ChordCut\`. Run `dist\ChordCut\ChordCut
 
 ## Translation
 
-ChordCut uses GNU gettext for internationalization. The application detects the system locale automatically and loads the matching translation if available.
+ChordCut uses gettext for internationalization. The application detects the system locale automatically and loads the matching translation if available.
 
 ### Translating into a new language
 
-1. Download the `chordcut.pot` template from the [latest GitHub release](https://github.com/Futyn-Maker/chordcut/releases/latest), or generate it from source:
+1. Download the `chordcut.pot` template from the [latest GitHub release](https://github.com/Futyn-Maker/chordcut/releases/latest), or generate it from source (requires `pip install babel`):
+
    ```
-   xgettext --add-comments=Translators -o locale/chordcut.pot --from-code=UTF-8 src/chordcut/*.py src/chordcut/**/*.py
+   pybabel extract --add-comments=Translators --charset=UTF-8 --project=ChordCut -o locale/chordcut.pot src/chordcut/
    ```
 
 2. Create a new `.po` file for your language (replace `xx` with the language code, e.g. `de`, `fr`, `es`):
+
    ```
-   msginit -i locale/chordcut.pot -o locale/xx/LC_MESSAGES/chordcut.po -l xx
+   pybabel init -i locale/chordcut.pot -d locale -D chordcut -l xx
    ```
 
 3. Open the `.po` file in any text editor or a tool like [Poedit](https://poedit.net/) and translate the strings.
 
 4. Compile the translation:
+
    ```
-   msgfmt -o locale/xx/LC_MESSAGES/chordcut.mo locale/xx/LC_MESSAGES/chordcut.po
+   pybabel compile -d locale -D chordcut
    ```
 
 5. Place the compiled `chordcut.mo` file into `locale/xx/LC_MESSAGES/` next to the ChordCut executable.
 
 To update an existing translation after the template changes:
+
 ```
-msgmerge -U locale/xx/LC_MESSAGES/chordcut.po locale/chordcut.pot
+pybabel update -i locale/chordcut.pot -d locale -D chordcut
 ```
 
 Then re-translate any new or changed strings and recompile.
 
 ## Credits
 
-* ChordCut was inspired by [VKBoss+](https://vkboss.ru), an accessible VK music client. Many interface decisions and the overall UX approach were borrowed from that project. Thank you guys for the best music client for VK, which I still use to this day! :)
+- ChordCut was inspired by [VKBoss+](https://vkboss.ru), an accessible VK music client. Many interface decisions and the overall UX approach were borrowed from that project. Thank you guys for the best music client for VK, which I still use to this day! :)

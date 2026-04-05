@@ -1,6 +1,6 @@
 """MPV audio player wrapper for ChordCut."""
 
-from typing import Callable
+from collections.abc import Callable
 
 import mpv
 
@@ -12,7 +12,7 @@ class Player:
         """Initialize the MPV player."""
         self._mpv = mpv.MPV(
             video=False,  # Audio only
-            ytdl=False,   # Don't use youtube-dl
+            ytdl=False,  # Don't use youtube-dl
         )
 
         # Callbacks
@@ -165,9 +165,7 @@ class Player:
         self.volume = self._volume - amount
         return self._volume
 
-    def set_on_position_change(
-        self, callback: Callable[[float], None] | None
-    ) -> None:
+    def set_on_position_change(self, callback: Callable[[float], None] | None) -> None:
         """Set callback for position changes.
 
         Args:
@@ -175,9 +173,7 @@ class Player:
         """
         self._on_position_change = callback
 
-    def set_on_duration_change(
-        self, callback: Callable[[float], None] | None
-    ) -> None:
+    def set_on_duration_change(self, callback: Callable[[float], None] | None) -> None:
         """Set callback for duration changes.
 
         Args:
@@ -215,7 +211,8 @@ class Player:
             devices = self._mpv.audio_device_list
             if devices:
                 return [
-                    d for d in devices
+                    d
+                    for d in devices
                     if d.get("name", "").startswith(
                         "wasapi/",
                     )

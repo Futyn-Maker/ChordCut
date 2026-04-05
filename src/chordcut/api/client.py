@@ -1,11 +1,11 @@
 """Threaded Jellyfin API client wrapper."""
 
 import uuid
+from collections.abc import Callable
 from concurrent.futures import (
     ThreadPoolExecutor,
     as_completed,
 )
-from typing import Callable
 
 from jellyfin_apiclient_python import JellyfinClient as BaseJellyfinClient
 
@@ -54,9 +54,7 @@ class JellyfinClient:
         """Get the server URL."""
         return self._server_url
 
-    def login(
-        self, server_url: str, username: str, password: str
-    ) -> dict | None:
+    def login(self, server_url: str, username: str, password: str) -> dict | None:
         """Authenticate with the Jellyfin server."""
         server_url = server_url.rstrip("/")
         self._server_url = server_url
@@ -64,7 +62,9 @@ class JellyfinClient:
         try:
             self._client.auth.connect_to_address(server_url)
             result = self._client.auth.login(
-                server_url, username, password,
+                server_url,
+                username,
+                password,
             )
 
             if result and "AccessToken" in result:
@@ -138,13 +138,11 @@ class JellyfinClient:
         except Exception:
             return []
 
-    _TRACK_FIELDS = (
-        "ArtistItems,Artists,"
-        "AlbumArtists,DateCreated"
-    )
+    _TRACK_FIELDS = "ArtistItems,Artists,AlbumArtists,DateCreated"
 
     def get_tracks_by_library(
-        self, library_id: str,
+        self,
+        library_id: str,
     ) -> list[dict]:
         """Get all audio tracks in a specific library."""
         if not self._user_id:
@@ -199,7 +197,8 @@ class JellyfinClient:
             return [], 0
 
     def get_track_count(
-        self, library_id: str,
+        self,
+        library_id: str,
     ) -> int:
         """Get total track count (warms server cache)."""
         if not self._user_id:
@@ -260,7 +259,8 @@ class JellyfinClient:
             return []
 
     def get_playlist_items(
-        self, playlist_id: str,
+        self,
+        playlist_id: str,
     ) -> list[dict]:
         """Get audio items in a playlist.
 
@@ -292,11 +292,10 @@ class JellyfinClient:
     def get_all_tracks_async(
         self,
         callback: Callable[[list[dict]], None],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Get all audio tracks asynchronously."""
+
         def task():
             try:
                 result = self.get_all_tracks()
@@ -311,14 +310,14 @@ class JellyfinClient:
         self,
         callback: Callable[
             [
-                list[dict], list[dict],
-                list[dict], dict[str, list[dict]],
+                list[dict],
+                list[dict],
+                list[dict],
+                dict[str, list[dict]],
             ],
             None,
         ],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Fetch entire library asynchronously.
 
@@ -331,6 +330,7 @@ class JellyfinClient:
         Per-library track fetches and per-playlist item
         fetches are parallelized for speed.
         """
+
         def task():
             try:
                 libraries = self.get_music_views()
@@ -338,10 +338,8 @@ class JellyfinClient:
                 # Fetch tracks per library in parallel
                 all_tracks: list[dict] = []
                 if libraries:
-                    all_tracks = (
-                        self._fetch_tracks_parallel(
-                            libraries,
-                        )
+                    all_tracks = self._fetch_tracks_parallel(
+                        libraries,
                     )
                 else:
                     # Fallback: no views found, fetch all
@@ -349,15 +347,15 @@ class JellyfinClient:
 
                 # Fetch playlists, then items in parallel
                 playlists = self.get_playlists()
-                playlist_items = (
-                    self._fetch_playlist_items_parallel(
-                        playlists,
-                    )
+                playlist_items = self._fetch_playlist_items_parallel(
+                    playlists,
                 )
 
                 callback(
-                    libraries, all_tracks,
-                    playlists, playlist_items,
+                    libraries,
+                    all_tracks,
+                    playlists,
+                    playlist_items,
                 )
             except Exception as e:
                 if error_callback:
@@ -366,7 +364,8 @@ class JellyfinClient:
         self._executor.submit(task)
 
     def _fetch_tracks_parallel(
-        self, libraries: list[dict],
+        self,
+        libraries: list[dict],
     ) -> list[dict]:
         """Fetch tracks from all libraries in parallel."""
         all_tracks: list[dict] = []
@@ -389,14 +388,12 @@ class JellyfinClient:
         return all_tracks
 
     def _fetch_playlist_items_parallel(
-        self, playlists: list[dict],
+        self,
+        playlists: list[dict],
     ) -> dict[str, list[dict]]:
         """Fetch items for all playlists in parallel."""
         playlist_items: dict[str, list[dict]] = {}
-        pids: list[str] = [
-            pl["Id"] for pl in playlists
-            if pl.get("Id")
-        ]
+        pids: list[str] = [pl["Id"] for pl in playlists if pl.get("Id")]
         if not pids:
             return playlist_items
 
@@ -405,7 +402,8 @@ class JellyfinClient:
         ) as pool:
             futures = {
                 pool.submit(
-                    self.get_playlist_items, pid,
+                    self.get_playlist_items,
+                    pid,
                 ): pid
                 for pid in pids
             }
@@ -421,17 +419,18 @@ class JellyfinClient:
     def fetch_library_paginated(
         self,
         libraries_callback: Callable[
-            [list[dict], dict[str, int]], None,
+            [list[dict], dict[str, int]],
+            None,
         ],
         page_callback: Callable[
-            [list[dict], str, int], None,
+            [list[dict], str, int],
+            None,
         ],
         done_callback: Callable[
-            [list[dict], dict[str, list[dict]]], None,
+            [list[dict], dict[str, list[dict]]],
+            None,
         ],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Fetch library data with per-page callbacks.
 
@@ -449,6 +448,7 @@ class JellyfinClient:
         called when everything (including playlists) is
         done.
         """
+
         def task():
             try:
                 # 1. Get music views
@@ -462,7 +462,8 @@ class JellyfinClient:
                 lib_counts: dict[str, int] = {}
                 with ThreadPoolExecutor(
                     max_workers=min(
-                        len(libraries), 4,
+                        len(libraries),
+                        4,
                     ),
                 ) as pool:
                     futures = {
@@ -476,9 +477,7 @@ class JellyfinClient:
                         futures,
                     ):
                         lid = futures[future]
-                        lib_counts[lid] = (
-                            future.result()
-                        )
+                        lib_counts[lid] = future.result()
 
                 libraries_callback(libraries, lib_counts)
 
@@ -486,7 +485,8 @@ class JellyfinClient:
                 for lib in libraries:
                     lib_id = lib["Id"]
                     lib_total = lib_counts.get(
-                        lib_id, 0,
+                        lib_id,
+                        0,
                     )
                     start = 0
                     while start < lib_total:
@@ -500,16 +500,16 @@ class JellyfinClient:
                         for t in items:
                             t["LibraryId"] = lib_id
                         page_callback(
-                            items, lib_id, len(items),
+                            items,
+                            lib_id,
+                            len(items),
                         )
                         start += self._PAGE_SIZE
 
                 # 4. Playlists (parallel items)
                 playlists = self.get_playlists()
-                pl_items = (
-                    self._fetch_playlist_items_parallel(
-                        playlists,
-                    )
+                pl_items = self._fetch_playlist_items_parallel(
+                    playlists,
                 )
                 done_callback(playlists, pl_items)
 
@@ -545,11 +545,10 @@ class JellyfinClient:
         self,
         name: str,
         callback: Callable[[str | None], None],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Create a playlist asynchronously."""
+
         def task() -> None:
             try:
                 result = self.create_playlist(name)
@@ -561,7 +560,9 @@ class JellyfinClient:
         self._executor.submit(task)
 
     def rename_playlist(
-        self, playlist_id: str, new_name: str,
+        self,
+        playlist_id: str,
+        new_name: str,
     ) -> bool:
         """Rename a playlist.
 
@@ -590,15 +591,15 @@ class JellyfinClient:
         playlist_id: str,
         new_name: str,
         callback: Callable[[bool], None],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Rename a playlist asynchronously."""
+
         def task() -> None:
             try:
                 result = self.rename_playlist(
-                    playlist_id, new_name,
+                    playlist_id,
+                    new_name,
                 )
                 callback(result)
             except Exception as e:
@@ -608,7 +609,8 @@ class JellyfinClient:
         self._executor.submit(task)
 
     def delete_playlist(
-        self, playlist_id: str,
+        self,
+        playlist_id: str,
     ) -> bool:
         """Delete a playlist."""
         try:
@@ -623,11 +625,10 @@ class JellyfinClient:
         self,
         playlist_id: str,
         callback: Callable[[bool], None] | None = None,
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Delete a playlist asynchronously."""
+
         def task() -> None:
             try:
                 result = self.delete_playlist(
@@ -644,7 +645,9 @@ class JellyfinClient:
     # --- Playlist item mutations ---
 
     def add_to_playlist(
-        self, playlist_id: str, track_id: str,
+        self,
+        playlist_id: str,
+        track_id: str,
     ) -> bool:
         """Add a track to the top of a playlist.
 
@@ -672,11 +675,10 @@ class JellyfinClient:
                     pid = it.get("PlaylistItemId")
                     break
             if pid:
-                move_url = (
-                    "Playlists/{plid}/Items/{pid}"
-                    "/Move/{idx}"
-                ).format(
-                    plid=playlist_id, pid=pid, idx=0,
+                move_url = ("Playlists/{plid}/Items/{pid}/Move/{idx}").format(
+                    plid=playlist_id,
+                    pid=pid,
+                    idx=0,
                 )
                 self._client.jellyfin._post(move_url)
             return True
@@ -688,15 +690,15 @@ class JellyfinClient:
         playlist_id: str,
         track_id: str,
         callback: Callable[[bool], None],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Add a track to a playlist asynchronously."""
+
         def task() -> None:
             try:
                 result = self.add_to_playlist(
-                    playlist_id, track_id,
+                    playlist_id,
+                    track_id,
                 )
                 callback(result)
             except Exception as e:
@@ -728,15 +730,15 @@ class JellyfinClient:
         playlist_id: str,
         playlist_item_id: str,
         callback: Callable[[bool], None] | None = None,
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Remove a track from a playlist async."""
+
         def task() -> None:
             try:
                 result = self.remove_from_playlist(
-                    playlist_id, playlist_item_id,
+                    playlist_id,
+                    playlist_item_id,
                 )
                 if callback:
                     callback(result)
@@ -754,10 +756,7 @@ class JellyfinClient:
     ) -> bool:
         """Move a playlist item to a new position."""
         try:
-            url = (
-                "Playlists/{plid}/Items/{pid}"
-                "/Move/{idx}"
-            ).format(
+            url = ("Playlists/{plid}/Items/{pid}/Move/{idx}").format(
                 plid=playlist_id,
                 pid=playlist_item_id,
                 idx=new_index,
@@ -773,11 +772,10 @@ class JellyfinClient:
         playlist_item_id: str,
         new_index: int,
         callback: Callable[[bool], None] | None = None,
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Move a playlist item asynchronously."""
+
         def task() -> None:
             try:
                 result = self.move_playlist_item(
@@ -844,10 +842,7 @@ class JellyfinClient:
             for tid in reversed(track_ids):
                 pid = id_to_pid.get(tid)
                 if pid:
-                    move_url = (
-                        "Playlists/{plid}/Items/{pid}"
-                        "/Move/{idx}"
-                    ).format(
+                    move_url = ("Playlists/{plid}/Items/{pid}/Move/{idx}").format(
                         plid=playlist_id,
                         pid=pid,
                         idx=0,
@@ -863,17 +858,15 @@ class JellyfinClient:
         playlist_id: str,
         track_ids: list[str],
         callback: Callable[[bool], None],
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Add tracks to playlist top asynchronously."""
+
         def task() -> None:
             try:
-                result = (
-                    self.add_tracks_to_playlist_top(
-                        playlist_id, track_ids,
-                    )
+                result = self.add_tracks_to_playlist_top(
+                    playlist_id,
+                    track_ids,
                 )
                 callback(result)
             except Exception as e:
@@ -914,15 +907,15 @@ class JellyfinClient:
         playlist_id: str,
         playlist_item_ids: list[str],
         callback: Callable[[bool], None] | None = None,
-        error_callback: (
-            Callable[[Exception], None] | None
-        ) = None,
+        error_callback: (Callable[[Exception], None] | None) = None,
     ) -> None:
         """Remove multiple tracks from a playlist async."""
+
         def task() -> None:
             try:
                 result = self.remove_tracks_from_playlist(
-                    playlist_id, playlist_item_ids,
+                    playlist_id,
+                    playlist_item_ids,
                 )
                 if callback:
                     callback(result)
@@ -935,22 +928,27 @@ class JellyfinClient:
     # --- Images ---
 
     def get_image_url(
-        self, item_id: str, max_size: int = 200,
+        self,
+        item_id: str,
+        max_size: int = 200,
         quality: int = 80,
     ) -> str:
         """Build URL for an item's primary image."""
         if not self._server_url:
             return ""
         return (
-            "{base}/Items/{id}/Images/Primary"
-            "?maxWidth={sz}&maxHeight={sz}&quality={q}"
+            "{base}/Items/{id}/Images/Primary?maxWidth={sz}&maxHeight={sz}&quality={q}"
         ).format(
-            base=self._server_url, id=item_id,
-            sz=max_size, q=quality,
+            base=self._server_url,
+            id=item_id,
+            sz=max_size,
+            q=quality,
         )
 
     def fetch_image(
-        self, item_id: str, max_size: int = 200,
+        self,
+        item_id: str,
+        max_size: int = 200,
     ) -> bytes | None:
         """Download an item's primary image as raw bytes.
 
@@ -961,6 +959,7 @@ class JellyfinClient:
             return None
         try:
             import urllib.request
+
             req = urllib.request.Request(url)
             if self._access_token:
                 req.add_header(
@@ -981,9 +980,11 @@ class JellyfinClient:
         max_size: int = 200,
     ) -> None:
         """Fetch an item's primary image asynchronously."""
+
         def task() -> None:
             result = self.fetch_image(item_id, max_size)
             callback(result)
+
         self._executor.submit(task)
 
     # --- Streaming ---
@@ -1044,15 +1045,18 @@ class JellyfinClient:
         callback: Callable[[dict | None], None],
     ) -> None:
         """Fetch lyrics asynchronously."""
+
         def task() -> None:
             result = self.get_lyrics(item_id)
             callback(result)
+
         self._executor.submit(task)
 
     # --- Item details ---
 
     def get_item_details(
-        self, item_id: str,
+        self,
+        item_id: str,
     ) -> dict | None:
         """Get full item details including MediaSources."""
         if not self._user_id:
@@ -1061,9 +1065,7 @@ class JellyfinClient:
             result = self._client.jellyfin.user_items(
                 handler="/{id}".format(id=item_id),
                 params={
-                    "Fields": (
-                        "MediaSources,DateCreated,Path"
-                    ),
+                    "Fields": ("MediaSources,DateCreated,Path"),
                 },
             )
             return result
@@ -1076,9 +1078,11 @@ class JellyfinClient:
         callback: Callable[[dict | None], None],
     ) -> None:
         """Fetch item details asynchronously."""
+
         def task() -> None:
             result = self.get_item_details(item_id)
             callback(result)
+
         self._executor.submit(task)
 
     def shutdown(self) -> None:

@@ -43,17 +43,21 @@ class PropertiesDialog(wx.Dialog):
         btn_sizer.Add(copy_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
         sizer.Add(
-            btn_sizer, 0,
-            wx.ALIGN_CENTER | wx.BOTTOM, 10,
+            btn_sizer,
+            0,
+            wx.ALIGN_CENTER | wx.BOTTOM,
+            10,
         )
 
         panel.SetSizer(sizer)
 
         copy_btn.Bind(
-            wx.EVT_BUTTON, lambda e: self._copy_selected(),
+            wx.EVT_BUTTON,
+            lambda e: self._copy_selected(),
         )
         close_btn.Bind(
-            wx.EVT_BUTTON, lambda e: self.Close(),
+            wx.EVT_BUTTON,
+            lambda e: self.Close(),
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
 
@@ -200,7 +204,8 @@ def build_track_properties(
 
 
 def build_artist_properties(
-    artist: dict, stats: dict,
+    artist: dict,
+    stats: dict,
 ) -> list[str]:
     """Build property lines for an artist."""
     props = []
@@ -224,7 +229,8 @@ def build_artist_properties(
 
 
 def build_album_properties(
-    album: dict, stats: dict,
+    album: dict,
+    stats: dict,
 ) -> list[str]:
     """Build property lines for an album."""
     props = []
@@ -259,7 +265,8 @@ def build_album_properties(
 
 
 def build_playlist_properties(
-    playlist: dict, stats: dict,
+    playlist: dict,
+    stats: dict,
 ) -> list[str]:
     """Build property lines for a playlist."""
     props = []

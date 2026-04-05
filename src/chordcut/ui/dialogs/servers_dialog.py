@@ -121,7 +121,8 @@ class ServersDialog(wx.Dialog):
             lambda e: self.EndModal(wx.ID_CLOSE),
         )
         self._server_list.Bind(
-            wx.EVT_KEY_DOWN, self._on_list_key,
+            wx.EVT_KEY_DOWN,
+            self._on_list_key,
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
 
@@ -144,7 +145,8 @@ class ServersDialog(wx.Dialog):
         active_id = self._settings.active_server_id
         strings = [
             "{user} @ {url}".format(
-                user=s.username, url=s.url,
+                user=s.username,
+                url=s.url,
             )
             for s in self._servers
         ]
@@ -192,9 +194,7 @@ class ServersDialog(wx.Dialog):
             dialog.Destroy()
 
             # Translators: Busy dialog shown while connecting.
-            progress = wx.BusyInfo(
-                _("Connecting to server...")
-            )
+            progress = wx.BusyInfo(_("Connecting to server..."))
             ok = self._client.login(url, username, password)
             del progress
 
@@ -204,9 +204,7 @@ class ServersDialog(wx.Dialog):
                     url=url,
                     user_id=self._client.user_id or "",
                     username=username,
-                    access_token=(
-                        self._client.access_token or ""
-                    ),
+                    access_token=(self._client.access_token or ""),
                     device_id=self._client.device_id,
                 )
                 server_id = self._db.save_server(creds)
@@ -219,8 +217,10 @@ class ServersDialog(wx.Dialog):
 
             wx.MessageBox(
                 # Translators: Error when adding server fails.
-                _("Failed to connect to the server.\n\n"
-                  "Please check the URL and credentials."),
+                _(
+                    "Failed to connect to the server.\n\n"
+                    "Please check the URL and credentials."
+                ),
                 # Translators: Title of connection error dialog.
                 _("Connection Failed"),
                 wx.OK | wx.ICON_ERROR,
@@ -263,8 +263,10 @@ class ServersDialog(wx.Dialog):
         if not ok:
             wx.MessageBox(
                 # Translators: Error when editing server fails.
-                _("Failed to connect to the server.\n\n"
-                  "The previous connection data will be kept."),
+                _(
+                    "Failed to connect to the server.\n\n"
+                    "The previous connection data will be kept."
+                ),
                 # Translators: Title of connection error dialog.
                 _("Connection Failed"),
                 wx.OK | wx.ICON_ERROR,
@@ -315,14 +317,17 @@ class ServersDialog(wx.Dialog):
 
         server = self._servers[sel]
         label = "{user} @ {url}".format(
-            user=server.username, url=server.url,
+            user=server.username,
+            url=server.url,
         )
         result = wx.MessageBox(
             # Translators: Confirmation message for server deletion.
             # {server} is the server label.
-            _("Delete server \"{server}\"?\n\n"
-              "All cached data for this server will be"
-              " removed.").format(server=label),
+            _(
+                'Delete server "{server}"?\n\n'
+                "All cached data for this server will be"
+                " removed."
+            ).format(server=label),
             # Translators: Title of the delete confirmation dialog.
             _("Confirm Delete"),
             wx.YES_NO | wx.ICON_WARNING,
@@ -331,9 +336,7 @@ class ServersDialog(wx.Dialog):
         if result != wx.YES:
             return
 
-        was_active = (
-            server.id == self._settings.active_server_id
-        )
+        was_active = server.id == self._settings.active_server_id
         self._db.delete_server(server.id)
 
         if was_active:
@@ -342,9 +345,7 @@ class ServersDialog(wx.Dialog):
             if remaining:
                 new_server = remaining[0]
                 # Translators: Busy dialog while reconnecting.
-                progress = wx.BusyInfo(
-                    _("Connecting to server...")
-                )
+                progress = wx.BusyInfo(_("Connecting to server..."))
                 ok = self._client.login_with_token(
                     new_server.url,
                     new_server.user_id,

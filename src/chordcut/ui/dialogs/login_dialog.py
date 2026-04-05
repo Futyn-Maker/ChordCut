@@ -16,7 +16,8 @@ class LoginDialog(wx.Dialog):
         """
         super().__init__(
             parent,
-            # Translators: Title of the login dialog for connecting to a Jellyfin server.
+            # Translators: Title of the login dialog
+            # for connecting to a Jellyfin server.
             title=_("Connect to Jellyfin Server"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
@@ -40,7 +41,8 @@ class LoginDialog(wx.Dialog):
         # Labels and text controls
         self._url_label = wx.StaticText(
             self,
-            # Translators: Label for the server URL input field. The ampersand indicates the keyboard mnemonic.
+            # Translators: Label for the server URL input field.
+            # The ampersand indicates the keyboard mnemonic.
             label=_("Server &URL:"),
         )
         self._url_text = wx.TextCtrl(
@@ -54,7 +56,8 @@ class LoginDialog(wx.Dialog):
 
         self._username_label = wx.StaticText(
             self,
-            # Translators: Label for the username input field. The ampersand indicates the keyboard mnemonic.
+            # Translators: Label for the username input field.
+            # The ampersand indicates the keyboard mnemonic.
             label=_("&Username:"),
         )
         self._username_text = wx.TextCtrl(
@@ -66,7 +69,8 @@ class LoginDialog(wx.Dialog):
 
         self._password_label = wx.StaticText(
             self,
-            # Translators: Label for the password input field. The ampersand indicates the keyboard mnemonic.
+            # Translators: Label for the password input field.
+            # The ampersand indicates the keyboard mnemonic.
             label=_("&Password:"),
         )
         self._password_text = wx.TextCtrl(

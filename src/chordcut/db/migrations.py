@@ -18,7 +18,7 @@ To add a migration:
 from __future__ import annotations
 
 import sqlite3
-from typing import Callable
+from collections.abc import Callable
 
 # Increment when the schema changes and add a migration below.
 SCHEMA_VERSION = 1

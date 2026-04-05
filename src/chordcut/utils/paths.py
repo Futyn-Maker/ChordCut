@@ -11,7 +11,7 @@ def get_app_dir() -> Path:
     directory containing the executable. When running from source,
     returns the project root.
     """
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Running as compiled executable
         return Path(sys.executable).parent
     else:
@@ -71,6 +71,6 @@ def get_locale_dir() -> Path:
     locale/ subfolder inside _internal/. When running from source,
     returns the locale/ folder in the project root.
     """
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         return Path(sys.executable).parent / "_internal" / "locale"
     return get_app_dir() / "locale"

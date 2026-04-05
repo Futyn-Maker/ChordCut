@@ -85,7 +85,8 @@ class MainWindow(wx.Frame):
         super().__init__(
             None,
             title="{name} - {ver}".format(
-                name=__app_name__, ver=__version__,
+                name=__app_name__,
+                ver=__version__,
             ),
             size=(800, 600),
         )
@@ -188,11 +189,10 @@ class MainWindow(wx.Frame):
 
         # Window icon (title bar + taskbar)
         from chordcut.utils.paths import get_icon_path
+
         _ico_path = get_icon_path()
         if _ico_path:
-            self.SetIcon(
-                wx.Icon(str(_ico_path), wx.BITMAP_TYPE_ICO)
-            )
+            self.SetIcon(wx.Icon(str(_ico_path), wx.BITMAP_TYPE_ICO))
 
         # System tray icon (always visible)
         self._tray_icon: TrayIcon | None = TrayIcon(self)
@@ -357,9 +357,9 @@ class MainWindow(wx.Frame):
         self._sort_menu_ids: dict[int, str] = {}
         sort_items = [
             # Translators: Sort option: alphabetical A-Z.
-            ("alpha_asc", _("Alphabetical A–Z")),
+            ("alpha_asc", _("Alphabetical A–Z")),  # noqa: RUF001
             # Translators: Sort option: alphabetical Z-A.
-            ("alpha_desc", _("Alphabetical Z–A")),
+            ("alpha_desc", _("Alphabetical Z–A")),  # noqa: RUF001
             # Translators: Sort option: newest first.
             ("date_desc", _("By date added (newest first)")),
             # Translators: Sort option: oldest first.
@@ -368,7 +368,8 @@ class MainWindow(wx.Frame):
         current_sort = self._settings.track_sort
         for sort_key, label in sort_items:
             item = self._sort_menu.AppendRadioItem(
-                wx.ID_ANY, label,
+                wx.ID_ANY,
+                label,
             )
             self._sort_menu_ids[item.GetId()] = sort_key
             if sort_key == current_sort:
@@ -482,7 +483,9 @@ class MainWindow(wx.Frame):
         self._list_label = wx.StaticText(
             self._panel,
             label=ngettext(
-                "{n} track", "{n} tracks", 0,
+                "{n} track",
+                "{n} tracks",
+                0,
             ).format(n=0),
         )
 
@@ -491,7 +494,8 @@ class MainWindow(wx.Frame):
 
         # Selected tracks area (tab order: after main list)
         self._selection_label = wx.StaticText(
-            self._panel, label="",
+            self._panel,
+            label="",
         )
         self._selection_list = LibraryListBox(self._panel)
         self._selection_list.set_formatter(format_track)
@@ -575,9 +579,7 @@ class MainWindow(wx.Frame):
         )
         main_sizer.Add(
             self._search_sizer,
-            flag=(
-                wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM
-            ),
+            flag=(wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM),
             border=10,
         )
 
@@ -590,10 +592,7 @@ class MainWindow(wx.Frame):
         main_sizer.Add(
             self._list,
             proportion=1,
-            flag=(
-                wx.EXPAND
-                | wx.LEFT | wx.RIGHT | wx.BOTTOM
-            ),
+            flag=(wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM),
             border=5,
         )
 
@@ -607,10 +606,7 @@ class MainWindow(wx.Frame):
         self._selection_sizer.Add(
             self._selection_list,
             proportion=1,
-            flag=(
-                wx.EXPAND
-                | wx.LEFT | wx.RIGHT
-            ),
+            flag=(wx.EXPAND | wx.LEFT | wx.RIGHT),
             border=5,
         )
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -664,10 +660,7 @@ class MainWindow(wx.Frame):
         )
         main_sizer.Add(
             self._np_sizer,
-            flag=(
-                wx.EXPAND
-                | wx.LEFT | wx.RIGHT | wx.BOTTOM
-            ),
+            flag=(wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM),
             border=10,
         )
 
@@ -677,116 +670,147 @@ class MainWindow(wx.Frame):
         """Bind event handlers."""
         # Menu events
         self.Bind(
-            wx.EVT_MENU, self._on_new_playlist,
+            wx.EVT_MENU,
+            self._on_new_playlist,
             self._menu_new_playlist,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_settings,
+            wx.EVT_MENU,
+            self._on_settings,
             self._menu_settings,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_timer_menu,
+            wx.EVT_MENU,
+            self._on_timer_menu,
             self._menu_timer,
         )
         self.Bind(
-            wx.EVT_TIMER, self._on_countdown_tick,
+            wx.EVT_TIMER,
+            self._on_countdown_tick,
             self._countdown_timer,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_exit, self._menu_exit,
+            wx.EVT_MENU,
+            self._on_exit,
+            self._menu_exit,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_play, self._menu_play,
+            wx.EVT_MENU,
+            self._on_play,
+            self._menu_play,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_pause,
+            wx.EVT_MENU,
+            self._on_pause,
             self._menu_pause,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_stop, self._menu_stop,
+            wx.EVT_MENU,
+            self._on_stop,
+            self._menu_stop,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_volume_up,
+            wx.EVT_MENU,
+            self._on_volume_up,
             self._menu_volume_up,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_volume_down,
+            wx.EVT_MENU,
+            self._on_volume_down,
             self._menu_volume_down,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_seek_forward,
+            wx.EVT_MENU,
+            self._on_seek_forward,
             self._menu_seek_fwd,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_seek_backward,
+            wx.EVT_MENU,
+            self._on_seek_backward,
             self._menu_seek_bwd,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_refresh,
+            wx.EVT_MENU,
+            self._on_refresh,
             self._menu_refresh,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_shortcuts,
+            wx.EVT_MENU,
+            self._on_shortcuts,
             self._menu_shortcuts,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_documentation,
+            wx.EVT_MENU,
+            self._on_documentation,
             self._menu_docs,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_check_updates,
+            wx.EVT_MENU,
+            self._on_check_updates,
             self._menu_check_updates,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_about,
+            wx.EVT_MENU,
+            self._on_about,
             self._menu_about,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_next_track,
+            wx.EVT_MENU,
+            self._on_next_track,
             self._menu_next,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_prev_track,
+            wx.EVT_MENU,
+            self._on_prev_track,
             self._menu_prev,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_restart_track,
+            wx.EVT_MENU,
+            self._on_restart_track,
             self._menu_restart,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_toggle_repeat,
+            wx.EVT_MENU,
+            self._on_toggle_repeat,
             self._menu_repeat,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_toggle_shuffle,
+            wx.EVT_MENU,
+            self._on_toggle_shuffle,
             self._menu_shuffle,
         )
 
         # Section selector
         self._section_choice.Bind(
-            wx.EVT_CHOICE, self._on_section_change,
+            wx.EVT_CHOICE,
+            self._on_section_change,
         )
 
         # Search
         self._search_text.Bind(
-            wx.EVT_TEXT, self._on_search_input,
+            wx.EVT_TEXT,
+            self._on_search_input,
         )
         self.Bind(
-            wx.EVT_TIMER, self._on_search_timer,
+            wx.EVT_TIMER,
+            self._on_search_timer,
             self._search_timer,
         )
 
         # Audio device selector
         self._device_choice.Bind(
-            wx.EVT_CHOICE, self._on_device_change,
+            wx.EVT_CHOICE,
+            self._on_device_change,
         )
 
         # List (double-click only; Enter/Backspace via CHAR_HOOK)
         self._list.Bind(
-            wx.EVT_LISTBOX_DCLICK, self._on_list_activate,
+            wx.EVT_LISTBOX_DCLICK,
+            self._on_list_activate,
         )
         self._list.Bind(
-            wx.EVT_CONTEXT_MENU, self._on_context_menu,
+            wx.EVT_CONTEXT_MENU,
+            self._on_context_menu,
         )
 
         # Selection area
@@ -799,7 +823,8 @@ class MainWindow(wx.Frame):
             self._on_selection_context_menu,
         )
         self._selection_clear_btn.Bind(
-            wx.EVT_BUTTON, self._on_clear_selection,
+            wx.EVT_BUTTON,
+            self._on_clear_selection,
         )
 
         # Frame-level key hook — fires before accelerators
@@ -821,102 +846,123 @@ class MainWindow(wx.Frame):
         self._id_lyrics_synced = wx.NewIdRef()
 
         self.Bind(
-            wx.EVT_MENU, self._on_properties_accel,
+            wx.EVT_MENU,
+            self._on_properties_accel,
             id=self._id_properties,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_copy_link_accel,
+            wx.EVT_MENU,
+            self._on_copy_link_accel,
             id=self._id_copy_link,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_copy_stream_accel,
+            wx.EVT_MENU,
+            self._on_copy_stream_accel,
             id=self._id_copy_stream,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_download_accel,
+            wx.EVT_MENU,
+            self._on_download_accel,
             id=self._id_download,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_lyrics_plain_accel,
+            wx.EVT_MENU,
+            self._on_lyrics_plain_accel,
             id=self._id_lyrics_plain,
         )
         self.Bind(
-            wx.EVT_MENU, self._on_lyrics_synced_accel,
+            wx.EVT_MENU,
+            self._on_lyrics_synced_accel,
             id=self._id_lyrics_synced,
         )
 
-        accel = wx.AcceleratorTable([
-            (
-                wx.ACCEL_NORMAL, wx.WXK_F8,
-                self._menu_settings.GetId(),
-            ),
-            (
-                wx.ACCEL_NORMAL, wx.WXK_ESCAPE,
-                self._menu_pause.GetId(),
-            ),
-            (
-                wx.ACCEL_CTRL, wx.WXK_UP,
-                self._menu_volume_up.GetId(),
-            ),
-            (
-                wx.ACCEL_CTRL, wx.WXK_DOWN,
-                self._menu_volume_down.GetId(),
-            ),
-            (
-                wx.ACCEL_CTRL, wx.WXK_RIGHT,
-                self._menu_seek_fwd.GetId(),
-            ),
-            (
-                wx.ACCEL_CTRL, wx.WXK_LEFT,
-                self._menu_seek_bwd.GetId(),
-            ),
-            # Shift+Left/Right handled in _on_char_hook
-            # to avoid conflict with search box selection
-            (
-                wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("X"),
-                self._menu_restart.GetId(),
-            ),
-            (
-                wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("R"),
-                self._menu_repeat.GetId(),
-            ),
-            (
-                wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("S"),
-                self._menu_shuffle.GetId(),
-            ),
-            (
-                wx.ACCEL_ALT, wx.WXK_RETURN,
-                self._id_properties,
-            ),
-            (
-                wx.ACCEL_CTRL | wx.ACCEL_ALT,
-                wx.WXK_RETURN,
-                self._id_lyrics_plain,
-            ),
-            (
-                wx.ACCEL_ALT | wx.ACCEL_SHIFT,
-                wx.WXK_RETURN,
-                self._id_lyrics_synced,
-            ),
-            # Ctrl+C for copy link handled in _on_char_hook
-            (
-                wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord("C"),
-                self._id_copy_stream,
-            ),
-            (
-                wx.ACCEL_CTRL | wx.ACCEL_SHIFT,
-                wx.WXK_RETURN,
-                self._id_download,
-            ),
-            (
-                wx.ACCEL_CTRL, ord("N"),
-                self._menu_new_playlist.GetId(),
-            ),
-        ])
+        accel = wx.AcceleratorTable(
+            [
+                (
+                    wx.ACCEL_NORMAL,
+                    wx.WXK_F8,
+                    self._menu_settings.GetId(),
+                ),
+                (
+                    wx.ACCEL_NORMAL,
+                    wx.WXK_ESCAPE,
+                    self._menu_pause.GetId(),
+                ),
+                (
+                    wx.ACCEL_CTRL,
+                    wx.WXK_UP,
+                    self._menu_volume_up.GetId(),
+                ),
+                (
+                    wx.ACCEL_CTRL,
+                    wx.WXK_DOWN,
+                    self._menu_volume_down.GetId(),
+                ),
+                (
+                    wx.ACCEL_CTRL,
+                    wx.WXK_RIGHT,
+                    self._menu_seek_fwd.GetId(),
+                ),
+                (
+                    wx.ACCEL_CTRL,
+                    wx.WXK_LEFT,
+                    self._menu_seek_bwd.GetId(),
+                ),
+                # Shift+Left/Right handled in _on_char_hook
+                # to avoid conflict with search box selection
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_ALT,
+                    ord("X"),
+                    self._menu_restart.GetId(),
+                ),
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_ALT,
+                    ord("R"),
+                    self._menu_repeat.GetId(),
+                ),
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_ALT,
+                    ord("S"),
+                    self._menu_shuffle.GetId(),
+                ),
+                (
+                    wx.ACCEL_ALT,
+                    wx.WXK_RETURN,
+                    self._id_properties,
+                ),
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_ALT,
+                    wx.WXK_RETURN,
+                    self._id_lyrics_plain,
+                ),
+                (
+                    wx.ACCEL_ALT | wx.ACCEL_SHIFT,
+                    wx.WXK_RETURN,
+                    self._id_lyrics_synced,
+                ),
+                # Ctrl+C for copy link handled in _on_char_hook
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_SHIFT,
+                    ord("C"),
+                    self._id_copy_stream,
+                ),
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_SHIFT,
+                    wx.WXK_RETURN,
+                    self._id_download,
+                ),
+                (
+                    wx.ACCEL_CTRL,
+                    ord("N"),
+                    self._menu_new_playlist.GetId(),
+                ),
+            ]
+        )
         self.SetAcceleratorTable(accel)
 
     def _setup_player_callbacks(self) -> None:
         """Set up player event callbacks."""
+
         def on_pos(pos: float) -> None:
             wx.CallAfter(self._update_position, pos)
 
@@ -977,12 +1023,14 @@ class MainWindow(wx.Frame):
     # ------------------------------------------------------------------
 
     def _on_settings(
-        self, _event: wx.CommandEvent,
+        self,
+        _event: wx.CommandEvent,
     ) -> None:
         """Open the settings dialog."""
         from chordcut.ui.dialogs.settings_dialog import (
             SettingsDialog,
         )
+
         dlg = SettingsDialog(self, self._settings)
         dlg.ShowModal()
         dlg.Destroy()
@@ -1015,14 +1063,12 @@ class MainWindow(wx.Frame):
 
     def _update_title(self) -> None:
         base = "{name} - {ver}".format(
-            name=__app_name__, ver=__version__,
+            name=__app_name__,
+            ver=__version__,
         )
         if self._current_track:
             # Translators: Fallback track title.
-            title = (
-                self._current_track.get("Name")
-                or _("Untitled")
-            )
+            title = self._current_track.get("Name") or _("Untitled")
             self.SetTitle(f"{title} - {base}")
         else:
             self.SetTitle(base)
@@ -1039,7 +1085,8 @@ class MainWindow(wx.Frame):
         """Update visible label + accessible name."""
         n = len(self._filtered_items)
         label = self._count_label(
-            self._current_level_type, n,
+            self._current_level_type,
+            n,
             self._context_name,
         )
         self._list_label.SetLabel(label)
@@ -1056,8 +1103,7 @@ class MainWindow(wx.Frame):
             if context:
                 # Translators: Track count with context.
                 # {n} = count, {name} = parent name.
-                fmt = ngettext("{n} track in {name}",
-                               "{n} tracks in {name}", n)
+                fmt = ngettext("{n} track in {name}", "{n} tracks in {name}", n)
                 return fmt.format(n=n, name=context)
             # Translators: Track count.
             return ngettext("{n} track", "{n} tracks", n).format(n=n)
@@ -1074,8 +1120,7 @@ class MainWindow(wx.Frame):
         if level_type == "albums":
             if context:
                 # Translators: Album count with context.
-                fmt = ngettext("{n} album by {name}",
-                               "{n} albums by {name}", n)
+                fmt = ngettext("{n} album by {name}", "{n} albums by {name}", n)
                 return fmt.format(n=n, name=context)
             # Translators: Album count.
             return ngettext("{n} album", "{n} albums", n).format(n=n)
@@ -1093,11 +1138,7 @@ class MainWindow(wx.Frame):
     def load_library(self) -> None:
         """Load library: show cache, then refresh."""
         server_id = self._settings.active_server_id
-        server = (
-            self._db.get_server(server_id)
-            if server_id is not None
-            else None
-        )
+        server = self._db.get_server(server_id) if server_id is not None else None
         if not server or not server.id:
             self._update_status(
                 # Translators: No server configured.
@@ -1120,10 +1161,7 @@ class MainWindow(wx.Frame):
         # the server reported; if the DB total matches the sum
         # of those expected counts the cache is complete.
         libraries = self._db.get_libraries(server.id)
-        total_expected = sum(
-            lib.get("ExpectedTrackCount", 0)
-            for lib in libraries
-        )
+        total_expected = sum(lib.get("ExpectedTrackCount", 0) for lib in libraries)
         total_cached = self._db.count_tracks(server.id)
 
         if total_expected > 0 and total_cached >= total_expected:
@@ -1149,14 +1187,20 @@ class MainWindow(wx.Frame):
         sid = server.id
 
         def on_loaded(
-            libraries, tracks, playlists, pl_items,
+            libraries,
+            tracks,
+            playlists,
+            pl_items,
         ):
             def run():
                 if self._load_server_id == sid:
                     self._on_library_loaded(
-                        libraries, tracks,
-                        playlists, pl_items,
+                        libraries,
+                        tracks,
+                        playlists,
+                        pl_items,
                     )
+
             wx.CallAfter(run)
 
         def on_error(e):
@@ -1164,14 +1208,17 @@ class MainWindow(wx.Frame):
             msg = _("Error refreshing: {error}").format(
                 error=e,
             )
+
             def run():
                 if self._load_server_id == sid:
                     self._update_status(msg)
                     self._finish_loading()
+
             wx.CallAfter(run)
 
         self._client.get_library_async(
-            on_loaded, on_error,
+            on_loaded,
+            on_error,
         )
 
     # --- Cold load (first launch / empty cache) ---
@@ -1201,24 +1248,31 @@ class MainWindow(wx.Frame):
             def run():
                 if self._load_server_id == sid:
                     self._on_libraries_ready(
-                        libraries, lib_counts,
+                        libraries,
+                        lib_counts,
                     )
+
             wx.CallAfter(run)
 
         def on_page(batch, lib_id, count):
             def run():
                 if self._load_server_id == sid:
                     self._on_page_loaded(
-                        batch, lib_id, count,
+                        batch,
+                        lib_id,
+                        count,
                     )
+
             wx.CallAfter(run)
 
         def on_done(playlists, pl_items):
             def run():
                 if self._load_server_id == sid:
                     self._on_initial_load_done(
-                        playlists, pl_items,
+                        playlists,
+                        pl_items,
                     )
+
             wx.CallAfter(run)
 
         def on_error(e):
@@ -1226,15 +1280,20 @@ class MainWindow(wx.Frame):
             msg = _("Error loading: {error}").format(
                 error=e,
             )
+
             def run():
                 if self._load_server_id == sid:
                     self._update_status(msg)
                     self._finish_cold_load()
                     self._finish_loading()
+
             wx.CallAfter(run)
 
         self._client.fetch_library_paginated(
-            on_libs, on_page, on_done, on_error,
+            on_libs,
+            on_page,
+            on_done,
+            on_error,
         )
 
     def _on_libraries_ready(
@@ -1248,23 +1307,22 @@ class MainWindow(wx.Frame):
             return
 
         self._lib_track_counts = dict(lib_counts)
-        self._lib_loaded_counts = {
-            lid: 0 for lid in lib_counts
-        }
+        self._lib_loaded_counts = {lid: 0 for lid in lib_counts}
 
         if libraries:
             self._db.cache_libraries(
-                server.id, libraries,
+                server.id,
+                libraries,
             )
             # Store the expected count per library so we can
             # detect an interrupted load on the next startup.
             self._db.set_libraries_expected_counts(
-                server.id, lib_counts,
+                server.id,
+                lib_counts,
             )
             db_libs = self._db.get_libraries(server.id)
             self._selected_library_ids = {
-                lib["Id"] for lib in db_libs
-                if lib.get("Enabled", True)
+                lib["Id"] for lib in db_libs if lib.get("Enabled", True)
             }
             self._libraries = db_libs
             self._rebuild_libraries_menu()
@@ -1289,8 +1347,7 @@ class MainWindow(wx.Frame):
 
         # Update per-library loaded count
         self._lib_loaded_counts[library_id] = (
-            self._lib_loaded_counts.get(library_id, 0)
-            + count
+            self._lib_loaded_counts.get(library_id, 0) + count
         )
 
         # Write batch to DB
@@ -1311,7 +1368,11 @@ class MainWindow(wx.Frame):
         total = sum(self._lib_track_counts.values())
         # Translators: Cold load progress in status bar.
         # {loaded} = tracks loaded so far, {total} = total tracks.
-        fmt = ngettext("Loading: {loaded} of {total} track", "Loading: {loaded} of {total} tracks", total)
+        fmt = ngettext(
+            "Loading: {loaded} of {total} track",
+            "Loading: {loaded} of {total} tracks",
+            total,
+        )
         self._update_status(fmt.format(loaded=loaded, total=total))
 
     def _on_initial_load_done(
@@ -1326,7 +1387,9 @@ class MainWindow(wx.Frame):
             return
 
         self._db.cache_playlists(
-            server.id, playlists, playlist_items,
+            server.id,
+            playlists,
+            playlist_items,
         )
         self._load_library_from_db(server.id)
 
@@ -1371,14 +1434,8 @@ class MainWindow(wx.Frame):
         ids = self._selected_library_ids
         if ids is None:
             ids = set(self._lib_track_counts)
-        loaded = sum(
-            self._lib_loaded_counts.get(lid, 0)
-            for lid in ids
-        )
-        total = sum(
-            self._lib_track_counts.get(lid, 0)
-            for lid in ids
-        )
+        loaded = sum(self._lib_loaded_counts.get(lid, 0) for lid in ids)
+        total = sum(self._lib_track_counts.get(lid, 0) for lid in ids)
         return loaded, total
 
     def _visible_tracks_complete(self) -> bool:
@@ -1398,13 +1455,13 @@ class MainWindow(wx.Frame):
         section = SECTIONS[idx]
 
         if section == "tracks" and not self._nav_stack:
-            loaded, total = (
-                self._visible_loading_counts()
-            )
+            loaded, total = self._visible_loading_counts()
             # Translators: Loading progress label.
             # {loaded} = tracks loaded so far,
             # {total} = total tracks on server.
-            fmt = ngettext("{loaded} of {total} track", "{loaded} of {total} tracks", total)
+            fmt = ngettext(
+                "{loaded} of {total} track", "{loaded} of {total} tracks", total
+            )
             label = fmt.format(loaded=loaded, total=total)
             self._list_label.SetLabel(label)
             self._list.SetName(label)
@@ -1415,36 +1472,27 @@ class MainWindow(wx.Frame):
         """Populate in-memory lists from the DB cache."""
         # Load libraries if not yet loaded
         if not self._libraries:
-            self._libraries = (
-                self._db.get_libraries(server_id)
-            )
+            self._libraries = self._db.get_libraries(server_id)
             if self._libraries:
                 # Restore persisted enabled/disabled state
                 self._selected_library_ids = {
-                    lib["Id"] for lib in self._libraries
-                    if lib.get("Enabled", True)
+                    lib["Id"] for lib in self._libraries if lib.get("Enabled", True)
                 }
                 self._rebuild_libraries_menu()
 
         lib_ids = self._selected_library_ids
         self._lib_tracks = self._db.get_all_tracks(
-            server_id, lib_ids,
+            server_id,
+            lib_ids,
             sort=self._settings.track_sort,
         )
-        self._lib_artists = (
-            self._db.get_all_artists(server_id, lib_ids)
+        self._lib_artists = self._db.get_all_artists(server_id, lib_ids)
+        self._lib_album_artists = self._db.get_all_album_artists(
+            server_id,
+            lib_ids,
         )
-        self._lib_album_artists = (
-            self._db.get_all_album_artists(
-                server_id, lib_ids,
-            )
-        )
-        self._lib_albums = (
-            self._db.get_all_albums(server_id, lib_ids)
-        )
-        self._lib_playlists = (
-            self._db.get_all_playlists(server_id)
-        )
+        self._lib_albums = self._db.get_all_albums(server_id, lib_ids)
+        self._lib_playlists = self._db.get_all_playlists(server_id)
 
     def _on_library_loaded(
         self,
@@ -1461,21 +1509,23 @@ class MainWindow(wx.Frame):
         # Cache libraries and rebuild menu
         if libraries:
             self._db.cache_libraries(
-                server.id, libraries,
+                server.id,
+                libraries,
             )
             # Read back from DB: cache_libraries preserves
             # existing enabled states; new libs default to 1.
             db_libs = self._db.get_libraries(server.id)
             self._selected_library_ids = {
-                lib["Id"] for lib in db_libs
-                if lib.get("Enabled", True)
+                lib["Id"] for lib in db_libs if lib.get("Enabled", True)
             }
             self._libraries = db_libs
             self._rebuild_libraries_menu()
 
         self._db.cache_library(server.id, tracks)
         self._db.cache_playlists(
-            server.id, playlists, playlist_items,
+            server.id,
+            playlists,
+            playlist_items,
         )
 
         # Update per-library expected counts from the actual
@@ -1484,12 +1534,11 @@ class MainWindow(wx.Frame):
         for track in tracks:
             lid = track.get("LibraryId", "") or ""
             if lid:
-                lib_counts[lid] = (
-                    lib_counts.get(lid, 0) + 1
-                )
+                lib_counts[lid] = lib_counts.get(lid, 0) + 1
         if lib_counts:
             self._db.set_libraries_expected_counts(
-                server.id, lib_counts,
+                server.id,
+                lib_counts,
             )
 
         self._load_library_from_db(server.id)
@@ -1501,7 +1550,8 @@ class MainWindow(wx.Frame):
         self._update_status(_("Library updated"))
 
     def _refresh_current_view(
-        self, server_id: int,
+        self,
+        server_id: int,
     ) -> None:
         """Re-query and refresh all navigation levels.
 
@@ -1513,13 +1563,13 @@ class MainWindow(wx.Frame):
 
         if not self._nav_stack:
             # Top level: refresh without clearing search
-            idx = (
-                self._section_choice.GetSelection()
-            )
+            idx = self._section_choice.GetSelection()
             section = SECTIONS[idx]
             items = self._items_for_section(idx)
             self._display_level(
-                items, section, None,
+                items,
+                section,
+                None,
             )
             return
 
@@ -1528,12 +1578,8 @@ class MainWindow(wx.Frame):
         for i, state in enumerate(self._nav_stack):
             if i == 0:
                 # Bottom of stack: top-level section
-                idx = (
-                    self._section_choice.GetSelection()
-                )
-                state.all_items = (
-                    self._items_for_section(idx)
-                )
+                idx = self._section_choice.GetSelection()
+                state.all_items = self._items_for_section(idx)
             else:
                 prev = self._nav_stack[i - 1]
                 state.all_items = self._query_sub_items(
@@ -1546,18 +1592,17 @@ class MainWindow(wx.Frame):
             # If the parent item we drilled into is gone,
             # the navigation path is broken — reset.
             if state.selected_id and not any(
-                it.get("Id") == state.selected_id
-                for it in state.all_items
+                it.get("Id") == state.selected_id for it in state.all_items
             ):
                 self._nav_stack.clear()
                 self._search_text.ChangeValue("")
-                idx = (
-                    self._section_choice.GetSelection()
-                )
+                idx = self._section_choice.GetSelection()
                 section = SECTIONS[idx]
                 items = self._items_for_section(idx)
                 self._display_level(
-                    items, section, None,
+                    items,
+                    section,
+                    None,
                 )
                 return
 
@@ -1587,19 +1632,26 @@ class MainWindow(wx.Frame):
             return []
         if parent_type == "artists":
             return self._db.get_albums_by_artist(
-                server_id, parent_id, library_ids,
+                server_id,
+                parent_id,
+                library_ids,
             )
         if parent_type == "album_artists":
             return self._db.get_albums_by_album_artist(
-                server_id, parent_id, library_ids,
+                server_id,
+                parent_id,
+                library_ids,
             )
         if parent_type == "albums":
             return self._db.get_tracks_by_album(
-                server_id, parent_id, library_ids,
+                server_id,
+                parent_id,
+                library_ids,
             )
         if parent_type == "playlists":
             return self._db.get_playlist_tracks(
-                server_id, parent_id,
+                server_id,
+                parent_id,
             )
         return []
 
@@ -1669,8 +1721,7 @@ class MainWindow(wx.Frame):
             q = normalize_search(query)
             lt = self._current_level_type
             self._filtered_items = [
-                i for i in self._all_items
-                if self._matches(i, q, lt)
+                i for i in self._all_items if self._matches(i, q, lt)
             ]
 
         self._list.set_items(self._filtered_items)
@@ -1678,7 +1729,9 @@ class MainWindow(wx.Frame):
 
     @staticmethod
     def _matches(
-        item: dict, q: str, level_type: str,
+        item: dict,
+        q: str,
+        level_type: str,
     ) -> bool:
         """Check if *item* matches the search query.
 
@@ -1690,10 +1743,7 @@ class MainWindow(wx.Frame):
         if level_type == "playlists":
             return q in n(item.get("Name", ""))
         if level_type == "albums":
-            return (
-                q in n(item.get("Name", ""))
-                or q in n(item.get("ArtistDisplay", ""))
-            )
+            return q in n(item.get("Name", "")) or q in n(item.get("ArtistDisplay", ""))
         # tracks
         return (
             q in n(item.get("Name", ""))
@@ -1721,27 +1771,32 @@ class MainWindow(wx.Frame):
 
         if lt == "artists":
             new_items = self._db.get_albums_by_artist(
-                server.id, item_id, lib_ids,
+                server.id,
+                item_id,
+                lib_ids,
             )
             new_type = "albums"
             new_ctx = item_name
         elif lt == "album_artists":
-            new_items = (
-                self._db.get_albums_by_album_artist(
-                    server.id, item_id, lib_ids,
-                )
+            new_items = self._db.get_albums_by_album_artist(
+                server.id,
+                item_id,
+                lib_ids,
             )
             new_type = "albums"
             new_ctx = item_name
         elif lt == "albums":
             new_items = self._db.get_tracks_by_album(
-                server.id, item_id, lib_ids,
+                server.id,
+                item_id,
+                lib_ids,
             )
             new_type = "tracks"
             new_ctx = item_name
         elif lt == "playlists":
             new_items = self._db.get_playlist_tracks(
-                server.id, item_id,
+                server.id,
+                item_id,
             )
             new_type = "tracks"
             new_ctx = item_name
@@ -1754,12 +1809,14 @@ class MainWindow(wx.Frame):
 
         # Push current state (unshuffled original so
         # going back always restores canonical order)
-        self._nav_stack.append(_NavState(
-            all_items=self._pre_shuffle_items,
-            level_type=self._current_level_type,
-            context_name=self._context_name,
-            selected_id=item_id,
-        ))
+        self._nav_stack.append(
+            _NavState(
+                all_items=self._pre_shuffle_items,
+                level_type=self._current_level_type,
+                context_name=self._context_name,
+                selected_id=item_id,
+            )
+        )
 
         self._search_text.ChangeValue("")
         self._display_level(new_items, new_type, new_ctx)
@@ -1789,7 +1846,8 @@ class MainWindow(wx.Frame):
     # ------------------------------------------------------------------
 
     def _on_sort_change(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Handle a sort radio-item selection."""
         sort_key = self._sort_menu_ids.get(
@@ -1807,18 +1865,18 @@ class MainWindow(wx.Frame):
 
         lib_ids = self._selected_library_ids
         self._lib_tracks = self._db.get_all_tracks(
-            server.id, lib_ids,
+            server.id,
+            lib_ids,
             sort=self._settings.track_sort,
         )
 
         # Refresh display if viewing top-level Tracks
         idx = self._section_choice.GetSelection()
-        if (
-            SECTIONS[idx] == "tracks"
-            and not self._nav_stack
-        ):
+        if SECTIONS[idx] == "tracks" and not self._nav_stack:
             self._display_level(
-                self._lib_tracks, "tracks", None,
+                self._lib_tracks,
+                "tracks",
+                None,
             )
 
     def _deactivate_list_shuffle(self) -> None:
@@ -1834,7 +1892,8 @@ class MainWindow(wx.Frame):
         self._menu_list_shuffle.Check(False)
 
     def _on_list_shuffle_toggle(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Toggle random shuffle of the visible list."""
         if event.IsChecked():
@@ -1856,11 +1915,10 @@ class MainWindow(wx.Frame):
     def _rebuild_libraries_menu(self) -> None:
         """Rebuild the Libraries submenu from current data."""
         # Remove old items and unbind events
-        for item in list(
-            self._libraries_menu.GetMenuItems()
-        ):
+        for item in list(self._libraries_menu.GetMenuItems()):
             self.Unbind(
-                wx.EVT_MENU, id=item.GetId(),
+                wx.EVT_MENU,
+                id=item.GetId(),
             )
             self._libraries_menu.Delete(item)
         self._library_menu_ids.clear()
@@ -1868,7 +1926,8 @@ class MainWindow(wx.Frame):
         for lib in self._libraries:
             lib_id = lib["Id"]
             item = self._libraries_menu.AppendCheckItem(
-                wx.ID_ANY, lib.get("Name", lib_id),
+                wx.ID_ANY,
+                lib.get("Name", lib_id),
             )
             if (
                 self._selected_library_ids is not None
@@ -1883,7 +1942,8 @@ class MainWindow(wx.Frame):
             )
 
     def _on_library_toggle(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Handle a library check/uncheck toggle."""
         lib_id = self._library_menu_ids.get(
@@ -1935,7 +1995,8 @@ class MainWindow(wx.Frame):
         # First item: Default (with name of first device)
         if devices:
             default_desc = devices[0].get(
-                "description", "",
+                "description",
+                "",
             )
             choices.append(
                 # Translators: Default audio device with name.
@@ -1964,7 +2025,8 @@ class MainWindow(wx.Frame):
         self._device_choice.SetSelection(0)
 
     def _on_device_change(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Handle audio device selection change."""
         idx = self._device_choice.GetSelection()
@@ -2017,10 +2079,7 @@ class MainWindow(wx.Frame):
 
         track_id = track.get("Id")
         self._queue_index = next(
-            (
-                i for i, t in enumerate(self._queue)
-                if t.get("Id") == track_id
-            ),
+            (i for i, t in enumerate(self._queue) if t.get("Id") == track_id),
             0,
         )
 
@@ -2032,16 +2091,15 @@ class MainWindow(wx.Frame):
     def _current_queue_origin(self) -> "_QueueOrigin":
         """Build a ``_QueueOrigin`` for the current view."""
         return _QueueOrigin(
-            section_idx=(
-                self._section_choice.GetSelection()
-            ),
+            section_idx=(self._section_choice.GetSelection()),
             nav_depth=len(self._nav_stack),
             level_type=self._current_level_type,
             context_name=self._context_name,
         )
 
     def _play_track_from_list(
-        self, track: dict,
+        self,
+        track: dict,
     ) -> None:
         """User pressed Enter/dbl-click: build queue and play."""
         if self._initial_loading:
@@ -2071,15 +2129,12 @@ class MainWindow(wx.Frame):
 
         # Translators: Fallback when a track has no title.
         title = track.get("Name") or _("Untitled")
-        artist = (
-            track.get("ArtistDisplay")
-            or track.get("AlbumArtist")
-            or ""
-        )
+        artist = track.get("ArtistDisplay") or track.get("AlbumArtist") or ""
         if artist:
             # Translators: Now-playing with artist.
             np = _("Now playing: {title} - {artist}").format(
-                title=title, artist=artist,
+                title=title,
+                artist=artist,
             )
         else:
             # Translators: Now-playing without artist.
@@ -2111,22 +2166,29 @@ class MainWindow(wx.Frame):
                 self._client.fetch_image_async(
                     album_id,
                     lambda d: wx.CallAfter(
-                        self._apply_album_art, d, request_id,
+                        self._apply_album_art,
+                        d,
+                        request_id,
                     ),
                     max_size=self._ART_SIZE * 2,
                 )
             else:
                 wx.CallAfter(
-                    self._apply_album_art, data, request_id,
+                    self._apply_album_art,
+                    data,
+                    request_id,
                 )
 
         self._client.fetch_image_async(
-            track_id, _on_image,
+            track_id,
+            _on_image,
             max_size=self._ART_SIZE * 2,
         )
 
     def _apply_album_art(
-        self, data: bytes | None, request_id: str,
+        self,
+        data: bytes | None,
+        request_id: str,
     ) -> None:
         """Apply fetched image data to the art bitmap."""
         if self._art_request_id != request_id:
@@ -2136,18 +2198,18 @@ class MainWindow(wx.Frame):
             return
         try:
             import io
+
             stream = io.BytesIO(data)
             img = wx.Image(stream, wx.BITMAP_TYPE_ANY)
             if not img.IsOk():
                 self._clear_album_art()
                 return
             img = img.Scale(
-                self._ART_SIZE, self._ART_SIZE,
+                self._ART_SIZE,
+                self._ART_SIZE,
                 wx.IMAGE_QUALITY_BICUBIC,
             )
-            self._art_bitmap.SetBitmap(
-                wx.Bitmap(img)
-            )
+            self._art_bitmap.SetBitmap(wx.Bitmap(img))
             if not self._art_bitmap.IsShown():
                 self._art_bitmap.Show()
                 self._np_sizer.Layout()
@@ -2167,10 +2229,7 @@ class MainWindow(wx.Frame):
             return
 
         # Synced lyrics open: reload same track paused
-        if (
-            self._synced_lyrics_active
-            and self._current_track
-        ):
+        if self._synced_lyrics_active and self._current_track:
             tid = self._current_track.get("Id")
             if tid:
                 url = self._client.get_stream_url(tid)
@@ -2187,10 +2246,7 @@ class MainWindow(wx.Frame):
                     self._player.play(url)
                     return
 
-        if (
-            self._queue
-            and self._queue_index < len(self._queue) - 1
-        ):
+        if self._queue and self._queue_index < len(self._queue) - 1:
             self._queue_index += 1
             next_track = self._queue[self._queue_index]
             self._play_track(next_track)
@@ -2201,9 +2257,7 @@ class MainWindow(wx.Frame):
         self._current_track = None
         self._clear_album_art()
         # Translators: Not playing label.
-        self._now_playing_label.SetLabel(
-            _("Not playing")
-        )
+        self._now_playing_label.SetLabel(_("Not playing"))
         # Translators: Playback finished status.
         self._update_status(_("Playback finished"))
         self._update_title()
@@ -2220,7 +2274,8 @@ class MainWindow(wx.Frame):
         self._queue_origin = None
 
     def _auto_focus_queue_track(
-        self, track: dict,
+        self,
+        track: dict,
     ) -> None:
         """Focus playing track in the queue's origin list.
 
@@ -2241,18 +2296,14 @@ class MainWindow(wx.Frame):
                 )
             return
 
-        cur_section = (
-            self._section_choice.GetSelection()
-        )
+        cur_section = self._section_choice.GetSelection()
         cur_depth = len(self._nav_stack)
 
         if (
             cur_section == origin.section_idx
             and cur_depth == origin.nav_depth
-            and self._current_level_type
-            == origin.level_type
-            and self._context_name
-            == origin.context_name
+            and self._current_level_type == origin.level_type
+            and self._context_name == origin.context_name
         ):
             self._list.set_selection_by_id(track_id)
 
@@ -2261,23 +2312,15 @@ class MainWindow(wx.Frame):
         if not self._queue:
             return
 
-        valid_ids = {
-            t.get("Id") for t in self._lib_tracks
-        }
+        valid_ids = {t.get("Id") for t in self._lib_tracks}
 
         current_id = None
         if 0 <= self._queue_index < len(self._queue):
-            current_id = self._queue[
-                self._queue_index
-            ].get("Id")
+            current_id = self._queue[self._queue_index].get("Id")
 
-        self._queue = [
-            t for t in self._queue
-            if t.get("Id") in valid_ids
-        ]
+        self._queue = [t for t in self._queue if t.get("Id") in valid_ids]
         self._original_queue = [
-            t for t in self._original_queue
-            if t.get("Id") in valid_ids
+            t for t in self._original_queue if t.get("Id") in valid_ids
         ]
 
         if not self._queue:
@@ -2286,10 +2329,7 @@ class MainWindow(wx.Frame):
 
         if current_id:
             new_idx = next(
-                (
-                    i for i, t in enumerate(self._queue)
-                    if t.get("Id") == current_id
-                ),
+                (i for i, t in enumerate(self._queue) if t.get("Id") == current_id),
                 None,
             )
             if new_idx is not None:
@@ -2304,11 +2344,9 @@ class MainWindow(wx.Frame):
         """Shuffle queue keeping current track in place."""
         if not self._queue or self._queue_index < 0:
             return
-        after = self._queue[self._queue_index + 1:]
+        after = self._queue[self._queue_index + 1 :]
         random.shuffle(after)
-        self._queue = (
-            self._queue[: self._queue_index + 1] + after
-        )
+        self._queue = self._queue[: self._queue_index + 1] + after
 
     def _unshuffle_queue(self) -> None:
         """Restore original queue order."""
@@ -2316,16 +2354,11 @@ class MainWindow(wx.Frame):
             return
         current_id = None
         if 0 <= self._queue_index < len(self._queue):
-            current_id = self._queue[
-                self._queue_index
-            ].get("Id")
+            current_id = self._queue[self._queue_index].get("Id")
         self._queue = list(self._original_queue)
         if current_id:
             self._queue_index = next(
-                (
-                    i for i, t in enumerate(self._queue)
-                    if t.get("Id") == current_id
-                ),
+                (i for i, t in enumerate(self._queue) if t.get("Id") == current_id),
                 0,
             )
 
@@ -2338,12 +2371,11 @@ class MainWindow(wx.Frame):
         self._update_status(message)
         try:
             notif = wx.adv.NotificationMessage(
-                __app_name__, message,
+                __app_name__,
+                message,
             )
             notif.Show(
-                timeout=(
-                    wx.adv.NotificationMessage.Timeout_Auto
-                ),
+                timeout=(wx.adv.NotificationMessage.Timeout_Auto),
             )
         except Exception:
             pass
@@ -2372,15 +2404,18 @@ class MainWindow(wx.Frame):
             return
 
         if focused is self._list:
-            if code in (
-                wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
-            ) and not event.AltDown() and not event.ControlDown():
+            if (
+                code
+                in (
+                    wx.WXK_RETURN,
+                    wx.WXK_NUMPAD_ENTER,
+                )
+                and not event.AltDown()
+                and not event.ControlDown()
+            ):
                 item = self._list.get_selected_item()
                 if item:
-                    if (
-                        self._current_level_type
-                        == "tracks"
-                    ):
+                    if self._current_level_type == "tracks":
                         self._play_track_from_list(item)
                     else:
                         self._drill_down(item)
@@ -2408,67 +2443,41 @@ class MainWindow(wx.Frame):
             # Delete: remove from playlist / delete playlist
             if code == wx.WXK_DELETE:
                 if self._current_playlist_id():
-                    item = (
-                        self._list.get_selected_item()
-                    )
+                    item = self._list.get_selected_item()
                     if item:
                         self._remove_from_playlist([item])
                     return
-                if (
-                    self._current_level_type
-                    == "playlists"
-                ):
-                    item = (
-                        self._list.get_selected_item()
-                    )
+                if self._current_level_type == "playlists":
+                    item = self._list.get_selected_item()
                     if item:
                         self._delete_playlist(item)
                     return
             # F2: rename playlist
             if code == wx.WXK_F2:
-                if (
-                    self._current_level_type
-                    == "playlists"
-                ):
-                    item = (
-                        self._list.get_selected_item()
-                    )
+                if self._current_level_type == "playlists":
+                    item = self._list.get_selected_item()
                     if item:
                         self._rename_playlist(item)
                     return
             # Alt+Up/Down: reorder in playlist
             # (blocked while list shuffle is active)
-            if (
-                event.AltDown()
-                and not event.ControlDown()
-                and not event.ShiftDown()
-            ):
+            if event.AltDown() and not event.ControlDown() and not event.ShiftDown():
                 if code == wx.WXK_UP:
-                    if (
-                        self._current_playlist_id()
-                        and not self._list_shuffle_active
-                    ):
-                        item = (
-                            self._list
-                            .get_selected_item()
-                        )
+                    if self._current_playlist_id() and not self._list_shuffle_active:
+                        item = self._list.get_selected_item()
                         if item:
                             self._move_playlist_item(
-                                item, -1,
+                                item,
+                                -1,
                             )
                         return
                 elif code == wx.WXK_DOWN:
-                    if (
-                        self._current_playlist_id()
-                        and not self._list_shuffle_active
-                    ):
-                        item = (
-                            self._list
-                            .get_selected_item()
-                        )
+                    if self._current_playlist_id() and not self._list_shuffle_active:
+                        item = self._list.get_selected_item()
                         if item:
                             self._move_playlist_item(
-                                item, 1,
+                                item,
+                                1,
                             )
                         return
 
@@ -2484,9 +2493,15 @@ class MainWindow(wx.Frame):
                 self._remove_from_selection()
                 return
             # Enter: play from selection queue
-            if code in (
-                wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
-            ) and not event.AltDown() and not event.ControlDown():
+            if (
+                code
+                in (
+                    wx.WXK_RETURN,
+                    wx.WXK_NUMPAD_ENTER,
+                )
+                and not event.AltDown()
+                and not event.ControlDown()
+            ):
                 self._play_from_selection()
                 return
             # Delete: bulk remove from playlist
@@ -2495,11 +2510,7 @@ class MainWindow(wx.Frame):
                     self._sel_remove_from_playlist()
                 return
             # Alt+Up/Down: reorder in selection
-            if (
-                event.AltDown()
-                and not event.ControlDown()
-                and not event.ShiftDown()
-            ):
+            if event.AltDown() and not event.ControlDown() and not event.ShiftDown():
                 if code == wx.WXK_UP:
                     self._move_selection_item(-1)
                     return
@@ -2508,7 +2519,8 @@ class MainWindow(wx.Frame):
                     return
             # Ctrl+Shift+Enter: bulk download
             if (
-                code in (
+                code
+                in (
                     wx.WXK_RETURN,
                     wx.WXK_NUMPAD_ENTER,
                 )
@@ -2542,11 +2554,7 @@ class MainWindow(wx.Frame):
                 return
 
         # Shift+Arrow: next/prev track (unless in search)
-        if (
-            event.ShiftDown()
-            and not event.ControlDown()
-            and not event.AltDown()
-        ):
+        if event.ShiftDown() and not event.ControlDown() and not event.AltDown():
             if code == wx.WXK_RIGHT:
                 if focused is not self._search_text:
                     self._on_next_track(None)
@@ -2605,7 +2613,8 @@ class MainWindow(wx.Frame):
         self._panel.Layout()
 
     def _on_clear_selection(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Clear all selected tracks."""
         self._selected_tracks.clear()
@@ -2628,13 +2637,15 @@ class MainWindow(wx.Frame):
             return
         self._update_selection_area()
         new_sel = min(
-            sel, len(self._selected_tracks) - 1,
+            sel,
+            len(self._selected_tracks) - 1,
         )
         if new_sel >= 0:
             self._selection_list.SetSelection(new_sel)
 
     def _on_selection_list_activate(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Play track from selection (double-click)."""
         self._play_from_selection()
@@ -2647,12 +2658,15 @@ class MainWindow(wx.Frame):
             return
 
         self._set_queue(
-            self._selected_tracks, item, None,
+            self._selected_tracks,
+            item,
+            None,
         )
         self._play_track(item)
 
     def _move_selection_item(
-        self, direction: int,
+        self,
+        direction: int,
     ) -> None:
         """Move a track up/down in the selection list."""
         sel = self._selection_list.GetSelection()
@@ -2676,7 +2690,8 @@ class MainWindow(wx.Frame):
         self._selection_list.SetSelection(new_idx)
 
     def _on_selection_context_menu(
-        self, event: wx.ContextMenuEvent,
+        self,
+        event: wx.ContextMenuEvent,
     ) -> None:
         """Show bulk-action context menu for selection."""
         item = self._selection_list.get_selected_item()
@@ -2684,18 +2699,18 @@ class MainWindow(wx.Frame):
             return
 
         from chordcut.ui.context_menu import (
-            build_selection_context_menu,
-            ID_SEL_PLAY,
-            ID_SEL_REMOVE,
-            ID_SEL_DOWNLOAD_ALL,
+            ID_PROPERTIES,
             ID_SEL_COPY_LINKS,
             ID_SEL_COPY_STREAM_LINKS,
-            ID_SEL_REMOVE_FROM_PLAYLIST,
-            ID_SEL_MOVE_UP,
+            ID_SEL_DOWNLOAD_ALL,
             ID_SEL_MOVE_DOWN,
-            ID_VIEW_LYRICS,
+            ID_SEL_MOVE_UP,
+            ID_SEL_PLAY,
+            ID_SEL_REMOVE,
+            ID_SEL_REMOVE_FROM_PLAYLIST,
             ID_SYNCED_LYRICS,
-            ID_PROPERTIES,
+            ID_VIEW_LYRICS,
+            build_selection_context_menu,
         )
 
         item_index = self._selection_list.GetSelection()
@@ -2710,68 +2725,41 @@ class MainWindow(wx.Frame):
             sel_ids = self._selected_track_ids
             for pl in playlists:
                 pl_id = pl.get("Id", "")
-                existing = (
-                    self._db.get_playlist_track_ids(
-                        server.id, pl_id,
-                    )
+                existing = self._db.get_playlist_track_ids(
+                    server.id,
+                    pl_id,
                 )
                 if sel_ids <= existing:
                     all_in[pl_id] = True
 
-        can_remove = (
-            self._can_bulk_remove_from_playlist()
-        )
+        can_remove = self._can_bulk_remove_from_playlist()
 
-        menu, playlist_id_map = (
-            build_selection_context_menu(
-                playlists=playlists,
-                all_in_playlists=all_in,
-                can_remove_from_playlist=can_remove,
-                item_index=item_index,
-                total_items=total,
-            )
+        menu, playlist_id_map = build_selection_context_menu(
+            playlists=playlists,
+            all_in_playlists=all_in,
+            can_remove_from_playlist=can_remove,
+            item_index=item_index,
+            total_items=total,
         )
 
         handler_map = {
-            ID_SEL_PLAY: lambda e: (
-                self._play_from_selection()
+            ID_SEL_PLAY: lambda e: self._play_from_selection(),
+            ID_SEL_REMOVE: lambda e: self._remove_from_selection(),
+            ID_SEL_DOWNLOAD_ALL: lambda e: self._download_tracks(
+                self._selected_tracks,
             ),
-            ID_SEL_REMOVE: lambda e: (
-                self._remove_from_selection()
+            ID_SEL_COPY_LINKS: lambda e: self._copy_link(
+                self._selected_tracks,
             ),
-            ID_SEL_DOWNLOAD_ALL: lambda e: (
-                self._download_tracks(
-                    self._selected_tracks,
-                )
+            ID_SEL_COPY_STREAM_LINKS: lambda e: self._copy_stream_link(
+                self._selected_tracks,
             ),
-            ID_SEL_COPY_LINKS: lambda e: (
-                self._copy_link(
-                    self._selected_tracks,
-                )
-            ),
-            ID_SEL_COPY_STREAM_LINKS: lambda e: (
-                self._copy_stream_link(
-                    self._selected_tracks,
-                )
-            ),
-            ID_SEL_REMOVE_FROM_PLAYLIST: lambda e: (
-                self._sel_remove_from_playlist()
-            ),
-            ID_SEL_MOVE_UP: lambda e: (
-                self._move_selection_item(-1)
-            ),
-            ID_SEL_MOVE_DOWN: lambda e: (
-                self._move_selection_item(1)
-            ),
-            ID_VIEW_LYRICS: lambda e: (
-                self._show_lyrics(item, synced=False)
-            ),
-            ID_SYNCED_LYRICS: lambda e: (
-                self._show_lyrics(item, synced=True)
-            ),
-            ID_PROPERTIES: lambda e: (
-                self._show_properties(item)
-            ),
+            ID_SEL_REMOVE_FROM_PLAYLIST: lambda e: self._sel_remove_from_playlist(),
+            ID_SEL_MOVE_UP: lambda e: self._move_selection_item(-1),
+            ID_SEL_MOVE_DOWN: lambda e: self._move_selection_item(1),
+            ID_VIEW_LYRICS: lambda e: self._show_lyrics(item, synced=False),
+            ID_SYNCED_LYRICS: lambda e: self._show_lyrics(item, synced=True),
+            ID_PROPERTIES: lambda e: self._show_properties(item),
         }
 
         for mid, handler in handler_map.items():
@@ -2780,10 +2768,9 @@ class MainWindow(wx.Frame):
         for mid, pl in playlist_id_map.items():
             self.Bind(
                 wx.EVT_MENU,
-                lambda e, p=pl: (
-                    self._add_to_playlist(
-                        self._selected_tracks, p,
-                    )
+                lambda e, p=pl: self._add_to_playlist(
+                    self._selected_tracks,
+                    p,
                 ),
                 id=mid,
             )
@@ -2800,13 +2787,8 @@ class MainWindow(wx.Frame):
         pl_id = self._current_playlist_id()
         if not pl_id:
             return False
-        current_ids = {
-            t.get("Id", "") for t in self._all_items
-        }
-        return any(
-            t.get("Id", "") in current_ids
-            for t in self._selected_tracks
-        )
+        current_ids = {t.get("Id", "") for t in self._all_items}
+        return any(t.get("Id", "") in current_ids for t in self._selected_tracks)
 
     def _sel_remove_from_playlist(self) -> None:
         """Remove selected tracks from active playlist.
@@ -2817,10 +2799,7 @@ class MainWindow(wx.Frame):
         pl_id = self._current_playlist_id()
         if not pl_id:
             return
-        current_map: dict[str, dict] = {
-            t.get("Id", ""): t
-            for t in self._all_items
-        }
+        current_map: dict[str, dict] = {t.get("Id", ""): t for t in self._all_items}
         to_remove = [
             current_map[t.get("Id", "")]
             for t in self._selected_tracks
@@ -2833,10 +2812,7 @@ class MainWindow(wx.Frame):
         item = self._list.get_selected_item()
         if item and self._current_level_type == "tracks":
             self._play_track_from_list(item)
-        elif (
-            self._current_track
-            and not self._player.is_playing
-        ):
+        elif self._current_track and not self._player.is_playing:
             self._player.resume()
 
     def _on_pause(self, event: wx.CommandEvent):
@@ -2854,9 +2830,7 @@ class MainWindow(wx.Frame):
         self._clear_queue()
         self._clear_album_art()
         # Translators: Not playing label.
-        self._now_playing_label.SetLabel(
-            _("Not playing")
-        )
+        self._now_playing_label.SetLabel(_("Not playing"))
         # Translators: Stopped status.
         self._update_status(_("Stopped"))
         self._update_title()
@@ -2876,10 +2850,7 @@ class MainWindow(wx.Frame):
         self._player.seek(-self._settings.seek_step)
 
     def _on_next_track(self, event: wx.CommandEvent):
-        if (
-            not self._queue
-            or self._queue_index >= len(self._queue) - 1
-        ):
+        if not self._queue or self._queue_index >= len(self._queue) - 1:
             return
         self._queue_index += 1
         track = self._queue[self._queue_index]
@@ -2899,9 +2870,7 @@ class MainWindow(wx.Frame):
             self._play_track(self._current_track)
 
     def _on_toggle_repeat(self, event: wx.CommandEvent):
-        self._repeat_enabled = (
-            self._menu_repeat.IsChecked()
-        )
+        self._repeat_enabled = self._menu_repeat.IsChecked()
         if self._repeat_enabled:
             # Translators: Repeat mode on notification.
             self._notify_toggle(_("Repeat on"))
@@ -2910,9 +2879,7 @@ class MainWindow(wx.Frame):
             self._notify_toggle(_("Repeat off"))
 
     def _on_toggle_shuffle(self, event: wx.CommandEvent):
-        self._shuffle_enabled = (
-            self._menu_shuffle.IsChecked()
-        )
+        self._shuffle_enabled = self._menu_shuffle.IsChecked()
         if self._shuffle_enabled:
             if self._queue:
                 self._shuffle_queue_around_current()
@@ -2956,11 +2923,10 @@ class MainWindow(wx.Frame):
     def _rebuild_servers_menu(self) -> None:
         """Rebuild the 'Change Server' submenu from the DB."""
         # Remove old items and unbind
-        for item in list(
-            self._servers_submenu.GetMenuItems()
-        ):
+        for item in list(self._servers_submenu.GetMenuItems()):
             self.Unbind(
-                wx.EVT_MENU, id=item.GetId(),
+                wx.EVT_MENU,
+                id=item.GetId(),
             )
             self._servers_submenu.Delete(item)
         self._server_menu_items.clear()
@@ -2968,16 +2934,16 @@ class MainWindow(wx.Frame):
         active_id = self._settings.active_server_id
         for server in self._db.get_all_servers():
             label = "{user} @ {url}".format(
-                user=server.username, url=server.url,
+                user=server.username,
+                url=server.url,
             )
             item = self._servers_submenu.AppendRadioItem(
-                wx.ID_ANY, label,
+                wx.ID_ANY,
+                label,
             )
             if server.id == active_id:
                 item.Check(True)
-            self._server_menu_items[item.GetId()] = (
-                server.id or 0
-            )
+            self._server_menu_items[item.GetId()] = server.id or 0
             self.Bind(
                 wx.EVT_MENU,
                 self._on_server_menu_item,
@@ -2999,7 +2965,8 @@ class MainWindow(wx.Frame):
         )
 
     def _on_server_menu_item(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Switch to a saved server from the submenu."""
         server_id = self._server_menu_items.get(
@@ -3016,14 +2983,18 @@ class MainWindow(wx.Frame):
         self._switch_to_server(server)
 
     def _on_manage_servers(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Open the server management dialog."""
         from chordcut.ui.dialogs.servers_dialog import (
             ServersDialog,
         )
+
         dlg = ServersDialog(
-            self, self._db, self._client,
+            self,
+            self._db,
+            self._client,
             self._settings,
         )
         dlg.ShowModal()
@@ -3037,13 +3008,12 @@ class MainWindow(wx.Frame):
             self.load_library()
 
     def _switch_to_server(
-        self, server: ServerCredentials,
+        self,
+        server: ServerCredentials,
     ) -> None:
         """Reconnect to a saved server and reload library."""
         # Translators: Busy dialog while switching servers.
-        progress = wx.BusyInfo(
-            _("Connecting to server...")
-        )
+        progress = wx.BusyInfo(_("Connecting to server..."))
         ok = self._client.login_with_token(
             server.url,
             server.user_id,
@@ -3055,8 +3025,10 @@ class MainWindow(wx.Frame):
         if not ok:
             wx.MessageBox(
                 # Translators: Error when switching servers.
-                _("Failed to connect to the server.\n\n"
-                  "The previous server remains active."),
+                _(
+                    "Failed to connect to the server.\n\n"
+                    "The previous server remains active."
+                ),
                 # Translators: Server switch error title.
                 _("Connection Failed"),
                 wx.OK | wx.ICON_ERROR,
@@ -3123,19 +3095,20 @@ class MainWindow(wx.Frame):
         # Translators: Label when no library is loaded.
         self._list_label.SetLabel(
             ngettext(
-                "{n} track", "{n} tracks", 0,
+                "{n} track",
+                "{n} tracks",
+                0,
             ).format(n=0)
         )
         # Translators: Now playing when nothing plays.
-        self._now_playing_label.SetLabel(
-            _("Not playing")
-        )
+        self._now_playing_label.SetLabel(_("Not playing"))
         self._update_title()
         self._panel.Layout()
 
     def _on_shortcuts(self, event: wx.CommandEvent):
         # Translators: Keyboard shortcuts help text.
-        shortcuts = _("Keyboard Shortcuts:\n\n"
+        shortcuts = _(
+            "Keyboard Shortcuts:\n\n"
             "Navigation:\n"
             "  Tab            - Move between controls\n"
             "  Up/Down        - Navigate items\n"
@@ -3199,7 +3172,8 @@ class MainWindow(wx.Frame):
     _log = logging.getLogger(f"{__name__}.MainWindow")
 
     def _on_check_updates(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Handle Help → Check for Updates (manual)."""
         self._do_update_check(silent=False)
@@ -3244,8 +3218,9 @@ class MainWindow(wx.Frame):
             if info is None:
                 if not silent:
                     # Translators: Shown when no update available.
-                    msg = _("You are running the latest version"
-                            " ({version}).").format(version=__version__)
+                    msg = _("You are running the latest version ({version}).").format(
+                        version=__version__
+                    )
                     wx.MessageBox(
                         msg,
                         # Translators: Title for the update check
@@ -3259,11 +3234,13 @@ class MainWindow(wx.Frame):
             self._show_update_dialog(info)
 
         threading.Thread(
-            target=_check, daemon=True,
+            target=_check,
+            daemon=True,
         ).start()
 
     def _show_update_error(
-        self, error: Exception,
+        self,
+        error: Exception,
     ) -> None:
         """Show a detailed error dialog for a failed update check."""
         import urllib.error
@@ -3281,8 +3258,7 @@ class MainWindow(wx.Frame):
         wx.MessageBox(
             # Translators: Error message when update check fails.
             # {detail} is the technical error description.
-            _("Could not check for updates.\n\n"
-              "{detail}").format(detail=detail),
+            _("Could not check for updates.\n\n{detail}").format(detail=detail),
             # Translators: Title for the update error dialog.
             _("Update Error"),
             wx.OK | wx.ICON_ERROR,
@@ -3315,22 +3291,32 @@ class MainWindow(wx.Frame):
 
         # Version info
         ver_sizer = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
-        ver_sizer.Add(wx.StaticText(
-            panel,
-            # Translators: Label for current version in update dialog.
-            label=_("Current version:"),
-        ))
-        ver_sizer.Add(wx.StaticText(
-            panel, label=info.current_version,
-        ))
-        ver_sizer.Add(wx.StaticText(
-            panel,
-            # Translators: Label for new version in update dialog.
-            label=_("New version:"),
-        ))
-        ver_sizer.Add(wx.StaticText(
-            panel, label=info.new_version,
-        ))
+        ver_sizer.Add(
+            wx.StaticText(
+                panel,
+                # Translators: Label for current version in update dialog.
+                label=_("Current version:"),
+            )
+        )
+        ver_sizer.Add(
+            wx.StaticText(
+                panel,
+                label=info.current_version,
+            )
+        )
+        ver_sizer.Add(
+            wx.StaticText(
+                panel,
+                # Translators: Label for new version in update dialog.
+                label=_("New version:"),
+            )
+        )
+        ver_sizer.Add(
+            wx.StaticText(
+                panel,
+                label=info.new_version,
+            )
+        )
         sizer.Add(
             ver_sizer,
             flag=wx.LEFT | wx.RIGHT,
@@ -3351,11 +3337,7 @@ class MainWindow(wx.Frame):
             changelog_ctrl = wx.TextCtrl(
                 panel,
                 value=info.changelog,
-                style=(
-                    wx.TE_MULTILINE
-                    | wx.TE_READONLY
-                    | wx.TE_WORDWRAP
-                ),
+                style=(wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_WORDWRAP),
                 # Translators: Accessible name for changelog field.
                 name=_("Changelog"),
             )
@@ -3421,11 +3403,7 @@ class MainWindow(wx.Frame):
             _("Downloading update..."),
             maximum=100,
             parent=self,
-            style=(
-                wx.PD_APP_MODAL
-                | wx.PD_AUTO_HIDE
-                | wx.PD_SMOOTH
-            ),
+            style=(wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_SMOOTH),
         )
 
         result_box: list = [None]
@@ -3438,7 +3416,8 @@ class MainWindow(wx.Frame):
         def _download():
             try:
                 result_box[0] = download_update(
-                    info, _progress_cb,
+                    info,
+                    _progress_cb,
                 )
             except Exception as exc:
                 result_box[0] = exc
@@ -3452,8 +3431,7 @@ class MainWindow(wx.Frame):
                 wx.MessageBox(
                     # Translators: Error downloading update.
                     # {error} is the error description.
-                    _("Failed to download the update.\n\n"
-                      "{error}").format(error=str(r)),
+                    _("Failed to download the update.\n\n{error}").format(error=str(r)),
                     # Translators: Title for download error.
                     _("Update Error"),
                     wx.OK | wx.ICON_ERROR,
@@ -3468,8 +3446,7 @@ class MainWindow(wx.Frame):
                 wx.MessageBox(
                     # Translators: Error applying update.
                     # {error} is the error description.
-                    _("Failed to apply the update.\n\n"
-                      "{error}").format(error=str(exc)),
+                    _("Failed to apply the update.\n\n{error}").format(error=str(exc)),
                     _("Update Error"),
                     wx.OK | wx.ICON_ERROR,
                     self,
@@ -3482,7 +3459,8 @@ class MainWindow(wx.Frame):
             self.Close()
 
         threading.Thread(
-            target=_download, daemon=True,
+            target=_download,
+            daemon=True,
         ).start()
 
     # ------------------------------------------------------------------
@@ -3516,10 +3494,12 @@ class MainWindow(wx.Frame):
         wx.MessageBox(
             # Translators: About dialog text.
             # {app_name} = app name, {version} = version string.
-            _("{app_name} v{version}\n\n"
-              "An accessible Jellyfin music client.\n\n"
-              "Designed for keyboard and"
-              " screen reader users.").format(
+            _(
+                "{app_name} v{version}\n\n"
+                "An accessible Jellyfin music client.\n\n"
+                "Designed for keyboard and"
+                " screen reader users."
+            ).format(
                 app_name=__app_name__,
                 version=__version__,
             ),
@@ -3536,7 +3516,8 @@ class MainWindow(wx.Frame):
     # ------------------------------------------------------------------
 
     def _on_context_menu(
-        self, event: wx.ContextMenuEvent,
+        self,
+        event: wx.ContextMenuEvent,
     ) -> None:
         """Show context menu for the selected item."""
         item = self._list.get_selected_item()
@@ -3544,16 +3525,24 @@ class MainWindow(wx.Frame):
             return
 
         from chordcut.ui.context_menu import (
-            build_context_menu,
-            ID_PLAY, ID_OPEN, ID_GO_BACK,
-            ID_GO_TO_ARTIST, ID_GO_TO_ALBUM,
+            ID_COPY_LINK,
+            ID_COPY_STREAM,
+            ID_DELETE_PLAYLIST,
+            ID_DOWNLOAD,
+            ID_GO_BACK,
+            ID_GO_TO_ALBUM,
             ID_GO_TO_ALBUM_ARTIST,
-            ID_VIEW_LYRICS, ID_SYNCED_LYRICS,
-            ID_DOWNLOAD, ID_COPY_LINK, ID_COPY_STREAM,
+            ID_GO_TO_ARTIST,
+            ID_MOVE_DOWN,
+            ID_MOVE_UP,
+            ID_OPEN,
+            ID_PLAY,
             ID_PROPERTIES,
             ID_REMOVE_FROM_PLAYLIST,
-            ID_MOVE_UP, ID_MOVE_DOWN,
-            ID_RENAME_PLAYLIST, ID_DELETE_PLAYLIST,
+            ID_RENAME_PLAYLIST,
+            ID_SYNCED_LYRICS,
+            ID_VIEW_LYRICS,
+            build_context_menu,
         )
 
         in_playlist = bool(self._current_playlist_id())
@@ -3570,7 +3559,8 @@ class MainWindow(wx.Frame):
                 for pl in self._lib_playlists:
                     pl_id = pl.get("Id", "")
                     ids = self._db.get_playlist_track_ids(
-                        server.id, pl_id,
+                        server.id,
+                        pl_id,
                     )
                     if track_id in ids:
                         track_in_pls.add(pl_id)
@@ -3588,53 +3578,23 @@ class MainWindow(wx.Frame):
         )
 
         handler_map = {
-            ID_PLAY: lambda e: (
-                self._play_track_from_list(item)
-            ),
+            ID_PLAY: lambda e: self._play_track_from_list(item),
             ID_OPEN: lambda e: self._drill_down(item),
             ID_GO_BACK: lambda e: self._go_back(),
-            ID_GO_TO_ARTIST: lambda e: (
-                self._go_to_artist(item)
-            ),
-            ID_GO_TO_ALBUM_ARTIST: lambda e: (
-                self._go_to_album_artist(item)
-            ),
-            ID_GO_TO_ALBUM: lambda e: (
-                self._go_to_album(item)
-            ),
-            ID_VIEW_LYRICS: lambda e: (
-                self._show_lyrics(item, synced=False)
-            ),
-            ID_SYNCED_LYRICS: lambda e: (
-                self._show_lyrics(item, synced=True)
-            ),
-            ID_DOWNLOAD: lambda e: (
-                self._download_tracks([item])
-            ),
-            ID_COPY_LINK: lambda e: (
-                self._copy_link([item])
-            ),
-            ID_COPY_STREAM: lambda e: (
-                self._copy_stream_link([item])
-            ),
-            ID_PROPERTIES: lambda e: (
-                self._show_properties(item)
-            ),
-            ID_REMOVE_FROM_PLAYLIST: lambda e: (
-                self._remove_from_playlist([item])
-            ),
-            ID_MOVE_UP: lambda e: (
-                self._move_playlist_item(item, -1)
-            ),
-            ID_MOVE_DOWN: lambda e: (
-                self._move_playlist_item(item, 1)
-            ),
-            ID_RENAME_PLAYLIST: lambda e: (
-                self._rename_playlist(item)
-            ),
-            ID_DELETE_PLAYLIST: lambda e: (
-                self._delete_playlist(item)
-            ),
+            ID_GO_TO_ARTIST: lambda e: self._go_to_artist(item),
+            ID_GO_TO_ALBUM_ARTIST: lambda e: self._go_to_album_artist(item),
+            ID_GO_TO_ALBUM: lambda e: self._go_to_album(item),
+            ID_VIEW_LYRICS: lambda e: self._show_lyrics(item, synced=False),
+            ID_SYNCED_LYRICS: lambda e: self._show_lyrics(item, synced=True),
+            ID_DOWNLOAD: lambda e: self._download_tracks([item]),
+            ID_COPY_LINK: lambda e: self._copy_link([item]),
+            ID_COPY_STREAM: lambda e: self._copy_stream_link([item]),
+            ID_PROPERTIES: lambda e: self._show_properties(item),
+            ID_REMOVE_FROM_PLAYLIST: lambda e: self._remove_from_playlist([item]),
+            ID_MOVE_UP: lambda e: self._move_playlist_item(item, -1),
+            ID_MOVE_DOWN: lambda e: self._move_playlist_item(item, 1),
+            ID_RENAME_PLAYLIST: lambda e: self._rename_playlist(item),
+            ID_DELETE_PLAYLIST: lambda e: self._delete_playlist(item),
         }
 
         for mid, handler in handler_map.items():
@@ -3644,9 +3604,7 @@ class MainWindow(wx.Frame):
         for mid, pl in playlist_id_map.items():
             self.Bind(
                 wx.EVT_MENU,
-                lambda e, p=pl: (
-                    self._add_to_playlist([item], p)
-                ),
+                lambda e, p=pl: self._add_to_playlist([item], p),
                 id=mid,
             )
 
@@ -3661,22 +3619,22 @@ class MainWindow(wx.Frame):
         a tracks view).
         """
         if self.FindFocus() is self._selection_list:
-            return (
-                self._selection_list.get_selected_item()
-            )
+            return self._selection_list.get_selected_item()
         if self._current_level_type == "tracks":
             return self._list.get_selected_item()
         return None
 
     def _on_properties_accel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         item = self._focused_track_item()
         if item:
             self._show_properties(item)
 
     def _on_copy_link_accel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         if self.FindFocus() is self._selection_list:
             self._copy_link(self._selected_tracks)
@@ -3686,7 +3644,8 @@ class MainWindow(wx.Frame):
             self._copy_link([item])
 
     def _on_copy_stream_accel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         if self.FindFocus() is self._selection_list:
             self._copy_stream_link(
@@ -3698,7 +3657,8 @@ class MainWindow(wx.Frame):
             self._copy_stream_link([item])
 
     def _on_download_accel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         if self.FindFocus() is self._selection_list:
             self._download_tracks(
@@ -3710,14 +3670,16 @@ class MainWindow(wx.Frame):
             self._download_tracks([item])
 
     def _on_lyrics_plain_accel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         item = self._focused_track_item()
         if item:
             self._show_lyrics(item, synced=False)
 
     def _on_lyrics_synced_accel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         item = self._focused_track_item()
         if item:
@@ -3738,9 +3700,9 @@ class MainWindow(wx.Frame):
             item_id = it.get("Id")
             if item_id:
                 urls.append(
-                    "{server}/web/index.html"
-                    "#!/details?id={id}".format(
-                        server=server_url, id=item_id,
+                    "{server}/web/index.html#!/details?id={id}".format(
+                        server=server_url,
+                        id=item_id,
                     )
                 )
         if not urls:
@@ -3754,12 +3716,14 @@ class MainWindow(wx.Frame):
             n = len(urls)
             # Translators: Link(s) copied notification.
             # {n} = count.
-            fmt = ngettext("{n} link copied to clipboard",
-                           "{n} links copied to clipboard", n)
+            fmt = ngettext(
+                "{n} link copied to clipboard", "{n} links copied to clipboard", n
+            )
             self._notify_toggle(fmt.format(n=n))
 
     def _copy_stream_link(
-        self, items: list[dict],
+        self,
+        items: list[dict],
     ) -> None:
         """Copy direct stream URLs to clipboard.
 
@@ -3786,9 +3750,11 @@ class MainWindow(wx.Frame):
             n = len(urls)
             # Translators: Stream link(s) copied.
             # {n} = count.
-            fmt = ngettext("{n} stream link copied to clipboard",
-                           "{n} stream links copied to clipboard",
-                           n)
+            fmt = ngettext(
+                "{n} stream link copied to clipboard",
+                "{n} stream links copied to clipboard",
+                n,
+            )
             self._notify_toggle(fmt.format(n=n))
 
     def _show_properties(self, item: dict) -> None:
@@ -3801,8 +3767,8 @@ class MainWindow(wx.Frame):
 
         from chordcut.ui.dialogs.properties_dialog import (
             PropertiesDialog,
-            build_artist_properties,
             build_album_properties,
+            build_artist_properties,
             build_playlist_properties,
         )
 
@@ -3813,25 +3779,31 @@ class MainWindow(wx.Frame):
 
         if lt in ("artists", "album_artists"):
             stats = self._db.get_artist_stats(
-                server.id, item.get("Id", ""),
-                lt, lib_ids,
+                server.id,
+                item.get("Id", ""),
+                lt,
+                lib_ids,
             )
             props = build_artist_properties(item, stats)
             # Translators: Artist properties dialog title.
             title = _("Artist Properties")
         elif lt == "albums":
             stats = self._db.get_album_stats(
-                server.id, item.get("Id", ""), lib_ids,
+                server.id,
+                item.get("Id", ""),
+                lib_ids,
             )
             props = build_album_properties(item, stats)
             # Translators: Album properties dialog title.
             title = _("Album Properties")
         elif lt == "playlists":
             stats = self._db.get_playlist_stats(
-                server.id, item.get("Id", ""),
+                server.id,
+                item.get("Id", ""),
             )
             props = build_playlist_properties(
-                item, stats,
+                item,
+                stats,
             )
             # Translators: Playlist properties title.
             title = _("Playlist Properties")
@@ -3843,7 +3815,8 @@ class MainWindow(wx.Frame):
         dlg.Destroy()
 
     def _show_track_properties(
-        self, item: dict,
+        self,
+        item: dict,
     ) -> None:
         """Fetch details then show track properties."""
         track_id = item.get("Id")
@@ -3855,15 +3828,19 @@ class MainWindow(wx.Frame):
         def on_details(details):
             wx.CallAfter(
                 self._on_track_details_received,
-                item, details,
+                item,
+                details,
             )
 
         self._client.get_item_details_async(
-            track_id, on_details,
+            track_id,
+            on_details,
         )
 
     def _on_track_details_received(
-        self, track: dict, details: dict | None,
+        self,
+        track: dict,
+        details: dict | None,
     ) -> None:
         from chordcut.ui.dialogs.properties_dialog import (
             PropertiesDialog,
@@ -3871,7 +3848,8 @@ class MainWindow(wx.Frame):
         )
 
         props = build_track_properties(
-            track, details,
+            track,
+            details,
         )
         # Translators: Track properties dialog title.
         title = _("Track Properties")
@@ -3882,7 +3860,9 @@ class MainWindow(wx.Frame):
         self._update_status(_("Ready"))
 
     def _show_lyrics(
-        self, item: dict, synced: bool = False,
+        self,
+        item: dict,
+        synced: bool = False,
     ) -> None:
         """Fetch and show lyrics for a track."""
         track_id = item.get("Id")
@@ -3903,7 +3883,9 @@ class MainWindow(wx.Frame):
             return
         if isinstance(cached, dict):
             self._on_lyrics_received(
-                cached, item, synced,
+                cached,
+                item,
+                synced,
             )
             return
 
@@ -3913,11 +3895,14 @@ class MainWindow(wx.Frame):
         def on_lyrics(result):
             wx.CallAfter(
                 self._on_lyrics_received,
-                result, item, synced,
+                result,
+                item,
+                synced,
             )
 
         self._client.get_lyrics_async(
-            track_id, on_lyrics,
+            track_id,
+            on_lyrics,
         )
 
     def _on_lyrics_received(
@@ -3947,9 +3932,7 @@ class MainWindow(wx.Frame):
         name = track.get("Name") or _("Untitled")
 
         has_timing = any(
-            cue.get("Start") is not None
-            and cue["Start"] > 0
-            for cue in lyrics
+            cue.get("Start") is not None and cue["Start"] > 0 for cue in lyrics
         )
 
         from chordcut.ui.dialogs.lyrics_dialog import (
@@ -3976,7 +3959,8 @@ class MainWindow(wx.Frame):
                 """Seek to timestamp and resume."""
                 pos = ticks / 10_000_000
                 self._player.seek(
-                    pos, relative=False,
+                    pos,
+                    relative=False,
                 )
                 if not self._player.is_playing:
                     self._player.resume()
@@ -4007,9 +3991,7 @@ class MainWindow(wx.Frame):
                 vol_down_cb,
             )
         else:
-            text = "\n".join(
-                cue.get("Text", "") for cue in lyrics
-            )
+            text = "\n".join(cue.get("Text", "") for cue in lyrics)
             # Translators: Plain lyrics dialog title.
             dlg = PlainLyricsDialog(
                 self,
@@ -4029,7 +4011,8 @@ class MainWindow(wx.Frame):
         self._update_status(_("Ready"))
 
     def _load_track_for_lyrics(
-        self, track: dict,
+        self,
+        track: dict,
     ) -> None:
         """Load a track paused at beginning for lyrics.
 
@@ -4065,13 +4048,12 @@ class MainWindow(wx.Frame):
         self._player.pause()
         title = track.get("Name") or _("Untitled")
         # Translators: Status bar when playing.
-        self._update_status(
-            _("Playing: {title}").format(title=title)
-        )
+        self._update_status(_("Playing: {title}").format(title=title))
         self._update_title()
 
     def _download_tracks(
-        self, items: list[dict],
+        self,
+        items: list[dict],
     ) -> None:
         """Download one or more tracks to the music folder.
 
@@ -4084,9 +4066,16 @@ class MainWindow(wx.Frame):
 
         bad = r'\/:*?"<>|'
 
-        def _sanitize(item: dict) -> tuple[
-            str, str, str,
-        ] | None:
+        def _sanitize(
+            item: dict,
+        ) -> (
+            tuple[
+                str,
+                str,
+                str,
+            ]
+            | None
+        ):
             tid = item.get("Id")
             if not tid:
                 return None
@@ -4097,13 +4086,12 @@ class MainWindow(wx.Frame):
             artist = item.get("ArtistDisplay", "")
             if artist:
                 fn = "{artist} - {name}".format(
-                    artist=artist, name=name,
+                    artist=artist,
+                    name=name,
                 )
             else:
                 fn = name
-            fn = "".join(
-                c for c in fn if c not in bad
-            )
+            fn = "".join(c for c in fn if c not in bad)
             fn = fn.strip() or "track"
             return url, fn, name
 
@@ -4116,6 +4104,7 @@ class MainWindow(wx.Frame):
             from chordcut.ui.dialogs.download_dialog import (
                 DownloadDialog,
             )
+
             dlg = DownloadDialog(
                 self,
                 # Translators: Download dialog title.
@@ -4131,8 +4120,7 @@ class MainWindow(wx.Frame):
             if result == wx.ID_OK:
                 # Translators: Download complete notification.
                 # {n} = count.
-                fmt = ngettext("{n} track downloaded",
-                               "{n} tracks downloaded", 1)
+                fmt = ngettext("{n} track downloaded", "{n} tracks downloaded", 1)
                 self._notify_toggle(fmt.format(n=1))
             return
 
@@ -4148,8 +4136,10 @@ class MainWindow(wx.Frame):
         from chordcut.ui.dialogs.download_dialog import (
             BulkDownloadDialog,
         )
+
         dlg = BulkDownloadDialog(
-            self, dl_items,
+            self,
+            dl_items,
             download_dir=self._settings.download_dir,
         )
         dlg.ShowModal()
@@ -4159,8 +4149,7 @@ class MainWindow(wx.Frame):
         if completed > 0:
             # Translators: Download complete notification.
             # {n} = count.
-            fmt = ngettext("{n} track downloaded",
-                           "{n} tracks downloaded", completed)
+            fmt = ngettext("{n} track downloaded", "{n} tracks downloaded", completed)
             self._notify_toggle(fmt.format(n=completed))
 
     # ------------------------------------------------------------------
@@ -4168,7 +4157,8 @@ class MainWindow(wx.Frame):
     # ------------------------------------------------------------------
 
     def _on_new_playlist(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Show dialog to create a new playlist."""
         dlg = wx.TextEntryDialog(
@@ -4199,11 +4189,14 @@ class MainWindow(wx.Frame):
         def on_done(pl_id: str | None) -> None:
             wx.CallAfter(
                 self._on_create_playlist_done,
-                pl_id, srv_id, name,
+                pl_id,
+                srv_id,
+                name,
             )
 
         self._client.create_playlist_async(
-            name, on_done,
+            name,
+            on_done,
         )
 
     def _on_create_playlist_done(
@@ -4221,27 +4214,25 @@ class MainWindow(wx.Frame):
             return
 
         self._db.create_playlist(
-            server_id, playlist_id, name,
+            server_id,
+            playlist_id,
+            name,
         )
         # Reload playlists into memory
-        self._lib_playlists = (
-            self._db.get_all_playlists(server_id)
-        )
+        self._lib_playlists = self._db.get_all_playlists(server_id)
 
         # Refresh view if on playlists section
         idx = self._section_choice.GetSelection()
-        if (
-            SECTIONS[idx] == "playlists"
-            and not self._nav_stack
-        ):
+        if SECTIONS[idx] == "playlists" and not self._nav_stack:
             self._display_level(
                 self._lib_playlists,
-                "playlists", None,
+                "playlists",
+                None,
             )
 
         self._notify_toggle(
             # Translators: Playlist created notification.
-            _("Playlist \"{name}\" created").format(
+            _('Playlist "{name}" created').format(
                 name=name,
             )
         )
@@ -4278,12 +4269,12 @@ class MainWindow(wx.Frame):
 
         # Update DB and in-memory immediately
         self._db.rename_playlist(
-            srv_id, pl_id, new_name,
+            srv_id,
+            pl_id,
+            new_name,
         )
         item["Name"] = new_name
-        self._lib_playlists = (
-            self._db.get_all_playlists(srv_id)
-        )
+        self._lib_playlists = self._db.get_all_playlists(srv_id)
 
         # Refresh list
         self._list.set_items(self._filtered_items)
@@ -4291,13 +4282,14 @@ class MainWindow(wx.Frame):
 
         # Fire async server request
         self._client.rename_playlist_async(
-            pl_id, new_name,
+            pl_id,
+            new_name,
             lambda ok: None,
         )
 
         self._notify_toggle(
             # Translators: Playlist renamed notification.
-            _("Playlist renamed to \"{name}\"").format(
+            _('Playlist renamed to "{name}"').format(
                 name=new_name,
             )
         )
@@ -4313,7 +4305,7 @@ class MainWindow(wx.Frame):
 
         result = wx.MessageBox(
             # Translators: Confirm delete playlist.
-            _("Delete playlist \"{name}\"?").format(
+            _('Delete playlist "{name}"?').format(
                 name=pl_name,
             ),
             # Translators: Confirm delete dialog title.
@@ -4337,7 +4329,8 @@ class MainWindow(wx.Frame):
             self._filtered_items.remove(item)
         self._list.set_items(self._filtered_items)
         new_sel = min(
-            sel, len(self._filtered_items) - 1,
+            sel,
+            len(self._filtered_items) - 1,
         )
         if new_sel >= 0:
             self._list.SetSelection(new_sel)
@@ -4345,16 +4338,14 @@ class MainWindow(wx.Frame):
 
         # Update DB and in-memory
         self._db.delete_playlist(srv_id, pl_id)
-        self._lib_playlists = (
-            self._db.get_all_playlists(srv_id)
-        )
+        self._lib_playlists = self._db.get_all_playlists(srv_id)
 
         # Fire async server request
         self._client.delete_playlist_async(pl_id)
 
         self._notify_toggle(
             # Translators: Playlist deleted notification.
-            _("Playlist \"{name}\" deleted").format(
+            _('Playlist "{name}" deleted').format(
                 name=pl_name,
             )
         )
@@ -4364,8 +4355,7 @@ class MainWindow(wx.Frame):
         if (
             self._current_level_type == "tracks"
             and self._nav_stack
-            and self._nav_stack[-1].level_type
-            == "playlists"
+            and self._nav_stack[-1].level_type == "playlists"
         ):
             return self._nav_stack[-1].selected_id
         return None
@@ -4395,27 +4385,21 @@ class MainWindow(wx.Frame):
         # Filter out duplicates
         if len(tracks) > 1:
             existing = self._db.get_playlist_track_ids(
-                srv_id, pl_id,
+                srv_id,
+                pl_id,
             )
-            to_add = [
-                t for t in tracks
-                if t.get("Id", "") not in existing
-            ]
+            to_add = [t for t in tracks if t.get("Id", "") not in existing]
             if not to_add:
                 self._notify_toggle(
                     # Translators: All selected tracks
                     # already in the playlist.
-                    _("All selected tracks are already "
-                      "in {name}").format(name=pl_name)
+                    _("All selected tracks are already in {name}").format(name=pl_name)
                 )
                 return
         else:
             to_add = tracks
 
-        track_ids = [
-            t.get("Id", "") for t in to_add
-            if t.get("Id")
-        ]
+        track_ids = [t.get("Id", "") for t in to_add if t.get("Id")]
         if not track_ids:
             return
 
@@ -4429,14 +4413,19 @@ class MainWindow(wx.Frame):
         def on_done(success: bool) -> None:
             wx.CallAfter(
                 self._on_add_to_playlist_done,
-                success, srv_id,
-                to_add, pl_id, pl_name,
+                success,
+                srv_id,
+                to_add,
+                pl_id,
+                pl_name,
             )
 
         # Both single and bulk use the same method:
         # batch add + fetch + move each to top.
         self._client.add_tracks_to_playlist_top_async(
-            pl_id, track_ids, on_done,
+            pl_id,
+            track_ids,
+            on_done,
         )
 
     def _on_add_to_playlist_done(
@@ -4458,21 +4447,21 @@ class MainWindow(wx.Frame):
         for t in reversed(tracks):
             tid = t.get("Id", "")
             self._db.add_playlist_track(
-                server_id, playlist_id,
-                tid, tid,
+                server_id,
+                playlist_id,
+                tid,
+                tid,
             )
 
         n = len(tracks)
         # Translators: Track(s) added to playlist.
         # {n} = count, {name} = playlist name.
-        fmt = ngettext("Added {n} track to {name}",
-                       "Added {n} tracks to {name}", n)
-        self._notify_toggle(
-            fmt.format(n=n, name=playlist_name)
-        )
+        fmt = ngettext("Added {n} track to {name}", "Added {n} tracks to {name}", n)
+        self._notify_toggle(fmt.format(n=n, name=playlist_name))
 
     def _remove_from_playlist(
-        self, items: list[dict],
+        self,
+        items: list[dict],
     ) -> None:
         """Remove one or more tracks from the current playlist.
 
@@ -4492,15 +4481,16 @@ class MainWindow(wx.Frame):
             track_name = items[0].get("Name", "")
             msg = (
                 # Translators: Confirm remove from playlist.
-                _("Remove \"{name}\" from the playlist?")
-                .format(name=track_name)
+                _('Remove "{name}" from the playlist?').format(name=track_name)
             )
         else:
             # Translators: Confirm bulk remove from playlist.
             # {n} = count.
-            msg = ngettext("Remove {n} track from the playlist?",
-                           "Remove {n} tracks from the"
-                           " playlist?", n).format(n=n)
+            msg = ngettext(
+                "Remove {n} track from the playlist?",
+                "Remove {n} tracks from the playlist?",
+                n,
+            ).format(n=n)
 
         result = wx.MessageBox(
             msg,
@@ -4514,27 +4504,25 @@ class MainWindow(wx.Frame):
 
         pids = [
             it.get(
-                "PlaylistItemId", it.get("Id", ""),
+                "PlaylistItemId",
+                it.get("Id", ""),
             )
             for it in items
         ]
 
         # Update UI immediately
-        remove_ids = {
-            it.get("Id", "") for it in items
-        }
+        remove_ids = {it.get("Id", "") for it in items}
         sel = self._list.GetSelection()
         self._all_items = [
-            t for t in self._all_items
-            if t.get("Id", "") not in remove_ids
+            t for t in self._all_items if t.get("Id", "") not in remove_ids
         ]
         self._filtered_items = [
-            t for t in self._filtered_items
-            if t.get("Id", "") not in remove_ids
+            t for t in self._filtered_items if t.get("Id", "") not in remove_ids
         ]
         self._list.set_items(self._filtered_items)
         new_sel = min(
-            sel, len(self._filtered_items) - 1,
+            sel,
+            len(self._filtered_items) - 1,
         )
         if new_sel >= 0:
             self._list.SetSelection(new_sel)
@@ -4543,21 +4531,27 @@ class MainWindow(wx.Frame):
         # Update DB
         for pid in pids:
             self._db.remove_playlist_track(
-                srv_id, pl_id, pid,
+                srv_id,
+                pl_id,
+                pid,
             )
 
         # Fire async server request (single batch)
         if len(pids) == 1:
             self._client.remove_from_playlist_async(
-                pl_id, pids[0],
+                pl_id,
+                pids[0],
             )
         else:
             self._client.remove_tracks_from_playlist_async(
-                pl_id, pids,
+                pl_id,
+                pids,
             )
 
     def _move_playlist_item(
-        self, item: dict, direction: int,
+        self,
+        item: dict,
+        direction: int,
     ) -> None:
         """Move a track up (-1) or down (+1) in playlist."""
         pl_id = self._current_playlist_id()
@@ -4579,7 +4573,8 @@ class MainWindow(wx.Frame):
 
         # Swap in _all_items
         self._all_items[old_idx], self._all_items[new_idx] = (
-            self._all_items[new_idx], self._all_items[old_idx]
+            self._all_items[new_idx],
+            self._all_items[old_idx],
         )
 
         # If no search filter, _filtered_items is the same
@@ -4591,10 +4586,7 @@ class MainWindow(wx.Frame):
                 fi_old = -1
             if fi_old >= 0:
                 fi_new = fi_old + direction
-                if (
-                    0 <= fi_new
-                    < len(self._filtered_items)
-                ):
+                if 0 <= fi_new < len(self._filtered_items):
                     (
                         self._filtered_items[fi_old],
                         self._filtered_items[fi_new],
@@ -4613,16 +4605,22 @@ class MainWindow(wx.Frame):
 
         # Update DB
         pid = item.get(
-            "PlaylistItemId", item.get("Id", ""),
+            "PlaylistItemId",
+            item.get("Id", ""),
         )
         self._db.move_playlist_track(
-            server.id, pl_id, pid,
-            old_idx, new_idx,
+            server.id,
+            pl_id,
+            pid,
+            old_idx,
+            new_idx,
         )
 
         # Fire async server request
         self._client.move_playlist_item_async(
-            pl_id, pid, new_idx,
+            pl_id,
+            pid,
+            new_idx,
         )
 
     def _go_to_artist(self, item: dict) -> None:
@@ -4649,10 +4647,7 @@ class MainWindow(wx.Frame):
 
     def _go_to_album_artist(self, item: dict) -> None:
         """Navigate to the album artist."""
-        album_artist = (
-            item.get("AlbumArtist", "")
-            or item.get("ArtistDisplay", "")
-        )
+        album_artist = item.get("AlbumArtist", "") or item.get("ArtistDisplay", "")
 
         target = None
         for a in self._lib_album_artists:
@@ -4713,6 +4708,7 @@ class MainWindow(wx.Frame):
 
         # Menu was just checked; show the setup dialog.
         from chordcut.ui.dialogs.timer_dialog import TimerDialog
+
         dlg = TimerDialog(self)
         if dlg.ShowModal() == wx.ID_OK:
             self._countdown_seconds = dlg.get_total_seconds()
@@ -4817,11 +4813,7 @@ class MainWindow(wx.Frame):
         self.Close()
 
     def _on_close(self, event: wx.CloseEvent):
-        if (
-            not self._force_closing
-            and self._settings.close_to_tray
-            and event.CanVeto()
-        ):
+        if not self._force_closing and self._settings.close_to_tray and event.CanVeto():
             event.Veto()
             self._minimize_to_tray()
             return
@@ -4841,9 +4833,7 @@ class MainWindow(wx.Frame):
         if self._settings.remember_device:
             idx = self._device_choice.GetSelection()
             if 0 <= idx < len(self._device_names):
-                self._settings.device = (
-                    self._device_names[idx]
-                )
+                self._settings.device = self._device_names[idx]
         self._settings.save()
 
         self._player.shutdown()

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import wx
 
-from chordcut.i18n import _, ngettext
+from chordcut.i18n import _
 from chordcut.utils.paths import get_app_dir
 
 
@@ -45,14 +45,18 @@ class DownloadDialog(wx.Dialog):
             name=_("Download progress"),
         )
         sizer.Add(
-            self._gauge, 0,
-            wx.EXPAND | wx.LEFT | wx.RIGHT, 10,
+            self._gauge,
+            0,
+            wx.EXPAND | wx.LEFT | wx.RIGHT,
+            10,
         )
 
         self._cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         sizer.Add(
-            self._cancel_btn, 0,
-            wx.ALIGN_CENTER | wx.ALL, 10,
+            self._cancel_btn,
+            0,
+            wx.ALIGN_CENTER | wx.ALL,
+            10,
         )
 
         panel.SetSizer(sizer)
@@ -64,7 +68,8 @@ class DownloadDialog(wx.Dialog):
         self._thread: threading.Thread | None = None
 
         self._cancel_btn.Bind(
-            wx.EVT_BUTTON, self._on_cancel,
+            wx.EVT_BUTTON,
+            self._on_cancel,
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.Bind(wx.EVT_CLOSE, self._on_close)
@@ -95,7 +100,8 @@ class DownloadDialog(wx.Dialog):
 
             # Determine extension from Content-Type
             ct = req.headers.get(
-                "Content-Type", "",
+                "Content-Type",
+                "",
             )
             ext = ""
             if "flac" in ct:
@@ -126,13 +132,15 @@ class DownloadDialog(wx.Dialog):
                             downloaded * 100 / total,
                         )
                         wx.CallAfter(
-                            self._update_progress, pct,
+                            self._update_progress,
+                            pct,
                         )
 
             if self._cancelled:
                 dest.unlink(missing_ok=True)
                 wx.CallAfter(
-                    self.EndModal, wx.ID_CANCEL,
+                    self.EndModal,
+                    wx.ID_CANCEL,
                 )
             else:
                 wx.CallAfter(self._on_complete)
@@ -166,7 +174,8 @@ class DownloadDialog(wx.Dialog):
         self.EndModal(wx.ID_CANCEL)
 
     def _on_cancel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         self._cancelled = True
 
@@ -212,12 +221,11 @@ class BulkDownloadDialog(wx.Dialog):
 
         self._items = items
         self._download_dir = (
-            download_dir
-            if download_dir is not None
-            else get_app_dir() / "music"
+            download_dir if download_dir is not None else get_app_dir() / "music"
         )
         self._download_dir.mkdir(
-            parents=True, exist_ok=True,
+            parents=True,
+            exist_ok=True,
         )
         self.completed: int = 0
         self._cancelled = False
@@ -240,26 +248,32 @@ class BulkDownloadDialog(wx.Dialog):
             name=_("Download progress"),
         )
         sizer.Add(
-            self._gauge, 0,
-            wx.EXPAND | wx.LEFT | wx.RIGHT, 10,
+            self._gauge,
+            0,
+            wx.EXPAND | wx.LEFT | wx.RIGHT,
+            10,
         )
 
         self._cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         sizer.Add(
-            self._cancel_btn, 0,
-            wx.ALIGN_CENTER | wx.ALL, 10,
+            self._cancel_btn,
+            0,
+            wx.ALIGN_CENTER | wx.ALL,
+            10,
         )
 
         panel.SetSizer(sizer)
 
         self._cancel_btn.Bind(
-            wx.EVT_BUTTON, self._on_cancel,
+            wx.EVT_BUTTON,
+            self._on_cancel,
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.Bind(wx.EVT_CLOSE, self._on_close)
 
         self._thread = threading.Thread(
-            target=self._run, daemon=True,
+            target=self._run,
+            daemon=True,
         )
         self._thread.start()
 
@@ -267,7 +281,8 @@ class BulkDownloadDialog(wx.Dialog):
         """Download all items sequentially."""
         total = len(self._items)
         for i, (url, filename, name) in enumerate(
-            self._items, 1,
+            self._items,
+            1,
         ):
             if self._cancelled:
                 break
@@ -275,18 +290,16 @@ class BulkDownloadDialog(wx.Dialog):
             # Translators: Bulk download dialog title.
             # {i} = current, {total} = total count,
             # {title} = track name.
-            title = _("Download ({i}/{total}): {title}"
-                      ).format(i=i, total=total, title=name)
+            title = _("Download ({i}/{total}): {title}").format(
+                i=i, total=total, title=name
+            )
             wx.CallAfter(self._begin_item, title)
 
             try:
                 self._download_one(url, filename)
             except Exception:
                 # Skip failed downloads, continue
-                if (
-                    self._current_dest
-                    and self._current_dest.exists()
-                ):
+                if self._current_dest and self._current_dest.exists():
                     self._current_dest.unlink(
                         missing_ok=True,
                     )
@@ -294,7 +307,8 @@ class BulkDownloadDialog(wx.Dialog):
 
         if self._cancelled:
             wx.CallAfter(
-                self.EndModal, wx.ID_CANCEL,
+                self.EndModal,
+                wx.ID_CANCEL,
             )
         else:
             wx.CallAfter(self.EndModal, wx.ID_OK)
@@ -311,7 +325,9 @@ class BulkDownloadDialog(wx.Dialog):
         )
 
     def _download_one(
-        self, url: str, filename: str,
+        self,
+        url: str,
+        filename: str,
     ) -> None:
         """Download a single file."""
         req = urllib.request.urlopen(url)
@@ -350,7 +366,8 @@ class BulkDownloadDialog(wx.Dialog):
                         downloaded * 100 / total_bytes,
                     )
                     wx.CallAfter(
-                        self._update_progress, pct,
+                        self._update_progress,
+                        pct,
                     )
 
         if self._cancelled:
@@ -370,7 +387,8 @@ class BulkDownloadDialog(wx.Dialog):
             )
 
     def _on_cancel(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         self._cancelled = True
 

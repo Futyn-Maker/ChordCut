@@ -3,6 +3,7 @@
 import ctypes
 import locale
 import threading
+
 import wx
 
 from chordcut.api import JellyfinClient
@@ -58,7 +59,10 @@ class ChordCutApp(wx.App):
 
         # Create the named event that a future second instance can signal.
         self._activate_event = kernel32.CreateEventW(
-            None, False, False, _ACTIVATE_EVENT_NAME,
+            None,
+            False,
+            False,
+            _ACTIVATE_EVENT_NAME,
         )
 
         # Activate wxWidgets' built-in translations (OK, Cancel, etc.)
@@ -70,7 +74,7 @@ class ChordCutApp(wx.App):
         if lang_info:
             self._wx_locale = wx.Locale(lang_info.Language)
         # wx.Locale changes LC_NUMERIC; MPV requires it to stay "C".
-        locale.setlocale(locale.LC_NUMERIC, 'C')
+        locale.setlocale(locale.LC_NUMERIC, "C")
 
         # Initialize core components
         self._settings = Settings()
@@ -80,11 +84,7 @@ class ChordCutApp(wx.App):
 
         # Look up the last active server from settings
         server_id = self._settings.active_server_id
-        server = (
-            self._db.get_server(server_id)
-            if server_id is not None
-            else None
-        )
+        server = self._db.get_server(server_id) if server_id is not None else None
 
         # If no active server in settings, check if there are servers in DB
         # (handles migration from older versions where DB exists but no settings)
@@ -170,7 +170,8 @@ class ChordCutApp(wx.App):
             last_username = username
 
             # Show progress
-            # Translators: Busy dialog message shown while connecting to the Jellyfin server.
+            # Translators: Busy dialog message shown while connecting
+            # to the Jellyfin server.
             progress = wx.BusyInfo(_("Connecting to server..."))
 
             auth_result = self._client.login(server_url, username, password)
@@ -194,8 +195,10 @@ class ChordCutApp(wx.App):
             else:
                 wx.MessageBox(
                     # Translators: Error message shown when the server connection fails.
-                    _("Failed to connect to the server.\n\n"
-                      "Please check the server URL and your credentials."),
+                    _(
+                        "Failed to connect to the server.\n\n"
+                        "Please check the server URL and your credentials."
+                    ),
                     # Translators: Title of the connection error dialog.
                     _("Connection Failed"),
                     wx.OK | wx.ICON_ERROR,
@@ -233,7 +236,8 @@ class ChordCutApp(wx.App):
                 # Wait up to 500 ms so the thread can exit when the
                 # process ends (daemon threads are killed on exit).
                 result = ctypes.WinDLL("kernel32").WaitForSingleObject(  # type: ignore[attr-defined]
-                    handle, 500,
+                    handle,
+                    500,
                 )
                 if result == 0 and self._main_window:  # WAIT_OBJECT_0
                     wx.CallAfter(

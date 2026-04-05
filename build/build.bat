@@ -17,7 +17,7 @@ echo Checking Python installation...
 python --version >nul 2>&1
 if errorlevel 1 (
     echo ERROR: Python not found in PATH
-    echo Please install Python 3.13+ from https://python.org
+    echo Please install Python 3.12+ from https://python.org
     echo Make sure to check "Add Python to PATH" during installation
     if !INTERACTIVE!==1 pause
     exit /b 1
@@ -36,9 +36,9 @@ if errorlevel 1 (
     if !INTERACTIVE!==1 pause
     exit /b 1
 )
-pip install --upgrade pyinstaller
+pip install --upgrade pyinstaller babel
 if errorlevel 1 (
-    echo ERROR: Failed to install pyinstaller
+    echo ERROR: Failed to install pyinstaller/babel
     if !INTERACTIVE!==1 pause
     exit /b 1
 )
@@ -87,14 +87,9 @@ echo.
 REM Compile translations (.po to .mo)
 echo Compiling translations...
 if exist "locale" (
-    for /d %%l in (locale\*) do (
-        if exist "%%l\LC_MESSAGES\chordcut.po" (
-            echo   Compiling %%~nl translation...
-            msgfmt -o "%%l\LC_MESSAGES\chordcut.mo" "%%l\LC_MESSAGES\chordcut.po" 2>nul
-            if errorlevel 1 (
-                echo   WARNING: Failed to compile %%~nl translation - msgfmt not found or error
-            )
-        )
+    python -c "from babel.messages.frontend import main; main()" compile -d locale -D chordcut 2>nul
+    if errorlevel 1 (
+        echo   WARNING: Failed to compile translations - babel not installed or error
     )
 ) else (
     echo   No locale folder found, skipping translations.

@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       changelog:
-        description: 'Release notes (Markdown supported; you can edit them later on the release page)'
+        description: "Release notes (Markdown supported; you can edit them later on the release page)"
         required: false
-        default: ''
+        default: ""
         type: string
 
 permissions:
@@ -25,8 +25,8 @@ jobs:
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
 
       - name: Calculate version
         id: version
@@ -58,22 +58,23 @@ jobs:
         run: |
           & build/download_libmpv.ps1 -OutputDir "resources\libmpv"
 
-      - name: Install gettext and pandoc
+      - name: Install pandoc
         shell: pwsh
         run: |
-          choco install gettext pandoc -y --no-progress
-          echo "C:\Program Files\gettext-iconv\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          choco install pandoc -y --no-progress
           echo "C:\Program Files\Pandoc" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Generate translation template (.pot)
         shell: bash
         run: |
-          find src/chordcut -name "*.py" | sort | xargs xgettext \
+          pip install babel
+          pybabel extract \
             --add-comments=Translators \
-            --from-code=UTF-8 \
-            --package-name=ChordCut \
-            --package-version="${{ steps.version.outputs.py_version }}" \
-            -o locale/chordcut.pot
+            --charset=UTF-8 \
+            --project=ChordCut \
+            --version="${{ steps.version.outputs.py_version }}" \
+            -o locale/chordcut.pot \
+            src/chordcut/
 
       - name: Build application
         shell: cmd

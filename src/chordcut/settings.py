@@ -7,6 +7,7 @@ holds server credentials and library cache.
 
 import json
 from pathlib import Path
+from typing import ClassVar
 
 from chordcut.utils.paths import get_settings_path
 
@@ -16,15 +17,15 @@ _DEFAULTS: dict = {
     # Folder where downloaded tracks are saved.
     # None means get_app_dir() / "music" at runtime.
     "download_dir": None,
-    # Volume adjustment step in percentage points (1–20).
+    # Volume adjustment step in percentage points (1-20).
     "volume_step": 5,
-    # Seek step in seconds (1–60).
+    # Seek step in seconds (1-60).
     "seek_step": 5,
     # Whether to restore volume on next launch.
     "remember_volume": True,
     # Whether to restore audio device on next launch.
     "remember_device": True,
-    # Last-saved volume level (0–100); used when remember_volume is True.
+    # Last-saved volume level (0-100); used when remember_volume is True.
     "volume": 80,
     # Last-saved MPV device string; used when remember_device is True.
     "device": "auto",
@@ -87,13 +88,12 @@ class Settings:
         if val:
             return Path(val)
         from chordcut.utils.paths import get_app_dir
+
         return get_app_dir() / "music"
 
     @download_dir.setter
     def download_dir(self, value: "Path | str | None") -> None:
-        self._data["download_dir"] = (
-            str(value) if value is not None else None
-        )
+        self._data["download_dir"] = str(value) if value is not None else None
 
     @property
     def volume_step(self) -> int:
@@ -133,7 +133,7 @@ class Settings:
 
     @property
     def volume(self) -> int:
-        """Last-saved volume level (0–100)."""
+        """Last-saved volume level (0-100)."""
         return max(0, min(100, int(self._data.get("volume", 80))))
 
     @volume.setter
@@ -168,8 +168,11 @@ class Settings:
     def close_to_tray(self, value: bool) -> None:
         self._data["close_to_tray"] = bool(value)
 
-    _VALID_TRACK_SORTS = {
-        "alpha_asc", "alpha_desc", "date_desc", "date_asc",
+    _VALID_TRACK_SORTS: ClassVar[set[str]] = {
+        "alpha_asc",
+        "alpha_desc",
+        "date_desc",
+        "date_asc",
     }
 
     @property

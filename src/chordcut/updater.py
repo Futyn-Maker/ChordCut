@@ -11,9 +11,9 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from chordcut import __repo__, __version__
 from chordcut.utils.paths import get_app_dir
@@ -115,10 +115,7 @@ def download_update(
         )
 
         with urllib.request.urlopen(req, timeout=300) as resp:
-            total = (
-                int(resp.headers.get("Content-Length", 0))
-                or info.asset_size
-            )
+            total = int(resp.headers.get("Content-Length", 0)) or info.asset_size
             downloaded = 0
 
             with open(zip_path, "wb") as f:

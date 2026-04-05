@@ -1,14 +1,14 @@
 """Reusable list widget and formatters for library items."""
 
-from typing import Callable
+from collections.abc import Callable
 
 import wx
 
 from chordcut.i18n import _
 from chordcut.player.mpv_player import format_duration
 
-
 # --- Formatting functions ---
+
 
 def format_track(track: dict) -> str:
     """Format a track for display.
@@ -28,11 +28,14 @@ def format_track(track: dict) -> str:
     if artist:
         # Translators: Track format: {artist} \u2014 {title}  {duration}
         return _("{artist} — {title}  {duration}").format(
-            artist=artist, title=name, duration=dur,
+            artist=artist,
+            title=name,
+            duration=dur,
         )
     # Translators: Track format without artist.
     return _("{title}  {duration}").format(
-        title=name, duration=dur,
+        title=name,
+        duration=dur,
     )
 
 
@@ -90,7 +93,8 @@ class LibraryListBox(wx.ListBox):
         self._formatter: Callable[[dict], str] = format_track
 
     def set_formatter(
-        self, formatter: Callable[[dict], str],
+        self,
+        formatter: Callable[[dict], str],
     ) -> None:
         """Change the display formatter."""
         self._formatter = formatter
@@ -114,9 +118,7 @@ class LibraryListBox(wx.ListBox):
                 self.SetSelection(new_idx)
             else:
                 sel = self.GetSelection()
-                self.SetSelection(
-                    min(max(sel, 0), len(items) - 1)
-                )
+                self.SetSelection(min(max(sel, 0), len(items) - 1))
         elif not had_items and items:
             self.SetSelection(0)
 

@@ -1,3 +1,3 @@
 """Audio player module."""
 
-from .mpv_player import Player
+from .mpv_player import Player as Player

@@ -1,6 +1,6 @@
 """Lyrics dialogs for ChordCut."""
 
-from typing import Callable
+from collections.abc import Callable
 
 import wx
 
@@ -30,16 +30,14 @@ class PlainLyricsDialog(wx.Dialog):
         self._text_ctrl = wx.TextCtrl(
             panel,
             value=text,
-            style=(
-                wx.TE_MULTILINE
-                | wx.TE_READONLY
-                | wx.TE_RICH2
-            ),
+            style=(wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2),
             name=title,
         )
         sizer.Add(
-            self._text_ctrl, 1,
-            wx.EXPAND | wx.ALL, 10,
+            self._text_ctrl,
+            1,
+            wx.EXPAND | wx.ALL,
+            10,
         )
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -53,17 +51,21 @@ class PlainLyricsDialog(wx.Dialog):
         btn_sizer.Add(copy_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
         sizer.Add(
-            btn_sizer, 0,
-            wx.ALIGN_CENTER | wx.BOTTOM, 10,
+            btn_sizer,
+            0,
+            wx.ALIGN_CENTER | wx.BOTTOM,
+            10,
         )
 
         panel.SetSizer(sizer)
 
         copy_btn.Bind(
-            wx.EVT_BUTTON, self._on_copy,
+            wx.EVT_BUTTON,
+            self._on_copy,
         )
         close_btn.Bind(
-            wx.EVT_BUTTON, lambda e: self.Close(),
+            wx.EVT_BUTTON,
+            lambda e: self.Close(),
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
 
@@ -132,16 +134,21 @@ class SyncedLyricsDialog(wx.Dialog):
             start = cue.get("Start", 0) or 0
             text = cue.get("Text", "")
             ts = format_duration(start / 10_000_000)
-            lines.append("{text} [{ts}]".format(
-                text=text, ts=ts,
-            ))
+            lines.append(
+                "{text} [{ts}]".format(
+                    text=text,
+                    ts=ts,
+                )
+            )
         self._list.Set(lines)
         if lines:
             self._list.SetSelection(0)
 
         sizer.Add(
-            self._list, 1,
-            wx.EXPAND | wx.ALL, 10,
+            self._list,
+            1,
+            wx.EXPAND | wx.ALL,
+            10,
         )
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -155,17 +162,21 @@ class SyncedLyricsDialog(wx.Dialog):
         btn_sizer.Add(copy_all_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
         sizer.Add(
-            btn_sizer, 0,
-            wx.ALIGN_CENTER | wx.BOTTOM, 10,
+            btn_sizer,
+            0,
+            wx.ALIGN_CENTER | wx.BOTTOM,
+            10,
         )
 
         panel.SetSizer(sizer)
 
         copy_all_btn.Bind(
-            wx.EVT_BUTTON, self._on_copy_all,
+            wx.EVT_BUTTON,
+            self._on_copy_all,
         )
         close_btn.Bind(
-            wx.EVT_BUTTON, lambda e: self.Close(),
+            wx.EVT_BUTTON,
+            lambda e: self.Close(),
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
 
@@ -185,7 +196,8 @@ class SyncedLyricsDialog(wx.Dialog):
 
         # Enter = play from selected timestamp
         if code in (
-            wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
+            wx.WXK_RETURN,
+            wx.WXK_NUMPAD_ENTER,
         ):
             idx = self._list.GetSelection()
             if idx != wx.NOT_FOUND:
@@ -226,7 +238,8 @@ class SyncedLyricsDialog(wx.Dialog):
         event.Skip()
 
     def _on_copy_all(
-        self, event: wx.CommandEvent,
+        self,
+        event: wx.CommandEvent,
     ) -> None:
         """Copy all lyrics with timestamps."""
         lines = []
@@ -234,9 +247,12 @@ class SyncedLyricsDialog(wx.Dialog):
             start = cue.get("Start", 0) or 0
             text = cue.get("Text", "")
             ts = format_duration(start / 10_000_000)
-            lines.append("{text} [{ts}]".format(
-                text=text, ts=ts,
-            ))
+            lines.append(
+                "{text} [{ts}]".format(
+                    text=text,
+                    ts=ts,
+                )
+            )
         full_text = "\n".join(lines)
         if wx.TheClipboard.Open():
             wx.TheClipboard.SetData(

@@ -44,11 +44,7 @@ class SettingsDialog(wx.Dialog):
             message=_("Select download folder"),
             # Translators: Accessible name for download folder picker.
             name=_("Download folder"),
-            style=(
-                wx.DIRP_USE_TEXTCTRL
-                | wx.DIRP_DIR_MUST_EXIST
-                | wx.DIRP_SMALL
-            ),
+            style=(wx.DIRP_USE_TEXTCTRL | wx.DIRP_DIR_MUST_EXIST | wx.DIRP_SMALL),
         )
         main_sizer.Add(
             self._folder_picker,
@@ -63,7 +59,8 @@ class SettingsDialog(wx.Dialog):
             label=_("Player settings"),
         )
         player_sizer = wx.StaticBoxSizer(
-            player_box, wx.VERTICAL,
+            player_box,
+            wx.VERTICAL,
         )
 
         # Volume step
@@ -120,7 +117,9 @@ class SettingsDialog(wx.Dialog):
         )
         self._remember_volume.SetValue(settings.remember_volume)
         player_sizer.Add(
-            self._remember_volume, flag=wx.ALL, border=5,
+            self._remember_volume,
+            flag=wx.ALL,
+            border=5,
         )
 
         # Remember device checkbox
@@ -131,7 +130,9 @@ class SettingsDialog(wx.Dialog):
         )
         self._remember_device.SetValue(settings.remember_device)
         player_sizer.Add(
-            self._remember_device, flag=wx.ALL, border=5,
+            self._remember_device,
+            flag=wx.ALL,
+            border=5,
         )
 
         main_sizer.Add(
@@ -147,7 +148,8 @@ class SettingsDialog(wx.Dialog):
             label=_("Behavior"),
         )
         behavior_sizer = wx.StaticBoxSizer(
-            behavior_box, wx.VERTICAL,
+            behavior_box,
+            wx.VERTICAL,
         )
 
         self._close_to_tray = wx.CheckBox(
@@ -157,7 +159,9 @@ class SettingsDialog(wx.Dialog):
         )
         self._close_to_tray.SetValue(settings.close_to_tray)
         behavior_sizer.Add(
-            self._close_to_tray, flag=wx.ALL, border=5,
+            self._close_to_tray,
+            flag=wx.ALL,
+            border=5,
         )
 
         self._check_updates = wx.CheckBox(
@@ -167,7 +171,9 @@ class SettingsDialog(wx.Dialog):
         )
         self._check_updates.SetValue(settings.check_updates)
         behavior_sizer.Add(
-            self._check_updates, flag=wx.ALL, border=5,
+            self._check_updates,
+            flag=wx.ALL,
+            border=5,
         )
 
         main_sizer.Add(
@@ -216,23 +222,11 @@ class SettingsDialog(wx.Dialog):
             else:
                 self._settings.download_dir = path
 
-        self._settings.volume_step = (
-            self._volume_step.GetValue()
-        )
-        self._settings.seek_step = (
-            self._seek_step.GetValue()
-        )
-        self._settings.remember_volume = (
-            self._remember_volume.GetValue()
-        )
-        self._settings.remember_device = (
-            self._remember_device.GetValue()
-        )
-        self._settings.close_to_tray = (
-            self._close_to_tray.GetValue()
-        )
-        self._settings.check_updates = (
-            self._check_updates.GetValue()
-        )
+        self._settings.volume_step = self._volume_step.GetValue()
+        self._settings.seek_step = self._seek_step.GetValue()
+        self._settings.remember_volume = self._remember_volume.GetValue()
+        self._settings.remember_device = self._remember_device.GetValue()
+        self._settings.close_to_tray = self._close_to_tray.GetValue()
+        self._settings.check_updates = self._check_updates.GetValue()
         self._settings.save()
         self.EndModal(wx.ID_OK)

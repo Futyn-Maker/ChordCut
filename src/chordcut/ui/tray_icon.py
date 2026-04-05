@@ -57,7 +57,8 @@ class TrayIcon(wx.adv.TaskBarIcon):
         )
 
     def _on_left_click(
-        self, event: wx.adv.TaskBarIconEvent,
+        self,
+        event: wx.adv.TaskBarIconEvent,
     ) -> None:
         if self._main_window.IsShown():
             self._main_window._minimize_to_tray()
@@ -68,11 +69,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
         """Update the tooltip to show the currently playing track."""
         if track:
             name = track.get("Name") or _("Untitled")
-            artist = (
-                track.get("ArtistDisplay")
-                or track.get("AlbumArtist")
-                or ""
-            )
+            artist = track.get("ArtistDisplay") or track.get("AlbumArtist") or ""
             tooltip = f"{name}\n{artist}" if artist else name
             if len(tooltip) > 128:
                 tooltip = tooltip[:125] + "..."
@@ -173,9 +170,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
         menu.Bind(
             wx.EVT_MENU,
             lambda _e: (
-                win._minimize_to_tray()
-                if win.IsShown()
-                else win._restore_from_tray()
+                win._minimize_to_tray() if win.IsShown() else win._restore_from_tray()
             ),
             item_toggle,
         )

@@ -3,10 +3,10 @@
 All user-facing strings must be wrapped with _() or ngettext() from this module
 and preceded by a ``# Translators:`` comment explaining the context.
 
-To generate a .pot translation template::
+To generate a .pot translation template (requires ``pip install babel``)::
 
-    xgettext --add-comments=Translators -o locale/chordcut.pot --from-code=UTF-8 \\
-        src/chordcut/*.py src/chordcut/**/*.py
+    pybabel extract --add-comments=Translators --charset=UTF-8 \\
+        --project=ChordCut -o locale/chordcut.pot src/chordcut/
 """
 
 import gettext
@@ -26,24 +26,24 @@ def _get_system_language() -> str | None:
     Returns a language code like 'ru' or 'en', or None if detection fails.
     """
     # Try Windows-specific approach first
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         try:
             import ctypes
+
             # Get Windows UI language (returns LCID, we need to convert)
             # GetThreadLocale returns a locale identifier
             windll = ctypes.windll.kernel32
             # Try GetUserDefaultUILanguage first (available on Windows Vista+)
-            if hasattr(windll, 'GetUserDefaultUILanguage'):
+            if hasattr(windll, "GetUserDefaultUILanguage"):
                 lcid = windll.GetUserDefaultUILanguage()
                 # Convert LCID to locale string
                 # Common mappings
                 lcid_map = {
-                    0x0409: 'en',  # English (US)
-                    0x0809: 'en',  # English (UK)
-                    0x0419: 'ru',  # Russian
-                    0x0425: 'et',  # Estonian
-                    0x0419: 'ru',  # Russian (Russia)
-                    0x0819: 'ru',  # Russian (Moldova)
+                    0x0409: "en",  # English (US)
+                    0x0809: "en",  # English (UK)
+                    0x0419: "ru",  # Russian
+                    0x0425: "et",  # Estonian
+                    0x0819: "ru",  # Russian (Moldova)
                 }
                 if lcid in lcid_map:
                     logger.debug(f"Windows LCID {lcid:#x} -> {lcid_map[lcid]}")
@@ -52,7 +52,7 @@ def _get_system_language() -> str | None:
                 try:
                     locale_name = locale.windows_locale.get(lcid)
                     if locale_name:
-                        lang = locale_name.split('_')[0].lower()
+                        lang = locale_name.split("_")[0].lower()
                         logger.debug(f"Windows LCID {lcid:#x} -> {lang}")
                         return lang
                 except Exception:
@@ -63,29 +63,29 @@ def _get_system_language() -> str | None:
     # Try standard locale approach
     try:
         # Set locale to user's default to get correct values
-        locale.setlocale(locale.LC_ALL, '')
+        locale.setlocale(locale.LC_ALL, "")
         lang = locale.getlocale()[0]
         # Restore LC_NUMERIC to "C" — MPV requires it.
-        locale.setlocale(locale.LC_NUMERIC, 'C')
+        locale.setlocale(locale.LC_NUMERIC, "C")
         if lang:
             # Extract just the language part (e.g., 'ru' from 'ru_RU')
-            result = lang.split('_')[0].lower()
+            result = lang.split("_")[0].lower()
             logger.debug(f"Locale detection: {lang} -> {result}")
             return result
     except Exception as e:
         logger.debug(f"Locale detection failed: {e}")
 
     # Fallback: try environment variable
-    lang = os.environ.get('LANG', '')
+    lang = os.environ.get("LANG", "")
     if lang:
-        result = lang.split('_')[0].lower().split('.')[0]
+        result = lang.split("_")[0].lower().split(".")[0]
         logger.debug(f"LANG env: {lang} -> {result}")
         return result
 
     return None
 
 
-current_language: str = _get_system_language() or 'en'
+current_language: str = _get_system_language() or "en"
 
 
 def _init_translation():
@@ -104,7 +104,7 @@ def _init_translation():
             languages=[lang] if lang else None,
             fallback=True,
         )
-        if lang and translation.info().get('language'):
+        if lang and translation.info().get("language"):
             logger.info(f"Loaded {lang} translation")
         else:
             logger.debug("Using fallback (English) strings")
