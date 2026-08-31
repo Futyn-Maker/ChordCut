@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ChordCut is a portable, accessible Jellyfin music client for Windows, built for blind and visually impaired users with full NVDA/JAWS screen reader support. It uses MPV for native audio playback without server-side transcoding.
+ChordCut is a portable Jellyfin music client for Windows with a visual multi-column interface and first-class accessibility: full NVDA/JAWS screen reader support and complete keyboard operability, equally usable by sighted, low-vision, and blind users. It uses MPV for native audio playback without server-side transcoding.
 
 **Stack:** Python 3.12+, wxPython (GUI), python-mpv (audio), jellyfin-apiclient-python (API), SQLite (cache), PyInstaller (packaging).
 
@@ -50,6 +50,10 @@ Central controller orchestrating all UI and logic. Key state: `_queue` (playback
 
 Multi-track selection adds a secondary `TrackTableView` and a "Clear selection" button, shown only when tracks are selected. Tracks are added via Space or Ctrl+click (Shift+Ctrl+click for a range); selected rows get a checkmark in the main list. Action methods (`_copy_link`, `_copy_stream_link`, `_download_tracks`, `_add_to_playlist`, `_remove_from_playlist`) are unified to accept `list[dict]` — single-item callers pass `[item]`. Adding to a playlist always places tracks at the top via `add_tracks_to_playlist_top` (batch add + fetch + N moves = N+2 requests). Bulk removal uses `remove_tracks_from_playlist` (single `DELETE` with comma-separated entry IDs). The selection context menu is built by `build_selection_context_menu()` in `ui/context_menu.py`.
 
+Playlist tracks can be reordered with Alt+Up/Down, the context menu, or mouse drag-and-drop (`EVT_ROW_MOVED` → `_on_row_moved`; one `Move` API request on drop). Dragging is enabled only in an unfiltered, unshuffled playlist view, where list indices equal playlist positions.
+
+The bottom `TransportBar` (`ui/transport_bar.py`) holds album art, the now-playing line, and a custom-drawn canvas with seek bar, transport buttons, lyrics/settings icons, and volume. MainWindow supplies action callbacks and pushes state via `update_play_state` / `set_progress` / `set_volume` at every playback transition.
+
 **Library loading has two modes:**
 
 - **Cold load** (<100 cached tracks): sequential paginated fetch, batches of 200, progressive UI updates
@@ -68,6 +72,8 @@ Multi-track selection adds a secondary `TrackTableView` and a "Clear selection" 
 - MSAA focus/selection events fire only on actual user-driven caret moves; background list refreshes (progressive loads, cache updates) are deliberately silent. After user-initiated view changes (Enter/Backspace navigation), `announce_view_change()` speaks the new list. Preserve this split when changing list code.
 - Visual-only affordances (columns, hover, checkmarks, empty-state messages) must stay invisible to the accessibility layer — announcements must not change.
 - All custom-drawn colors come from `ui/theme.py` (system colors, high-contrast aware); never hardcode colors in controls.
+- The playback transport controls are **mouse-only by design**: keyboard users act via hotkeys and menus. The transport canvas (and its parent `TransportBar` panel) refuse focus at every level (`AcceptsFocus` / `AcceptsFocusFromKeyboard` / `AcceptsFocusRecursively` all False) so it contributes no tab stops, clicks never move keyboard focus, and its accessible surface is a nameless pane — NVDA mouse tracking stays silent over it. Never add focusable or named controls to the transport area. Volume/seek steps from Settings apply to hotkeys and to the mouse wheel over the transport; positional actions (dragging or clicking the seek bar) are step-free.
+- Avoid composite picker controls (e.g. `wx.DirPickerCtrl`): their inner text field and button get no accessible labels, and screen reader label association (preceding static text) cannot reach inside them. Use a plain labeled `wx.TextCtrl` + `wx.Button` instead (see the download folder in `ui/dialogs/settings_dialog.py`).
 - List labels set as accessible names so screen readers announce item counts
 - Full keyboard navigation: Tab cycles controls, Enter drills in, Backspace backs out
 - All menus have keyboard mnemonics

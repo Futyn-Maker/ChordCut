@@ -54,6 +54,15 @@ class TrackTableView(wx.Window):
         self._typeahead = ""
         self._typeahead_time = 0.0
 
+        # Drag-and-drop state: a press on a row arms a potential drag;
+        # crossing the system drag threshold starts it.
+        self._drag_origin: tuple[int, wx.Point] | None = None
+        self._dragging = False
+        self._drag_row = -1
+        self._drop_gap = -1  # insertion point: 0..len(items)
+        self._autoscroll_timer = wx.Timer(self)
+        self._autoscroll_dir = 0
+
         self._theme = Theme(self)
 
         # The accessible must outlive any MSAA query; keep a hard
@@ -69,9 +78,12 @@ class TrackTableView(wx.Window):
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         self.Bind(wx.EVT_CHAR, self._on_char)
         self.Bind(wx.EVT_LEFT_DOWN, self._on_left_down)
+        self.Bind(wx.EVT_LEFT_UP, self._on_left_up)
         self.Bind(wx.EVT_LEFT_DCLICK, self._on_left_dclick)
         self.Bind(wx.EVT_MOTION, self._on_motion)
         self.Bind(wx.EVT_LEAVE_WINDOW, self._on_leave)
+        self.Bind(wx.EVT_MOUSE_CAPTURE_LOST, self._on_capture_lost)
+        self.Bind(wx.EVT_TIMER, self._on_autoscroll, self._autoscroll_timer)
         self.Bind(wx.EVT_MOUSEWHEEL, self._on_wheel)
         self.Bind(wx.EVT_SCROLLWIN, self._on_scrollwin)
         self.Bind(wx.EVT_SYS_COLOUR_CHANGED, self._on_theme_change)
@@ -166,6 +178,8 @@ class TrackTableView(wx.Window):
 
     def set_drag_enabled(self, enabled: bool) -> None:
         self._drag_enabled = enabled
+        if not enabled:
+            self.cancel_drag()
 
     def hit_test_row(self, pt: wx.Point) -> int:
         """Row index at the given client point, or -1."""
@@ -350,6 +364,9 @@ class TrackTableView(wx.Window):
 
     def _on_key_down(self, event: wx.KeyEvent) -> None:
         key = event.GetKeyCode()
+        if key == wx.WXK_ESCAPE and self._dragging:
+            self.cancel_drag()
+            return
         if key == wx.WXK_TAB:
             self.HandleAsNavigationKey(event)
             return
@@ -430,6 +447,13 @@ class TrackTableView(wx.Window):
             self.GetEventHandler().ProcessEvent(evt)
         else:
             self._set_caret(row)
+            if self._drag_enabled:
+                self._drag_origin = (row, event.GetPosition())
+
+    def _on_left_up(self, event: wx.MouseEvent) -> None:
+        if self._dragging:
+            self._finish_drag(drop=True)
+        self._drag_origin = None
 
     def _on_left_dclick(self, event: wx.MouseEvent) -> None:
         row = self.hit_test_row(event.GetPosition())
@@ -442,7 +466,20 @@ class TrackTableView(wx.Window):
         self.GetEventHandler().ProcessEvent(evt)
 
     def _on_motion(self, event: wx.MouseEvent) -> None:
-        row = self.hit_test_row(event.GetPosition())
+        pos = event.GetPosition()
+        if self._dragging:
+            self._update_drop_gap(pos)
+            self._update_autoscroll(pos)
+            return
+        origin = self._drag_origin
+        if (
+            origin is not None
+            and event.LeftIsDown()
+            and self._past_drag_threshold(origin[1], pos)
+        ):
+            self._start_drag(origin[0])
+            return
+        row = self.hit_test_row(pos)
         if row != self._hover:
             old = self._hover
             self._hover = row
@@ -454,6 +491,94 @@ class TrackTableView(wx.Window):
             old = self._hover
             self._hover = -1
             self._refresh_row(old)
+
+    # ------------------------------------------------------------------
+    # Drag and drop (internal reorder)
+
+    def _past_drag_threshold(self, origin: wx.Point, pos: wx.Point) -> bool:
+        return abs(pos.x - origin.x) > wx.SystemSettings.GetMetric(
+            wx.SYS_DRAG_X
+        ) or abs(pos.y - origin.y) > wx.SystemSettings.GetMetric(wx.SYS_DRAG_Y)
+
+    def _start_drag(self, row: int) -> None:
+        self._dragging = True
+        self._drag_row = row
+        self._drop_gap = -1
+        if self._hover >= 0:
+            old = self._hover
+            self._hover = -1
+            self._refresh_row(old)
+        self.CaptureMouse()
+        self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+
+    def _update_drop_gap(self, pos: wx.Point) -> None:
+        theme = self._theme
+        gap = self._top + round((pos.y - theme.header_height) / theme.row_height)
+        gap = min(max(0, gap), len(self._items))
+        if gap != self._drop_gap:
+            self._drop_gap = gap
+            self.Refresh()
+
+    def _update_autoscroll(self, pos: wx.Point) -> None:
+        theme = self._theme
+        height = self.GetClientSize().height
+        if pos.y < theme.header_height + theme.row_height // 2:
+            direction = -1
+        elif pos.y > height - theme.row_height // 2:
+            direction = 1
+        else:
+            direction = 0
+        if direction != self._autoscroll_dir:
+            self._autoscroll_dir = direction
+            if direction:
+                self._autoscroll_timer.Start(120)
+            else:
+                self._autoscroll_timer.Stop()
+
+    def _on_autoscroll(self, event: wx.TimerEvent) -> None:
+        if not self._dragging or not self._autoscroll_dir:
+            self._autoscroll_timer.Stop()
+            return
+        self._top += self._autoscroll_dir
+        self._clamp_top()
+        self._update_scrollbar()
+        self._update_drop_gap(self.ScreenToClient(wx.GetMousePosition()))
+        self.Refresh()
+
+    def _finish_drag(self, drop: bool) -> None:
+        from_idx = self._drag_row
+        gap = self._drop_gap
+        self._dragging = False
+        self._drag_origin = None
+        self._drag_row = -1
+        self._drop_gap = -1
+        self._autoscroll_dir = 0
+        self._autoscroll_timer.Stop()
+        if self.HasCapture():
+            self.ReleaseMouse()
+        self.SetCursor(wx.NullCursor)
+        self.Refresh()
+        if not drop or gap < 0 or from_idx < 0:
+            return
+        # An insertion gap above the removed row keeps its index; one
+        # below shifts up by the removed row.
+        to_idx = gap if gap <= from_idx else gap - 1
+        if to_idx == from_idx:
+            return
+        evt = RowMovedEvent(self.GetId())
+        evt.SetEventObject(self)
+        evt.from_idx = from_idx
+        evt.to_idx = to_idx
+        self.GetEventHandler().ProcessEvent(evt)
+
+    def cancel_drag(self) -> None:
+        """Cancel an in-progress drag without dropping."""
+        if self._dragging:
+            self._finish_drag(drop=False)
+        self._drag_origin = None
+
+    def _on_capture_lost(self, event: wx.MouseCaptureLostEvent) -> None:
+        self.cancel_drag()
 
     def _on_wheel(self, event: wx.MouseEvent) -> None:
         lines = -event.GetWheelRotation() // event.GetWheelDelta() * 3
@@ -506,6 +631,16 @@ class TrackTableView(wx.Window):
         last = min(len(self._items), first + self._visible_rows() + 1)
         for row in range(first, last):
             self._draw_row(dc, row, cols)
+
+        if self._dragging and self._drop_gap >= 0:
+            self._draw_insertion_line(dc, size)
+
+    def _draw_insertion_line(self, dc: wx.DC, size: wx.Size) -> None:
+        theme = self._theme
+        y = theme.header_height + (self._drop_gap - self._top) * theme.row_height
+        y = min(max(theme.header_height, y), size.height - 1)
+        dc.SetPen(wx.Pen(theme.accent, self.FromDIP(2)))
+        dc.DrawLine(0, y, size.width, y)
 
     def _draw_header(
         self,

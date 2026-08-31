@@ -22,9 +22,11 @@ from chordcut.ui.library_list import (
 )
 from chordcut.ui.track_table import (
     EVT_ROW_CTRL_CLICK,
+    EVT_ROW_MOVED,
     EVT_ROW_RANGE_CLICK,
     TrackTableView,
 )
+from chordcut.ui.transport_bar import TransportBar
 from chordcut.ui.tray_icon import TrayIcon
 from chordcut.utils.text import normalize_search
 
@@ -528,25 +530,27 @@ class MainWindow(wx.Frame):
         self._device_names: list[str] = []
         self._populate_audio_devices()
 
-        # Album art (hidden until a track with art plays)
-        self._ART_SIZE = 60
-        self._art_bitmap = wx.StaticBitmap(
-            self._panel,
-            size=(self._ART_SIZE, self._ART_SIZE),
-        )
-        self._art_bitmap.Hide()
-        # Track which image request is current so stale
+        # Playback transport bar (art, now-playing, seek, buttons,
+        # volume). Track which image request is current so stale
         # callbacks don't overwrite a newer image.
+        self._ART_SIZE = 96
         self._art_request_id: str = ""
-
-        # Now-playing label
-        self._now_playing_label = wx.StaticText(
+        self._transport = TransportBar(
             self._panel,
-            # Translators: Label when nothing is playing.
-            label=_("Not playing"),
-            # Translators: Accessible name for now-playing.
-            name=_("Now playing"),
+            self._ART_SIZE,
+            on_prev=lambda: self._on_prev_track(None),
+            on_play_pause=lambda: self._on_pause(None),
+            on_next=lambda: self._on_next_track(None),
+            on_seek=self._transport_seek,
+            on_set_volume=self._transport_set_volume,
+            on_wheel_seek=self._transport_wheel_seek,
+            on_wheel_volume=self._transport_wheel_volume,
+            on_lyrics=lambda: self._transport_lyrics(synced=False),
+            on_synced_lyrics=lambda: self._transport_lyrics(synced=True),
+            on_settings=lambda: self._on_settings(None),
         )
+        self._art_bitmap = self._transport.art_bitmap
+        self._now_playing_label = self._transport.now_playing_label
 
     def _do_layout(self) -> None:
         """Layout the window controls."""
@@ -651,21 +655,10 @@ class MainWindow(wx.Frame):
             border=10,
         )
 
-        # Now playing row (album art + label)
-        self._np_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self._np_sizer.Add(
-            self._art_bitmap,
-            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-            border=8,
-        )
-        self._np_sizer.Add(
-            self._now_playing_label,
-            proportion=1,
-            flag=wx.ALIGN_CENTER_VERTICAL,
-        )
+        # Playback transport bar
         main_sizer.Add(
-            self._np_sizer,
-            flag=(wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM),
+            self._transport,
+            flag=(wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.TOP),
             border=10,
         )
 
@@ -826,6 +819,10 @@ class MainWindow(wx.Frame):
             EVT_ROW_RANGE_CLICK,
             self._on_row_range_click,
         )
+        self._list.Bind(
+            EVT_ROW_MOVED,
+            self._on_row_moved,
+        )
 
         # Selection area
         self._selection_list.Bind(
@@ -840,6 +837,7 @@ class MainWindow(wx.Frame):
             EVT_ROW_CTRL_CLICK,
             self._on_selection_row_ctrl_click,
         )
+
         self._selection_clear_btn.Bind(
             wx.EVT_BUTTON,
             self._on_clear_selection,
@@ -1064,11 +1062,14 @@ class MainWindow(wx.Frame):
         dur = format_duration(self._player.duration)
         pos = format_duration(position)
         self.SetStatusText(f"{pos} / {dur}", 1)
+        self._transport.set_progress(position, self._player.duration)
+        self._transport.update_play_state(self._player.is_playing)
 
     def _update_duration(self, duration: float) -> None:
         pos = format_duration(self._player.position)
         dur = format_duration(duration)
         self.SetStatusText(f"{pos} / {dur}", 1)
+        self._transport.set_progress(self._player.position, duration)
 
     def _update_volume_display(self) -> None:
         self.SetStatusText(
@@ -1078,6 +1079,7 @@ class MainWindow(wx.Frame):
             ),
             2,
         )
+        self._transport.set_volume(self._player.volume)
 
     def _update_title(self) -> None:
         base = "{name} - {ver}".format(
@@ -1759,6 +1761,13 @@ class MainWindow(wx.Frame):
             self._list.set_empty_message(msg)
         self._list.set_items(self._filtered_items)
         self._list.set_basket_ids(self._selected_track_ids)
+        # Reordering by mouse is only meaningful when list order equals
+        # playlist order: no search filter, no list shuffle.
+        self._list.set_drag_enabled(
+            bool(self._current_playlist_id())
+            and not self._list_shuffle_active
+            and not query
+        )
         self._update_list_label()
 
     @staticmethod
@@ -2164,6 +2173,7 @@ class MainWindow(wx.Frame):
 
         self._current_track = track
         self._player.play(url)
+        self._transport.update_play_state(True)
 
         # Translators: Fallback when a track has no title.
         title = track.get("Name") or _("Untitled")
@@ -2250,7 +2260,7 @@ class MainWindow(wx.Frame):
             self._art_bitmap.SetBitmap(wx.Bitmap(img))
             if not self._art_bitmap.IsShown():
                 self._art_bitmap.Show()
-                self._np_sizer.Layout()
+                self._transport.Layout()
         except Exception:
             self._clear_album_art()
 
@@ -2259,7 +2269,7 @@ class MainWindow(wx.Frame):
         self._art_request_id = ""
         if self._art_bitmap.IsShown():
             self._art_bitmap.Hide()
-            self._np_sizer.Layout()
+            self._transport.Layout()
 
     def _on_track_end(self) -> None:
         """Handle track end: repeat, advance queue, or stop."""
@@ -2274,6 +2284,7 @@ class MainWindow(wx.Frame):
                 if url:
                     self._player.play(url)
                     self._player.pause()
+                    self._transport.update_play_state(False)
                     return
 
         if self._repeat_enabled and self._current_track:
@@ -2282,6 +2293,7 @@ class MainWindow(wx.Frame):
                 url = self._client.get_stream_url(tid)
                 if url:
                     self._player.play(url)
+                    self._transport.update_play_state(True)
                     return
 
         if self._queue and self._queue_index < len(self._queue) - 1:
@@ -2294,6 +2306,8 @@ class MainWindow(wx.Frame):
         self._clear_queue()
         self._current_track = None
         self._clear_album_art()
+        self._transport.update_play_state(False)
+        self._transport.set_progress(0, 0)
         # Translators: Not playing label.
         self._now_playing_label.SetLabel(_("Not playing"))
         # Translators: Playback finished status.
@@ -2899,6 +2913,7 @@ class MainWindow(wx.Frame):
 
     def _on_pause(self, event: wx.CommandEvent):
         self._player.toggle_pause()
+        self._transport.update_play_state(self._player.is_playing)
         if self._player.is_playing:
             # Translators: Playing status.
             self._update_status(_("Playing"))
@@ -2911,6 +2926,8 @@ class MainWindow(wx.Frame):
         self._current_track = None
         self._clear_queue()
         self._clear_album_art()
+        self._transport.update_play_state(False)
+        self._transport.set_progress(0, 0)
         # Translators: Not playing label.
         self._now_playing_label.SetLabel(_("Not playing"))
         # Translators: Stopped status.
@@ -2924,6 +2941,36 @@ class MainWindow(wx.Frame):
     def _on_volume_down(self, event: wx.CommandEvent):
         self._player.volume_down(self._settings.volume_step)
         self._update_volume_display()
+
+    def _transport_seek(self, fraction: float) -> None:
+        """Seek to the absolute position picked on the seek bar."""
+        if not self._player.is_loaded:
+            return
+        duration = self._player.duration
+        if duration <= 0:
+            return
+        self._player.seek(fraction * duration, relative=False)
+
+    def _transport_set_volume(self, volume: int) -> None:
+        self._player.volume = volume
+        self._update_volume_display()
+
+    def _transport_wheel_seek(self, direction: int) -> None:
+        if self._player.is_loaded:
+            self._player.seek(direction * self._settings.seek_step)
+
+    def _transport_wheel_volume(self, direction: int) -> None:
+        if direction > 0:
+            self._player.volume_up(self._settings.volume_step)
+        else:
+            self._player.volume_down(self._settings.volume_step)
+        self._update_volume_display()
+
+    def _transport_lyrics(self, synced: bool) -> None:
+        """Show lyrics for the playing track (or the focused one)."""
+        item = self._current_track or self._focused_track_item()
+        if item:
+            self._show_lyrics(item, synced=synced)
 
     def _on_seek_forward(self, event: wx.CommandEvent):
         self._player.seek(self._settings.seek_step)
@@ -4068,6 +4115,7 @@ class MainWindow(wx.Frame):
 
             def pause_cb() -> None:
                 self._player.toggle_pause()
+                self._transport.update_play_state(self._player.is_playing)
 
             def seek_cb(seconds: float) -> None:
                 self._player.seek(seconds)
@@ -4146,6 +4194,7 @@ class MainWindow(wx.Frame):
 
         self._current_track = track
         self._player.play(url)
+        self._transport.update_play_state(True)
         self._player.pause()
         title = track.get("Name") or _("Untitled")
         # Translators: Status bar when playing.
@@ -4648,6 +4697,51 @@ class MainWindow(wx.Frame):
                 pl_id,
                 pids,
             )
+
+    def _on_row_moved(self, event: wx.CommandEvent) -> None:
+        """Apply a drag-and-drop reorder within the current playlist.
+
+        Drag is only enabled in an unfiltered, unshuffled playlist
+        view, so list indices equal playlist positions. The server
+        request is sent once, for the final position.
+        """
+        pl_id = self._current_playlist_id()
+        server = self._current_server
+        if not pl_id or not server or not server.id:
+            return
+
+        from_idx = event.from_idx
+        to_idx = event.to_idx
+        items = self._all_items
+        if (
+            from_idx == to_idx
+            or not 0 <= from_idx < len(items)
+            or not 0 <= to_idx < len(items)
+        ):
+            return
+
+        item = items.pop(from_idx)
+        items.insert(to_idx, item)
+
+        self._list.set_items(self._filtered_items)
+        self._list.set_selection_by_id(item.get("Id", ""))
+
+        pid = item.get(
+            "PlaylistItemId",
+            item.get("Id", ""),
+        )
+        self._db.move_playlist_track(
+            server.id,
+            pl_id,
+            pid,
+            from_idx,
+            to_idx,
+        )
+        self._client.move_playlist_item_async(
+            pl_id,
+            pid,
+            to_idx,
+        )
 
     def _move_playlist_item(
         self,
