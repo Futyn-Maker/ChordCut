@@ -18,8 +18,12 @@ from chordcut.player.mpv_player import format_duration
 from chordcut.settings import Settings
 from chordcut.ui.library_list import (
     FORMATTERS,
-    LibraryListBox,
     format_track,
+)
+from chordcut.ui.track_table import (
+    EVT_ROW_CTRL_CLICK,
+    EVT_ROW_RANGE_CLICK,
+    TrackTableView,
 )
 from chordcut.ui.tray_icon import TrayIcon
 from chordcut.utils.text import normalize_search
@@ -490,15 +494,16 @@ class MainWindow(wx.Frame):
         )
 
         # Library list
-        self._list = LibraryListBox(self._panel)
+        self._list = TrackTableView(self._panel)
 
         # Selected tracks area (tab order: after main list)
         self._selection_label = wx.StaticText(
             self._panel,
             label="",
         )
-        self._selection_list = LibraryListBox(self._panel)
+        self._selection_list = TrackTableView(self._panel)
         self._selection_list.set_formatter(format_track)
+        self._selection_list.set_level_type("tracks")
         self._selection_clear_btn = wx.Button(
             self._panel,
             # Translators: Button to clear the track selection.
@@ -812,6 +817,15 @@ class MainWindow(wx.Frame):
             wx.EVT_CONTEXT_MENU,
             self._on_context_menu,
         )
+        # Mouse basket gestures
+        self._list.Bind(
+            EVT_ROW_CTRL_CLICK,
+            self._on_row_ctrl_click,
+        )
+        self._list.Bind(
+            EVT_ROW_RANGE_CLICK,
+            self._on_row_range_click,
+        )
 
         # Selection area
         self._selection_list.Bind(
@@ -821,6 +835,10 @@ class MainWindow(wx.Frame):
         self._selection_list.Bind(
             wx.EVT_CONTEXT_MENU,
             self._on_selection_context_menu,
+        )
+        self._selection_list.Bind(
+            EVT_ROW_CTRL_CLICK,
+            self._on_selection_row_ctrl_click,
         )
         self._selection_clear_btn.Bind(
             wx.EVT_BUTTON,
@@ -1710,6 +1728,7 @@ class MainWindow(wx.Frame):
 
         fmt = FORMATTERS.get(level_type, FORMATTERS["tracks"])
         self._list.set_formatter(fmt)
+        self._list.set_level_type(level_type)
 
         self._apply_filter(self._search_text.GetValue())
 
@@ -1724,7 +1743,22 @@ class MainWindow(wx.Frame):
                 i for i in self._all_items if self._matches(i, q, lt)
             ]
 
+        if not self._filtered_items:
+            if self._initial_loading or self._loading_in_progress:
+                # Translators: Message shown in the empty list area
+                # while the library is still loading from the server.
+                msg = _("Loading…")
+            elif query:
+                # Translators: Message shown in the empty list area when
+                # a search filter matches nothing.
+                msg = _("No matches for your search")
+            else:
+                # Translators: Message shown in the empty list area when
+                # the current view has no items at all.
+                msg = _("Nothing here yet")
+            self._list.set_empty_message(msg)
         self._list.set_items(self._filtered_items)
+        self._list.set_basket_ids(self._selected_track_ids)
         self._update_list_label()
 
     @staticmethod
@@ -1820,6 +1854,7 @@ class MainWindow(wx.Frame):
 
         self._search_text.ChangeValue("")
         self._display_level(new_items, new_type, new_ctx)
+        self._list.announce_view_change()
 
     def _go_back(self) -> None:
         """Return to the previous navigation level."""
@@ -1835,11 +1870,14 @@ class MainWindow(wx.Frame):
             state.context_name,
         )
 
-        # Restore focus to the item we came from
+        # Restore focus to the item we came from; announce_view_change
+        # is the single announcement (avoids double-speaking).
         if state.selected_id:
             self._list.set_selection_by_id(
                 state.selected_id,
+                fire_events=False,
             )
+        self._list.announce_view_change()
 
     # ------------------------------------------------------------------
     # Sorting
@@ -2434,11 +2472,7 @@ class MainWindow(wx.Frame):
             ):
                 item = self._list.get_selected_item()
                 if item:
-                    tid = item.get("Id", "")
-                    if tid and tid not in self._selected_track_ids:
-                        self._selected_tracks.append(item)
-                        self._selected_track_ids.add(tid)
-                        self._update_selection_area()
+                    self._add_tracks_to_selection([item])
                 return
             # Delete: remove from playlist / delete playlist
             if code == wx.WXK_DELETE:
@@ -2592,8 +2626,55 @@ class MainWindow(wx.Frame):
     # Multi-track selection
     # ------------------------------------------------------------------
 
+    def _add_tracks_to_selection(self, items: list[dict]) -> None:
+        """Add tracks to the selection basket (keeps order, dedups)."""
+        added = False
+        for item in items:
+            tid = item.get("Id", "")
+            if tid and tid not in self._selected_track_ids:
+                self._selected_tracks.append(item)
+                self._selected_track_ids.add(tid)
+                added = True
+        if added:
+            self._update_selection_area()
+
+    def _toggle_track_selection(self, item: dict) -> None:
+        """Toggle a track in the selection basket (Ctrl+click)."""
+        tid = item.get("Id", "")
+        if not tid:
+            return
+        if tid in self._selected_track_ids:
+            self._selected_tracks = [
+                t for t in self._selected_tracks if t.get("Id") != tid
+            ]
+            self._selected_track_ids.discard(tid)
+            self._update_selection_area()
+        else:
+            self._add_tracks_to_selection([item])
+
+    def _on_row_ctrl_click(self, event: wx.CommandEvent) -> None:
+        """Ctrl+click in the main list: mouse equivalent of Space."""
+        if self._current_level_type == "tracks":
+            self._toggle_track_selection(event.item)
+
+    def _on_row_range_click(self, event: wx.CommandEvent) -> None:
+        """Shift+Ctrl+click: add the clicked range to the selection."""
+        if self._current_level_type == "tracks":
+            self._add_tracks_to_selection(event.items)
+
+    def _on_selection_row_ctrl_click(self, event: wx.CommandEvent) -> None:
+        """Ctrl+click in the selection list removes the clicked track.
+
+        The table sets the caret to the clicked row before emitting,
+        so this acts on the right item (mouse equivalent of Space).
+        """
+        self._remove_from_selection()
+
     def _update_selection_area(self) -> None:
         """Show/hide the selection area and refresh."""
+        # Keep the basket checkmarks in the main list in sync.
+        self._list.set_basket_ids(self._selected_track_ids)
+
         if not self._selected_tracks:
             self._selection_sizer.ShowItems(False)
             self._panel.Layout()
@@ -2694,6 +2775,7 @@ class MainWindow(wx.Frame):
         event: wx.ContextMenuEvent,
     ) -> None:
         """Show bulk-action context menu for selection."""
+        self._focus_row_under_cursor(self._selection_list, event)
         item = self._selection_list.get_selected_item()
         if not item:
             return
@@ -3515,11 +3597,30 @@ class MainWindow(wx.Frame):
     # Context menu & actions
     # ------------------------------------------------------------------
 
+    def _focus_row_under_cursor(
+        self,
+        list_widget: TrackTableView,
+        event: wx.ContextMenuEvent,
+    ) -> None:
+        """For mouse-invoked context menus, act on the clicked row.
+
+        Keyboard invocations (Apps key / Shift+F10) report a default
+        position and keep acting on the current selection.
+        """
+        pos = event.GetPosition()
+        if pos == wx.DefaultPosition:
+            return
+        row = list_widget.hit_test_row(list_widget.ScreenToClient(pos))
+        if row >= 0:
+            list_widget.SetFocus()
+            list_widget.SetSelection(row)
+
     def _on_context_menu(
         self,
         event: wx.ContextMenuEvent,
     ) -> None:
         """Show context menu for the selected item."""
+        self._focus_row_under_cursor(self._list, event)
         item = self._list.get_selected_item()
         if not item:
             return
@@ -4595,13 +4696,10 @@ class MainWindow(wx.Frame):
                         self._filtered_items[fi_old],
                     )
 
-        # Refresh list and restore selection
+        # Refresh list; set_items preserves focus by Id, so the moved
+        # item is already selected at its new index.
         self._list.set_items(self._filtered_items)
-        sel = self._list.GetSelection()
-        # Move selection to follow the item
-        new_sel = sel + direction
-        if 0 <= new_sel < len(self._filtered_items):
-            self._list.SetSelection(new_sel)
+        self._list.set_selection_by_id(item.get("Id", ""))
 
         # Update DB
         pid = item.get(

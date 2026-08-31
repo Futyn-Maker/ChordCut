@@ -48,7 +48,7 @@ There are no automated tests. The app is tested manually on Windows with a real 
 
 Central controller orchestrating all UI and logic. Key state: `_queue` (playback queue snapshot), `_nav_stack` (drill-in/out navigation), `_all_items`/`_filtered_items` (current view), per-type library caches (`_lib_tracks`, `_lib_albums`, etc.), `_selected_tracks`/`_selected_track_ids` (multi-track selection, persists across navigation).
 
-Multi-track selection adds a secondary `LibraryListBox` and a "Clear selection" button, shown only when tracks are selected. Action methods (`_copy_link`, `_copy_stream_link`, `_download_tracks`, `_add_to_playlist`, `_remove_from_playlist`) are unified to accept `list[dict]` — single-item callers pass `[item]`. Adding to a playlist always places tracks at the top via `add_tracks_to_playlist_top` (batch add + fetch + N moves = N+2 requests). Bulk removal uses `remove_tracks_from_playlist` (single `DELETE` with comma-separated entry IDs). The selection context menu is built by `build_selection_context_menu()` in `ui/context_menu.py`.
+Multi-track selection adds a secondary `TrackTableView` and a "Clear selection" button, shown only when tracks are selected. Tracks are added via Space or Ctrl+click (Shift+Ctrl+click for a range); selected rows get a checkmark in the main list. Action methods (`_copy_link`, `_copy_stream_link`, `_download_tracks`, `_add_to_playlist`, `_remove_from_playlist`) are unified to accept `list[dict]` — single-item callers pass `[item]`. Adding to a playlist always places tracks at the top via `add_tracks_to_playlist_top` (batch add + fetch + N moves = N+2 requests). Bulk removal uses `remove_tracks_from_playlist` (single `DELETE` with comma-separated entry IDs). The selection context menu is built by `build_selection_context_menu()` in `ui/context_menu.py`.
 
 **Library loading has two modes:**
 
@@ -64,7 +64,10 @@ Multi-track selection adds a secondary `LibraryListBox` and a "Clear selection" 
 
 ### Accessibility Patterns
 
-- Native Win32 LISTBOX (`LibraryListBox` in `ui/library_list.py`) — required for NVDA/JAWS compatibility
+- Library lists are `TrackTableView` (`ui/track_table.py`) — a custom-drawn multi-column table that screen readers perceive as a plain list. `TrackTableAccessible` (`ui/track_table_accessible.py`, MSAA via `wx.Accessible`) exposes one LISTITEM per row named by the formatters in `ui/library_list.py`, so NVDA/JAWS announce terse one-line items, never columns. Do NOT use `wx.ListCtrl` for lists: NVDA reads its columns via `LVM_GETITEMTEXT` injection, bypassing all accessibility interfaces, and the verbosity cannot be suppressed.
+- MSAA focus/selection events fire only on actual user-driven caret moves; background list refreshes (progressive loads, cache updates) are deliberately silent. After user-initiated view changes (Enter/Backspace navigation), `announce_view_change()` speaks the new list. Preserve this split when changing list code.
+- Visual-only affordances (columns, hover, checkmarks, empty-state messages) must stay invisible to the accessibility layer — announcements must not change.
+- All custom-drawn colors come from `ui/theme.py` (system colors, high-contrast aware); never hardcode colors in controls.
 - List labels set as accessible names so screen readers announce item counts
 - Full keyboard navigation: Tab cycles controls, Enter drills in, Backspace backs out
 - All menus have keyboard mnemonics
