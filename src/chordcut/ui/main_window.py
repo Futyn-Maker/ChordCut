@@ -16,6 +16,7 @@ from chordcut.i18n import _, ngettext
 from chordcut.player import Player
 from chordcut.player.mpv_player import format_duration
 from chordcut.settings import Settings
+from chordcut.ui.artwork_cache import ArtworkProvider
 from chordcut.ui.library_list import (
     FORMATTERS,
     format_track,
@@ -566,7 +567,9 @@ class MainWindow(wx.Frame):
         # Playback transport bar (art, now-playing, seek, buttons,
         # volume). Track which image request is current so stale
         # callbacks don't overwrite a newer image.
-        self._ART_SIZE = 96
+        # DPI-scaled so the art keeps its intended physical size on
+        # high-DPI displays.
+        self._ART_SIZE = self.FromDIP(96)
         self._art_request_id: str = ""
         self._transport = TransportBar(
             self._panel,
@@ -584,6 +587,11 @@ class MainWindow(wx.Frame):
         )
         self._art_bitmap = self._transport.art_bitmap
         self._now_playing_label = self._transport.now_playing_label
+
+        # Cover art thumbnails in the library lists
+        self._artwork = ArtworkProvider(self._client)
+        self._list.set_artwork_provider(self._artwork)
+        self._selection_list.set_artwork_provider(self._artwork)
 
     def _do_layout(self) -> None:
         """Layout the window controls."""
@@ -5062,6 +5070,7 @@ class MainWindow(wx.Frame):
         self._save_geometry()
         self._settings.save()
 
+        self._artwork.shutdown()
         self._player.shutdown()
         self._client.shutdown()
         # Flush clipboard so data survives after exit.

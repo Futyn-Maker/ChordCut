@@ -21,22 +21,22 @@ import sqlite3
 from collections.abc import Callable
 
 # Increment when the schema changes and add a migration below.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Ordered list of (target_version, migration_callable).
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = []
 
 
-# -- Example (uncomment and adapt when you need migration 2) ----------
-#
-# def _migrate_to_2(conn: sqlite3.Connection) -> None:
-#     cols = {row[1] for row in conn.execute(
-#         "PRAGMA table_info(tracks)",
-#     )}
-#     if "genre" not in cols:
-#         conn.execute(
-#             "ALTER TABLE tracks ADD COLUMN genre TEXT",
-#         )
-#
-# SCHEMA_VERSION = 2
-# MIGRATIONS.append((2, _migrate_to_2))
+def _migrate_to_2(conn: sqlite3.Connection) -> None:
+    """Add cover art image tag columns to tracks and albums."""
+    track_cols = {row[1] for row in conn.execute("PRAGMA table_info(tracks)")}
+    if "primary_image_tag" not in track_cols:
+        conn.execute("ALTER TABLE tracks ADD COLUMN primary_image_tag TEXT")
+    if "album_primary_image_tag" not in track_cols:
+        conn.execute("ALTER TABLE tracks ADD COLUMN album_primary_image_tag TEXT")
+    album_cols = {row[1] for row in conn.execute("PRAGMA table_info(albums)")}
+    if "primary_image_tag" not in album_cols:
+        conn.execute("ALTER TABLE albums ADD COLUMN primary_image_tag TEXT")
+
+
+MIGRATIONS.append((2, _migrate_to_2))

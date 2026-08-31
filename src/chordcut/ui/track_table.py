@@ -50,6 +50,7 @@ class TrackTableView(wx.Window):
         self._basket_ids: set[str] = set()
         self._empty_message = ""
         self._drag_enabled = False
+        self._artwork = None  # ArtworkProvider, set by MainWindow
 
         self._typeahead = ""
         self._typeahead_time = 0.0
@@ -100,7 +101,38 @@ class TrackTableView(wx.Window):
         """Select the visual column model for the given level type."""
         self._level_type = level_type
         self._columns = COLUMN_MODELS.get(level_type, COLUMN_MODELS["tracks"])
+        self._clamp_top()
+        self._update_scrollbar()
         self.Refresh()
+
+    def set_artwork_provider(self, provider) -> None:
+        """Enable cover art thumbnails (tracks and albums views)."""
+        self._artwork = provider
+        self.Refresh()
+
+    def _art_enabled(self) -> bool:
+        return self._artwork is not None and self._level_type in (
+            "tracks",
+            "albums",
+        )
+
+    def _art_source(self, item: dict) -> tuple[str, str] | None:
+        """Return (item_id, image_tag) to fetch art for, or None.
+
+        Handles both DB-cache dicts (flat PrimaryImageTag) and raw API
+        dicts (nested ImageTags), which appear during progressive
+        loads.
+        """
+        tag = item.get("PrimaryImageTag") or (item.get("ImageTags") or {}).get(
+            "Primary"
+        )
+        if tag:
+            return item.get("Id", ""), tag
+        album_tag = item.get("AlbumPrimaryImageTag")
+        album_id = item.get("AlbumId")
+        if album_tag and album_id:
+            return album_id, album_tag
+        return None
 
     def set_items(self, items: list[dict]) -> None:
         """Replace all items, preserving focus by Id."""
@@ -186,7 +218,7 @@ class TrackTableView(wx.Window):
         y = pt.y - self._theme.header_height
         if y < 0:
             return -1
-        row = self._top + y // self._theme.row_height
+        row = self._top + y // self._row_height()
         if 0 <= row < len(self._items):
             return row
         return -1
@@ -215,23 +247,37 @@ class TrackTableView(wx.Window):
     # ------------------------------------------------------------------
     # Geometry helpers
 
+    def _row_height(self) -> int:
+        # Rows grow to fit cover art thumbnails when art is shown.
+        if self._art_enabled():
+            return max(self._theme.row_height, self.FromDIP(40))
+        return self._theme.row_height
+
+    def _art_size(self) -> int:
+        return self._row_height() - self.FromDIP(6)
+
     def _visible_rows(self) -> int:
         h = self.GetClientSize().height - self._theme.header_height
-        return max(1, h // self._theme.row_height)
+        return max(1, h // self._row_height())
 
     def _row_rect(self, index: int) -> wx.Rect:
-        y = self._theme.header_height + (index - self._top) * self._theme.row_height
-        return wx.Rect(0, y, self.GetClientSize().width, self._theme.row_height)
+        y = self._theme.header_height + (index - self._top) * self._row_height()
+        return wx.Rect(0, y, self.GetClientSize().width, self._row_height())
 
     def _basket_gutter(self) -> int:
         if self._level_type == "tracks":
             return self.FromDIP(24)
         return 0
 
+    def _art_gutter(self) -> int:
+        if self._art_enabled():
+            return self._art_size() + self.FromDIP(6)
+        return 0
+
     def _col_rects(self, width: int) -> list[tuple[ColumnSpec, int, int]]:
         """Compute (spec, x, width) for each column."""
         pad = self._theme.cell_padding
-        x = self._basket_gutter() + pad
+        x = self._basket_gutter() + self._art_gutter() + pad
         # Budget for the column widths themselves: everything except
         # the leading offset and one trailing pad per column.
         widths_avail = width - x - pad * len(self._columns)
@@ -513,7 +559,7 @@ class TrackTableView(wx.Window):
 
     def _update_drop_gap(self, pos: wx.Point) -> None:
         theme = self._theme
-        gap = self._top + round((pos.y - theme.header_height) / theme.row_height)
+        gap = self._top + round((pos.y - theme.header_height) / self._row_height())
         gap = min(max(0, gap), len(self._items))
         if gap != self._drop_gap:
             self._drop_gap = gap
@@ -522,9 +568,9 @@ class TrackTableView(wx.Window):
     def _update_autoscroll(self, pos: wx.Point) -> None:
         theme = self._theme
         height = self.GetClientSize().height
-        if pos.y < theme.header_height + theme.row_height // 2:
+        if pos.y < theme.header_height + self._row_height() // 2:
             direction = -1
-        elif pos.y > height - theme.row_height // 2:
+        elif pos.y > height - self._row_height() // 2:
             direction = 1
         else:
             direction = 0
@@ -637,7 +683,7 @@ class TrackTableView(wx.Window):
 
     def _draw_insertion_line(self, dc: wx.DC, size: wx.Size) -> None:
         theme = self._theme
-        y = theme.header_height + (self._drop_gap - self._top) * theme.row_height
+        y = theme.header_height + (self._drop_gap - self._top) * self._row_height()
         y = min(max(theme.header_height, y), size.height - 1)
         dc.SetPen(wx.Pen(theme.accent, self.FromDIP(2)))
         dc.DrawLine(0, y, size.width, y)
@@ -669,6 +715,45 @@ class TrackTableView(wx.Window):
             tw, th = dc.GetTextExtent(label)
             tx = x + (w - tw if spec.align == wx.ALIGN_RIGHT else 0)
             dc.DrawText(label, tx, (theme.header_height - th) // 2)
+
+    def _draw_art(self, dc: wx.DC, rect: wx.Rect, item: dict) -> None:
+        """Draw the row's cover art thumbnail or a placeholder."""
+        theme = self._theme
+        size = self._art_size()
+        x = rect.x + self._basket_gutter()
+        y = rect.y + (rect.height - size) // 2
+
+        source = self._art_source(item)
+        provider = self._artwork
+        bmp = None
+        if source is not None and provider is not None:
+            item_id, tag = source
+            bmp = provider.get_cached(item_id, tag, size)
+            if bmp is None and not provider.is_negative(item_id, tag, size):
+                provider.request(
+                    item_id,
+                    tag,
+                    size,
+                    lambda: self.Refresh() if self else None,
+                )
+        if bmp is not None:
+            dc.DrawBitmap(
+                bmp,
+                x + (size - bmp.GetWidth()) // 2,
+                y + (size - bmp.GetHeight()) // 2,
+                True,
+            )
+            return
+
+        # Placeholder: rounded rect with a note glyph.
+        dc.SetBrush(wx.Brush(theme.header_bg))
+        dc.SetPen(wx.Pen(theme.grid_line))
+        dc.DrawRoundedRectangle(x, y, size, size, self.FromDIP(3))
+        dc.SetFont(theme.font)
+        dc.SetTextForeground(theme.secondary_text)
+        note = "♪"
+        tw, th = dc.GetTextExtent(note)
+        dc.DrawText(note, x + (size - tw) // 2, y + (size - th) // 2)
 
     def _draw_row(
         self,
@@ -718,6 +803,9 @@ class TrackTableView(wx.Window):
                 rect.x + (gutter - tw) // 2,
                 rect.y + (rect.height - th) // 2,
             )
+
+        if self._art_enabled():
+            self._draw_art(dc, rect, item)
 
         dc.SetFont(theme.font)
         for spec, x, w in cols:

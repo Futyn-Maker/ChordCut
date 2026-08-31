@@ -54,6 +54,8 @@ Playlist tracks can be reordered with Alt+Up/Down, the context menu, or mouse dr
 
 The bottom `TransportBar` (`ui/transport_bar.py`) holds album art, the now-playing line, and a custom-drawn canvas with seek bar, transport buttons, lyrics/settings icons, and volume. MainWindow supplies action callbacks and pushes state via `update_play_state` / `set_progress` / `set_volume` at every playback transition.
 
+Library rows show cover art thumbnails (tracks and albums views) through `ArtworkProvider` (`ui/artwork_cache.py`): image tags are cached in SQLite (`primary_image_tag` / `album_primary_image_tag`, arriving in the default track DTO — no extra Fields needed), images load lazily on a dedicated 2-worker pool with a disk cache at `data/artcache/` (pruned to ~200 MB), a memory LRU, and a negative cache so items without art are never re-requested. Requests happen at paint time for visible rows only; delivery refreshes the view via `wx.CallAfter`. Thumbnails are visual-only (no screen reader impact); rows grow to 40 DIP when art is active.
+
 **Library loading has two modes:**
 
 - **Cold load** (<100 cached tracks): sequential paginated fetch, batches of 200, progressive UI updates
@@ -224,7 +226,7 @@ Adding a `genre` column to `tracks` and a new `favorites` table:
 ```python
 # In migrations.py:
 
-def _migrate_to_2(conn: sqlite3.Connection) -> None:
+def _migrate_to_3(conn: sqlite3.Connection) -> None:
     # Add column — check first because fresh DBs already have it.
     cols = {row[1] for row in conn.execute("PRAGMA table_info(tracks)")}
     if "genre" not in cols:
@@ -232,8 +234,8 @@ def _migrate_to_2(conn: sqlite3.Connection) -> None:
     # New tables are handled by CREATE TABLE IF NOT EXISTS in SCHEMA,
     # so no action needed here for the favorites table.
 
-SCHEMA_VERSION = 2
-MIGRATIONS.append((2, _migrate_to_2))
+SCHEMA_VERSION = 3
+MIGRATIONS.append((3, _migrate_to_3))
 ```
 
 And in `models.py`, update the `tracks` table in `SCHEMA` to include the `genre TEXT` column, and add the `CREATE TABLE IF NOT EXISTS favorites (...)` block.

@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS tracks (
     track_number INTEGER,
     library_id TEXT,
     date_created TEXT,
+    primary_image_tag TEXT,
+    album_primary_image_tag TEXT,
     PRIMARY KEY (id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
@@ -88,6 +90,7 @@ CREATE TABLE IF NOT EXISTS albums (
     name TEXT NOT NULL,
     artist_display TEXT,
     library_id TEXT,
+    primary_image_tag TEXT,
     PRIMARY KEY (id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );

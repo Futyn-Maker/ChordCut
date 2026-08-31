@@ -310,7 +310,7 @@ class Database:
         """
         artists_seen: dict[str, str] = {}
         album_artists_seen: dict[str, str] = {}
-        albums_seen: dict[str, tuple[str, str, str]] = {}
+        albums_seen: dict[str, tuple[str, str, str, str | None]] = {}
         track_artist_links: list[tuple[str, str]] = []
         album_aa_links: set[tuple[str, str]] = set()
         track_rows: list[tuple] = []
@@ -369,6 +369,7 @@ class Database:
                     track.get("Album", ""),
                     track.get("AlbumArtist", ""),
                     library_id,
+                    track.get("AlbumPrimaryImageTag"),
                 )
                 for aai in album_artists_items:
                     aaid = aai.get("Id")
@@ -392,6 +393,8 @@ class Database:
                     track.get("IndexNumber"),
                     library_id,
                     track.get("DateCreated"),
+                    (track.get("ImageTags") or {}).get("Primary"),
+                    track.get("AlbumPrimaryImageTag"),
                 )
             )
 
@@ -402,8 +405,9 @@ class Database:
             "  artist_name, artist_display,"
             "  album_id, artist_id,"
             "  duration_ticks, track_number,"
-            "  library_id, date_created"
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "  library_id, date_created,"
+            "  primary_image_tag, album_primary_image_tag"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             track_rows,
         )
 
@@ -424,11 +428,16 @@ class Database:
         conn.executemany(
             "INSERT OR IGNORE INTO albums"
             " (id, server_id, name, artist_display,"
-            " library_id)"
-            " VALUES (?, ?, ?, ?, ?)",
+            " library_id, primary_image_tag)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
             [
-                (aid, server_id, aname, adisplay, lib_id)
-                for aid, (aname, adisplay, lib_id) in albums_seen.items()
+                (aid, server_id, aname, adisplay, lib_id, img_tag)
+                for aid, (
+                    aname,
+                    adisplay,
+                    lib_id,
+                    img_tag,
+                ) in albums_seen.items()
             ],
         )
 
@@ -562,6 +571,8 @@ class Database:
             "IndexNumber": row["track_number"],
             "LibraryId": row["library_id"] or "",
             "DateCreated": row["date_created"] or "",
+            "PrimaryImageTag": row["primary_image_tag"],
+            "AlbumPrimaryImageTag": row["album_primary_image_tag"],
         }
 
     @staticmethod
@@ -575,6 +586,7 @@ class Database:
             "Name": row["name"],
             "ArtistDisplay": row["artist_display"] or "",
             "LibraryId": row["library_id"] or "",
+            "PrimaryImageTag": row["primary_image_tag"],
         }
 
     @staticmethod
