@@ -203,7 +203,40 @@ class MainWindow(wx.Frame):
         # System tray icon (always visible)
         self._tray_icon: TrayIcon | None = TrayIcon(self)
 
-        self.CenterOnScreen()
+        self.SetMinSize(self.FromDIP(wx.Size(640, 480)))
+        self._restore_geometry()
+
+    def _restore_geometry(self) -> None:
+        """Restore the saved window rectangle, if still on a screen."""
+        geometry = self._settings.window_geometry
+        restored = False
+        if geometry:
+            rect = wx.Rect(*geometry)
+            # Only restore if the window's center is on a display
+            # (monitors may have been unplugged or rearranged).
+            center = wx.Point(
+                rect.x + rect.width // 2,
+                rect.y + rect.height // 2,
+            )
+            if wx.Display.GetFromPoint(center) != wx.NOT_FOUND:
+                self.SetSize(rect)
+                restored = True
+        if not restored:
+            self.CenterOnScreen()
+        if self._settings.window_maximized:
+            self.Maximize()
+
+    def _save_geometry(self) -> None:
+        """Remember the window rectangle for the next launch."""
+        self._settings.window_maximized = self.IsMaximized()
+        if not self.IsMaximized() and not self.IsIconized():
+            rect = self.GetRect()
+            self._settings.window_geometry = (
+                rect.x,
+                rect.y,
+                rect.width,
+                rect.height,
+            )
 
     # ------------------------------------------------------------------
     # UI creation
@@ -5026,6 +5059,7 @@ class MainWindow(wx.Frame):
             idx = self._device_choice.GetSelection()
             if 0 <= idx < len(self._device_names):
                 self._settings.device = self._device_names[idx]
+        self._save_geometry()
         self._settings.save()
 
         self._player.shutdown()

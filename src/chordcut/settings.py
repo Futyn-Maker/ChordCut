@@ -35,6 +35,10 @@ _DEFAULTS: dict = {
     "close_to_tray": False,
     # Whether to check for updates on startup.
     "check_updates": True,
+    # Last window rectangle [x, y, w, h]; None = default size, centered.
+    "window_geometry": None,
+    # Whether the window was maximized on last exit.
+    "window_maximized": False,
 }
 
 
@@ -196,3 +200,30 @@ class Settings:
     @check_updates.setter
     def check_updates(self, value: bool) -> None:
         self._data["check_updates"] = bool(value)
+
+    @property
+    def window_geometry(self) -> tuple[int, int, int, int] | None:
+        """Last window rectangle (x, y, w, h), or None for default."""
+        val = self._data.get("window_geometry")
+        if (
+            isinstance(val, (list, tuple))
+            and len(val) == 4
+            and all(isinstance(v, int) for v in val)
+            and val[2] > 0
+            and val[3] > 0
+        ):
+            return tuple(val)
+        return None
+
+    @window_geometry.setter
+    def window_geometry(self, value: "tuple[int, int, int, int] | None") -> None:
+        self._data["window_geometry"] = list(value) if value is not None else None
+
+    @property
+    def window_maximized(self) -> bool:
+        """Whether the window was maximized on last exit."""
+        return bool(self._data.get("window_maximized", False))
+
+    @window_maximized.setter
+    def window_maximized(self, value: bool) -> None:
+        self._data["window_maximized"] = bool(value)
