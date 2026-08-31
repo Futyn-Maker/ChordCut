@@ -35,19 +35,27 @@ class SettingsDialog(wx.Dialog):
             border=10,
         )
 
-        # wx.DirPickerCtrl is the native way to pick a folder in wx:
-        # it renders as a read-only text field + "Browse" button.
-        self._folder_picker = wx.DirPickerCtrl(
+        # Plain text field + labeled button instead of wx.DirPickerCtrl:
+        # the picker is a composite whose inner text field and button
+        # get no accessible labels, so screen readers announce them as
+        # nameless controls.
+        folder_row = wx.BoxSizer(wx.HORIZONTAL)
+        self._folder_text = wx.TextCtrl(
             panel,
-            path=str(settings.download_dir),
-            # Translators: Folder browser dialog prompt.
-            message=_("Select download folder"),
-            # Translators: Accessible name for download folder picker.
+            value=str(settings.download_dir),
+            # Translators: Accessible name for download folder field.
             name=_("Download folder"),
-            style=(wx.DIRP_USE_TEXTCTRL | wx.DIRP_DIR_MUST_EXIST | wx.DIRP_SMALL),
         )
+        browse_btn = wx.Button(
+            panel,
+            # Translators: Button that opens the folder browser.
+            label=_("&Browse..."),
+        )
+        browse_btn.Bind(wx.EVT_BUTTON, self._on_browse_folder)
+        folder_row.Add(self._folder_text, proportion=1, flag=wx.RIGHT, border=5)
+        folder_row.Add(browse_btn)
         main_sizer.Add(
-            self._folder_picker,
+            folder_row,
             flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP,
             border=10,
         )
@@ -68,7 +76,7 @@ class SettingsDialog(wx.Dialog):
         vol_label = wx.StaticText(
             panel,
             # Translators: Label for volume step spin control.
-            label=_("&Volume step (%):"),
+            label=_("&Volume step for hotkeys and wheel (%):"),
         )
         self._volume_step = wx.SpinCtrl(
             panel,
@@ -91,7 +99,7 @@ class SettingsDialog(wx.Dialog):
         seek_label = wx.StaticText(
             panel,
             # Translators: Label for seek step spin control.
-            label=_("&Seek step (seconds):"),
+            label=_("&Seek step for hotkeys and wheel (seconds):"),
         )
         self._seek_step = wx.SpinCtrl(
             panel,
@@ -206,9 +214,22 @@ class SettingsDialog(wx.Dialog):
 
         self._save_btn.Bind(wx.EVT_BUTTON, self._on_save)
 
+    def _on_browse_folder(self, event: wx.CommandEvent) -> None:
+        """Open a folder browser for the download folder."""
+        dlg = wx.DirDialog(
+            self,
+            # Translators: Folder browser dialog prompt.
+            message=_("Select download folder"),
+            defaultPath=self._folder_text.GetValue(),
+            style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST,
+        )
+        if dlg.ShowModal() == wx.ID_OK:
+            self._folder_text.SetValue(dlg.GetPath())
+        dlg.Destroy()
+
     def _on_save(self, event: wx.CommandEvent) -> None:
         """Apply values from the dialog to settings and save."""
-        path = self._folder_picker.GetPath()
+        path = self._folder_text.GetValue().strip()
         if path:
             from pathlib import Path
 
