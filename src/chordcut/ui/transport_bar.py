@@ -18,6 +18,7 @@ import wx
 
 from chordcut.i18n import _
 from chordcut.player.mpv_player import format_duration
+from chordcut.ui.theme import is_high_contrast
 
 
 class TransportBar(wx.Panel):
@@ -418,6 +419,9 @@ class _TransportCanvas(wx.Window):
         )
 
     def _blend(self, fg: wx.Colour, bg: wx.Colour, alpha: float) -> wx.Colour:
+        # No alpha blends in high contrast: use the pure system color.
+        if is_high_contrast():
+            return fg
         if wx.SystemSettings.GetAppearance().IsUsingDarkBackground():
             alpha = min(1.0, alpha * 1.5)
         return wx.Colour(
