@@ -2,7 +2,7 @@
 
 # ChordCut
 
-ChordCut is a portable, accessible music client for [Jellyfin](https://jellyfin.org/) media servers on Windows. It is designed primarily for blind and visually impaired users and works with NVDA, JAWS, and other screen readers out of the box. All functionality is fully operable from the keyboard.
+ChordCut is a portable music client for [Jellyfin](https://jellyfin.org/) media servers on Windows. It plays every audio format natively through MPV with no server-side transcoding, presents your library in a fast multi-column view with cover art, and includes synced lyrics, playlists, and a playback bar with full transport controls. Every feature can be reached with the mouse or the keyboard, and screen readers such as NVDA and JAWS are supported out of the box.
 
 ## Screenshots
 
@@ -17,21 +17,24 @@ ChordCut is a portable, accessible music client for [Jellyfin](https://jellyfin.
 ## Features
 
 - Stream music directly from your Jellyfin server with no transcoding — all audio formats are played natively through MPV.
-- Browse your library by tracks, artists, album artists, albums, and playlists with hierarchical drill-down navigation.
+- Multi-column library view with cover art thumbnails, hover highlighting, and a marker on the track that is currently playing. Artwork is cached locally, so it loads once and works offline afterwards.
+- Browse by tracks, artists, album artists, albums, and playlists with hierarchical drill-down navigation.
+- Playback bar with seek bar, transport buttons, shuffle and repeat toggles, and a volume slider.
+- Lyrics panel beside the library: synced lyrics scroll karaoke-style with the music; click a line to jump to it.
+- Plain and synced (timed) lyrics dialogs; in synced lyrics the current line is highlighted as the track plays.
 - Real-time search that filters the current section as you type.
-- Sort tracks alphabetically or by date added.
-- Filter by music library if your server has more than one.
+- Sort tracks alphabetically or by date added; filter by music library if your server has more than one.
 - Playback queue with next/previous track, repeat, and shuffle.
-- Create, rename, delete playlists and reorder tracks in them. Add or remove tracks from playlists.
+- Create, rename, and delete playlists; add or remove tracks; reorder tracks by drag and drop, keyboard, or the context menu.
 - Select multiple tracks to build a custom playback queue, bulk-add to playlists, bulk-download, and more.
-- View plain and synced (timed) lyrics. Jump to any line in synced lyrics to seek to that moment.
 - Download individual tracks or multiple selected tracks at once to a configurable folder.
 - View detailed properties for tracks (including bitrate, format, and file size), albums, artists, and playlists.
 - Copy a Jellyfin web link for any item or a direct stream link for tracks.
 - Sleep timer with three actions: close the program, shut down, or put the computer to sleep.
 - System tray icon with basic playback controls — minimize and keep listening in the background.
 - Connect to multiple Jellyfin servers and switch between them.
-- Configurable volume and seek steps, output device selection, and persistent settings across restarts.
+- Full keyboard operability and screen reader support (NVDA, JAWS); the interface follows the Windows theme, including high-contrast modes.
+- Configurable volume and seek steps, output device selection; window size and position, volume, and device are remembered across restarts.
 - Built-in auto-update — check for new versions on startup or on demand, download and install without leaving the app.
 - Fully portable — the entire program runs from a single folder with no installation required.
 
@@ -43,30 +46,34 @@ On first launch, ChordCut shows a login dialog. Enter your Jellyfin server URL (
 
 ### Interface Overview
 
-The main window has four controls you cycle through with Tab:
+The main window consists of:
 
-1. **Section selector** — choose between Tracks, Playlists, Artists, Album Artists, and Albums.
-2. **Search field** — type to filter the current list in real time.
-3. **Library list** — the items in the current section. A label above the list shows a contextual count (e.g. "1100 tracks", "5 albums by Artist Name").
-4. **Output device selector** — choose the audio output device.
+- **Section selector** — switches between Tracks, Playlists, Artists, Album Artists, and Albums.
+- **Search field** — filters the current list as you type.
+- **Library view** — the items of the current section, shown as a table with columns for cover art, title, artist, album, track number, and length (the set of columns depends on the section; on narrow windows less important columns are hidden). A label above the view shows a contextual count (e.g. "1100 tracks", "5 albums by Artist Name"), and the track that is currently playing is marked in the list.
+- **Lyrics panel** (optional) — shows the lyrics of the playing track beside the library; hidden by default.
+- **Output device selector** — chooses the audio output device.
+- **Playback bar** — album art and the now-playing line, a seek bar with elapsed and total time, buttons for shuffle, previous, play/pause, next, and repeat, buttons for the lyrics panel and settings, and a volume slider. Hovering any control shows a tooltip with its keyboard shortcut. Active toggles (shuffle, repeat, lyrics panel) are drawn in the accent color with a dot beneath.
 
-The status bar at the bottom shows the current track, playback time, sleep timer countdown (if active), and volume level.
+The status bar at the bottom shows the current status, playback time, sleep timer countdown (if active), and volume level. The Tab key moves keyboard focus between the section selector, search field, library view, and device selector.
 
 ## Usage Guide
 
 ### Browsing the Library
 
-Switch sections with the section selector. Press Enter on an artist to see their albums, Enter on an album to see its tracks, and so on. Press Backspace to go back one level.
+Switch sections with the section selector. To open an item — an artist's albums, an album's tracks — double-click it or press Enter. To go back one level, press Backspace or choose Go Back from the context menu.
 
 ### Playing Music
 
-Press Enter on a track to start playback. This also creates a queue from all currently visible tracks. Use Shift+Right and Shift+Left to skip to the next or previous track. Press Escape to pause or resume.
+Double-click a track (or press Enter) to start playback; this also creates a queue from all currently visible tracks. Skip between tracks with the previous/next buttons on the playback bar or Shift+Left / Shift+Right. Pause and resume with the play/pause button or Escape.
 
-Toggle repeat with Ctrl+Alt+R (loops the current track; next/previous still works). Toggle shuffle with Ctrl+Alt+S (reorders the queue; disabling it restores the original order). Stop playback entirely with Ctrl+Alt+Q — this also destroys the queue.
+Toggle repeat with the repeat button, Playback > Repeat, or Ctrl+Alt+R (loops the current track; next/previous still works). Toggle shuffle with the shuffle button, Playback > Shuffle, or Ctrl+Alt+S (reorders the queue; disabling it restores the original order). Stop playback entirely with Playback > Stop or Ctrl+Alt+Q — this also destroys the queue.
 
 ### Volume and Seeking
 
-Ctrl+Up / Ctrl+Down adjusts volume. Ctrl+Right / Ctrl+Left seeks forward or backward. The step size for both is configurable in Settings (F8); defaults are 5% for volume and 5 seconds for seeking.
+Drag or click the seek bar to jump anywhere in the track, and drag the volume slider to set the volume. The mouse wheel also works over the playback bar: over the seek bar it seeks, elsewhere it changes the volume.
+
+From the keyboard, Ctrl+Up / Ctrl+Down adjusts volume and Ctrl+Right / Ctrl+Left seeks forward or backward. The step size for keys and wheel is configurable in Settings (F8); defaults are 5% for volume and 5 seconds for seeking.
 
 ### Searching and Sorting
 
@@ -80,21 +87,21 @@ If your server has multiple music libraries (e.g. "Music" and "Soundtracks"), us
 
 ### Playlist Management
 
-- **Create**: Ctrl+N or File > New Playlist. Enter a name in the dialog.
-- **Rename**: select a playlist, press F2, or use the context menu.
-- **Delete**: select a playlist, press Delete, or use the context menu. Confirm in the dialog.
+- **Create**: File > New Playlist or Ctrl+N. Enter a name in the dialog.
+- **Rename**: select a playlist and press F2, or use the context menu.
+- **Delete**: select a playlist and press Delete, or use the context menu. Confirm in the dialog.
 - **Add a track**: open the context menu on any track, choose Add to Playlist, and pick a playlist from the submenu. The track is added to the top.
 - **Remove a track**: inside a playlist, select a track and press Delete, or use the context menu.
-- **Reorder tracks**: inside a playlist, use Alt+Up and Alt+Down to move the selected track, or use the context menu.
+- **Reorder tracks**: inside a playlist, drag a track to its new position with the mouse, press Alt+Up / Alt+Down, or use the context menu. (Dragging is available while the list is unfiltered and not shuffled, so that list positions match playlist positions.)
 
 ### Multi-Track Selection
 
 You can select multiple tracks from any track list to build a custom playback queue or perform bulk actions.
 
-- **Add a track to the selection**: press Space on any track in a track list. The track is appended to the selection in the order you select it. Pressing Space on an already-selected track does nothing.
-- **Selected tracks area**: once at least one track is selected, a new area appears in the tab order between the main list and the output device selector. It shows the number of selected tracks and contains its own list. A "Clear selection" button removes all selected tracks.
-- **Remove a track from the selection**: press Space on a track inside the selected tracks list. If the last track is removed, the area disappears and focus returns to the main list.
-- **Play from selection**: press Enter or double-click a track in the selected tracks list to start playback using the selection as the queue.
+- **Add a track to the selection**: press Space on a track, or Ctrl+click it. Ctrl+Shift+click adds a whole range of tracks. Selected tracks get a checkmark in the list, and the selection keeps the order in which you added tracks. Ctrl+clicking an already-selected track removes it from the selection.
+- **Selected tracks area**: once at least one track is selected, a new area appears between the main list and the output device selector. It shows the number of selected tracks and contains its own list. A "Clear selection" button removes all selected tracks.
+- **Remove a track from the selection**: press Space (or Ctrl+click) on a track inside the selected tracks list. If the last track is removed, the area disappears.
+- **Play from selection**: double-click a track in the selected tracks list, or press Enter on it, to start playback using the selection as the queue.
 - **Reorder**: use Alt+Up and Alt+Down inside the selected tracks list to change the playback order.
 - **Bulk actions**: when the focus is inside the selected tracks list, hotkeys and the context menu apply to all selected tracks:
   - Ctrl+Shift+Enter — download all selected tracks one by one.
@@ -105,48 +112,50 @@ You can select multiple tracks from any track list to build a custom playback qu
   - Delete key — same as Remove All from Playlist when available.
 - **Persistence**: the selection is preserved when navigating between sections and lists. It is cleared only when you press "Clear selection" or close the application.
 
-**Note:** when the focus is on the main track list, all actions (Enter, context menu, hotkeys) still apply to the single track under the cursor, regardless of whether a selection exists.
+**Note:** when the focus is on the main track list, all actions (Enter, context menu, hotkeys) still apply to the single focused track, regardless of whether a selection exists.
 
 ### Lyrics
 
-Press **Ctrl+Alt+Enter** on a track to view plain lyrics, or **Alt+Shift+Enter** to open synced (timed) lyrics. You can also use the context menu: View Lyrics for plain text, or Synced Lyrics for timed lyrics. In the synced lyrics dialog, press Enter on any line to seek to that timestamp. Ctrl+Up/Down adjusts volume and Ctrl+Right/Left seeks within the dialog, as in the main window. Press Backspace to close the dialog, or Escape to pause/resume playback. Use Ctrl+C to copy the selected line, or the Copy All button to copy all lyrics.
+The **lyrics panel** shows the lyrics of the playing track beside the library. Toggle it with View > Lyrics Panel, the F9 key, or the lyrics button on the playback bar; the choice is remembered. Synced lyrics follow the music karaoke-style — the current line is emphasized and kept centered — and clicking a line jumps playback to it. Scrolling with the mouse wheel pauses the automatic following for a few seconds. Plain lyrics are shown as scrollable text.
+
+Lyrics also open in dialogs: press **Ctrl+Alt+Enter** on a track for plain lyrics, or **Alt+Shift+Enter** for synced (timed) lyrics — both are in the context menu as well. In the synced lyrics dialog the line being sung is highlighted as the track plays; press Enter or double-click any line to seek to its timestamp, and use Ctrl+J or the "Jump to current" button to move to the line at the current playback position. Ctrl+Up/Down adjusts volume and Ctrl+Right/Left seeks within the dialog, as in the main window. Press Backspace to close the dialog, or Escape to pause/resume playback. Use Ctrl+C to copy the selected line, or the Copy All button to copy all lyrics.
 
 ### Downloading Tracks
 
-Select a track, press Ctrl+Shift+Enter (or use the context menu). A progress dialog appears. The download folder is configurable in Settings (F8); by default it is the `music` subfolder next to the executable.
+Select a track and press Ctrl+Shift+Enter, or use the context menu. A progress dialog appears. The download folder is configurable in Settings (F8); by default it is the `music` subfolder next to the executable.
 
 ### Properties and Links
 
-Press Alt+Enter on any item to view its properties. For tracks, this includes bitrate, audio format, and file size. Press Ctrl+C in the properties dialog to copy a value.
+Press Alt+Enter on any item (or choose Properties from the context menu) to view its properties. For tracks, this includes bitrate, audio format, and file size. Press Ctrl+C in the properties dialog to copy a value.
 
 In the main list, press Ctrl+C to copy the Jellyfin web link for the selected item, or Ctrl+Shift+C to copy the direct audio stream link.
 
 ### Context Menu
 
-Press the Applications key, Shift+F10, or right-click to open the context menu. The available actions depend on the item type: play, open, go to artist/album, add to playlist, lyrics, download, copy link, properties, and more. Inside a playlist, additional options for removing and reordering tracks appear.
+Right-click an item — or press the Applications key or Shift+F10 — to open the context menu. Right-clicking acts on the item under the mouse pointer; the keyboard invocations act on the focused item. The available actions depend on the item type: play, open, go to artist/album, add to playlist, lyrics, download, copy link, properties, and more. Inside a playlist, additional options for removing and reordering tracks appear.
 
 ### Sleep Timer
 
-Open via File > Sleep Timer. Set hours, minutes, and seconds, choose an action (close the program, shut down, or sleep), and press Enable Timer. The countdown appears in the status bar. Click the menu item again to cancel the timer.
+Open via File > Sleep Timer. Set hours, minutes, and seconds, choose an action (close the program, shut down, or sleep), and press Enable Timer. The countdown appears in the status bar. Choose the menu item again to cancel the timer.
 
 ### System Tray
 
-Press Shift+Escape to minimize ChordCut to the notification area, or enable "Close button minimizes to tray" in Settings so that the close button and Alt+F4 also minimize instead of exiting. Left-click the tray icon or choose Restore from its context menu to bring the window back. The tray context menu also provides basic playback controls: pause/resume, next/previous track, volume, seeking, repeat, shuffle, and close.
+To hide ChordCut to the notification area and keep the music playing, choose File > Minimize to Tray, press Shift+Escape, or click the tray icon. By default the close button and Alt+F4 also hide the window to the tray instead of exiting (this can be turned off in Settings); use File > Exit or the tray menu's Exit to quit. Click the tray icon or choose Restore from its context menu to bring the window back. The tray icon's tooltip names the playing track, and its context menu provides basic playback controls: pause/resume, next/previous track, volume, seeking, repeat, and shuffle.
 
 ### Multiple Servers
 
-Add servers via File > Change Server > Manage Servers. In the dialog, use Add to connect to a new server, Edit to update credentials, or Delete to remove a server (the last server cannot be deleted). Switch between servers from the File > Change Server submenu.
+Add servers via File > Change Server > Manage Servers. In the dialog, use Add to connect to a new server, Edit to update credentials, or Delete to remove a server (the last server cannot be deleted); the currently active server is marked in the list. Switch between servers from the File > Change Server submenu.
 
 ### Settings
 
-Press F8 or go to File > Settings to configure:
+Press F8, go to File > Settings, or click the gear button on the playback bar to configure:
 
 - **Download folder** — where downloaded tracks are saved.
-- **Volume step** — how much volume changes per keypress (1–20%, default 5).
-- **Seek step** — how far to seek per keypress (1–60 seconds, default 5).
+- **Volume step** — how much the volume changes per keypress or wheel notch (1–20%, default 5).
+- **Seek step** — how far to seek per keypress or wheel notch (1–60 seconds, default 5).
 - **Remember volume level on exit** — restore the last volume on next launch.
 - **Remember output device on exit** — restore the last output device on next launch.
-- **Close button minimizes to tray** — when checked, the close button and Alt+F4 minimize to the notification area instead of exiting. Use File > Exit or the tray menu to quit.
+- **Close button minimizes to tray** — when checked (default), the close button and Alt+F4 hide the window to the notification area instead of exiting. Use File > Exit or the tray menu to quit.
 - **Check for updates on startup** — when checked (default), ChordCut silently checks for a newer version when launched. If an update is found, a dialog offers to download and install it. You can also check manually at any time via Help > Check for Updates.
 
 ## Keyboard Shortcuts
@@ -168,6 +177,7 @@ Press F8 or go to File > Settings to configure:
 | Ctrl+Down                  | Volume down                                                       |
 | Ctrl+Right                 | Seek forward                                                      |
 | Ctrl+Left                  | Seek backward                                                     |
+| F9                         | Show or hide the lyrics panel                                     |
 | Ctrl+N                     | Create new playlist                                               |
 | F2                         | Rename playlist                                                   |
 | Delete                     | Delete playlist / Remove track from playlist                      |
@@ -181,13 +191,14 @@ Press F8 or go to File > Settings to configure:
 | Alt+Enter                  | Properties                                                        |
 | Ctrl+Alt+Enter             | View lyrics (tracks only)                                         |
 | Alt+Shift+Enter            | View synced lyrics (tracks only)                                  |
+| Ctrl+J (synced lyrics)     | Jump to the line at the playback position                         |
 | Ctrl+C                     | Copy Jellyfin link                                                |
 | Ctrl+Shift+C               | Copy stream link (tracks only)                                    |
 | Ctrl+Shift+Enter           | Download track                                                    |
 | F5                         | Refresh library                                                   |
 | F8                         | Settings                                                          |
 | F1                         | Keyboard shortcuts reference                                      |
-| Alt+F4                     | Minimize to tray (if enabled) / Exit                              |
+| Alt+F4                     | Minimize to tray (default) / Exit                                 |
 
 ## Building from Source
 
