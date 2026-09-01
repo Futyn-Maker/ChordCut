@@ -65,6 +65,14 @@ class ChordCutApp(wx.App):
             _ACTIVATE_EVENT_NAME,
         )
 
+        # Drop wxWidgets' internal debug chatter (warnings and errors
+        # still surface).  Menu labels spell their shortcuts the way
+        # the target language writes them ("Ctrl+вверх"), which wx
+        # cannot parse into an accelerator - harmless here, because
+        # every shortcut is registered explicitly in the accelerator
+        # table, but it logs a line per menu item at startup.
+        wx.Log.SetLogLevel(wx.LOG_Info)
+
         # Activate wxWidgets' built-in translations (OK, Cancel, etc.)
         # for standard dialogs based on the detected language.
         # Point wx at the app's locale dir so it can find wxstd.mo
