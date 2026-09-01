@@ -320,26 +320,45 @@ class TrackTableView(wx.Window):
         return 0
 
     def _col_rects(self, width: int) -> list[tuple[ColumnSpec, int, int]]:
-        """Compute (spec, x, width) for each column."""
+        """Compute (spec, x, width) for each column.
+
+        When the window is too narrow to give every flexible column a
+        readable width, optional columns are dropped (rightmost first)
+        the way streaming players hide secondary columns.
+        """
         pad = self._theme.cell_padding
-        x = self._basket_gutter() + self._art_gutter() + pad
-        # Budget for the column widths themselves: everything except
-        # the leading offset and one trailing pad per column.
-        widths_avail = width - x - pad * len(self._columns)
-        fixed_total = sum(
-            self.FromDIP(c.fixed_dip) for c in self._columns if c.weight == 0
-        )
-        weight_total = sum(c.weight for c in self._columns) or 1
-        flex_avail = max(0, widths_avail - fixed_total)
-        result = []
-        for col in self._columns:
-            if col.weight == 0:
-                w = self.FromDIP(col.fixed_dip)
-            else:
-                w = flex_avail * col.weight // weight_total
-            result.append((col, x, max(0, w)))
-            x += w + pad
-        return result
+        min_flex = self.FromDIP(110)
+        columns = list(self._columns)
+        while True:
+            x0 = self._basket_gutter() + self._art_gutter() + pad
+            # Budget for the column widths themselves: everything
+            # except the leading offset and one trailing pad per
+            # column.
+            widths_avail = width - x0 - pad * len(columns)
+            fixed_total = sum(
+                self.FromDIP(c.fixed_dip) for c in columns if c.weight == 0
+            )
+            weight_total = sum(c.weight for c in columns) or 1
+            flex_avail = max(0, widths_avail - fixed_total)
+            too_narrow = any(
+                flex_avail * c.weight // weight_total < min_flex
+                for c in columns
+                if c.weight > 0
+            )
+            optionals = [c for c in columns if c.optional]
+            if too_narrow and optionals:
+                columns.remove(optionals[-1])
+                continue
+            result = []
+            x = x0
+            for col in columns:
+                if col.weight == 0:
+                    w = self.FromDIP(col.fixed_dip)
+                else:
+                    w = flex_avail * col.weight // weight_total
+                result.append((col, x, max(0, w)))
+                x += w + pad
+            return result
 
     def _clamp_top(self) -> None:
         max_top = max(0, len(self._items) - self._visible_rows())

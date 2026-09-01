@@ -23,6 +23,10 @@ class ColumnSpec:
     align: int  # wx.ALIGN_LEFT or wx.ALIGN_RIGHT
     cell: Callable[[dict], str]
     secondary: bool = False  # drawn in the secondary text color
+    # Dropped when the window is too narrow to give every flexible
+    # column a readable width (the way streaming players hide their
+    # secondary columns in small windows).
+    optional: bool = False
 
 
 def _artist_of(item: dict) -> str:
@@ -69,6 +73,7 @@ COLUMN_MODELS: dict[str, list[ColumnSpec]] = {
             align=wx.ALIGN_LEFT,
             cell=lambda i: i.get("Album") or "",
             secondary=True,
+            optional=True,
         ),
         ColumnSpec(
             "index",
