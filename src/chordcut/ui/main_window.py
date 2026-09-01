@@ -566,6 +566,9 @@ class MainWindow(wx.Frame):
         self._selection_list = TrackTableView(self._panel)
         self._selection_list.set_formatter(format_track)
         self._selection_list.set_level_type("tracks")
+        # The selection is a purely local list, so reordering it by
+        # drag and drop is always allowed.
+        self._selection_list.set_drag_enabled(True)
         self._selection_clear_btn = wx.Button(
             self._panel,
             # Translators: Button to clear the track selection.
@@ -914,6 +917,19 @@ class MainWindow(wx.Frame):
             self._on_row_moved,
         )
 
+        # The mouse's Back button navigates up one level, the way it
+        # does in Explorer, from anywhere in the window.
+        for window in (
+            self._panel,
+            self._list,
+            self._selection_list,
+            self._lyrics_panel,
+        ):
+            window.Bind(
+                wx.EVT_MOUSE_AUX1_DOWN,
+                lambda e: self._go_back(),
+            )
+
         # Selection area
         self._selection_list.Bind(
             wx.EVT_LISTBOX_DCLICK,
@@ -926,6 +942,10 @@ class MainWindow(wx.Frame):
         self._selection_list.Bind(
             EVT_ROW_CTRL_CLICK,
             self._on_selection_row_ctrl_click,
+        )
+        self._selection_list.Bind(
+            EVT_ROW_MOVED,
+            self._on_selection_row_moved,
         )
 
         self._selection_clear_btn.Bind(
@@ -2881,6 +2901,18 @@ class MainWindow(wx.Frame):
             self._selected_tracks,
         )
         self._selection_list.SetSelection(new_idx)
+
+    def _on_selection_row_moved(self, event: wx.CommandEvent) -> None:
+        """Apply a drag-and-drop reorder within the selection list."""
+        from_idx = event.from_idx
+        to_idx = event.to_idx
+        n = len(self._selected_tracks)
+        if from_idx == to_idx or not 0 <= from_idx < n or not 0 <= to_idx < n:
+            return
+        track = self._selected_tracks.pop(from_idx)
+        self._selected_tracks.insert(to_idx, track)
+        # set_items keeps the caret on the moved track by Id.
+        self._selection_list.set_items(self._selected_tracks)
 
     def _on_selection_context_menu(
         self,

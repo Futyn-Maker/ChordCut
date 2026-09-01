@@ -61,7 +61,7 @@ The status bar at the bottom shows the current status, playback time, sleep time
 
 ### Browsing the Library
 
-Switch sections with the section selector. To open an item — an artist's albums, an album's tracks — double-click it or press Enter. To go back one level, press Backspace or choose Go Back from the context menu.
+Switch sections with the section selector. To open an item — an artist's albums, an album's tracks — double-click it or press Enter. To go back one level, press Backspace, press the Back button on your mouse (if it has one), or choose Go Back from the context menu.
 
 ### Playing Music
 
@@ -102,7 +102,7 @@ You can select multiple tracks from any track list to build a custom playback qu
 - **Selected tracks area**: once at least one track is selected, a new area appears between the main list and the output device selector. It shows the number of selected tracks and contains its own list. A "Clear selection" button removes all selected tracks.
 - **Remove a track from the selection**: press Space (or Ctrl+click) on a track inside the selected tracks list. If the last track is removed, the area disappears.
 - **Play from selection**: double-click a track in the selected tracks list, or press Enter on it, to start playback using the selection as the queue.
-- **Reorder**: use Alt+Up and Alt+Down inside the selected tracks list to change the playback order.
+- **Reorder**: inside the selected tracks list, drag a track to its new position with the mouse, press Alt+Up / Alt+Down, or use the context menu to change the playback order.
 - **Bulk actions**: when the focus is inside the selected tracks list, hotkeys and the context menu apply to all selected tracks:
   - Ctrl+Shift+Enter — download all selected tracks one by one.
   - Ctrl+C — copy Jellyfin web links for all selected tracks (one per line).
