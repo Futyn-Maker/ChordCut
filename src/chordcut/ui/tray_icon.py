@@ -90,7 +90,8 @@ class TrayIcon(wx.adv.TaskBarIcon):
             toggle_label = _("&Minimize to Tray")
         else:
             # Translators: Tray context menu: restore window from tray.
-            toggle_label = _("&Restore")
+            # Mnemonic must not clash with Resume/Repeat.
+            toggle_label = _("Rest&ore")
         item_toggle = menu.Append(wx.ID_ANY, toggle_label)
         menu.AppendSeparator()
 
@@ -100,7 +101,8 @@ class TrayIcon(wx.adv.TaskBarIcon):
             pause_label = _("&Pause")
         else:
             # Translators: Tray context menu: resume playback.
-            pause_label = _("&Resume")
+            # Mnemonic must not clash with Restore/Repeat.
+            pause_label = _("R&esume")
         item_pause = menu.Append(wx.ID_ANY, pause_label)
         menu.AppendSeparator()
 
@@ -159,11 +161,11 @@ class TrayIcon(wx.adv.TaskBarIcon):
         item_shuffle.Check(win._shuffle_enabled)
         menu.AppendSeparator()
 
-        # Close
+        # Exit
         item_close = menu.Append(
             wx.ID_ANY,
-            # Translators: Tray context menu: close the application.
-            _("&Close"),
+            # Translators: Tray context menu: exit the application.
+            _("E&xit"),
         )
 
         # --- Bind handlers ---
