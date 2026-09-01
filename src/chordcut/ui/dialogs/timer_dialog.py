@@ -45,10 +45,10 @@ class TimerDialog(wx.Dialog):
         )
         time_sizer.Add(
             hours_label,
-            flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM,
             border=5,
         )
-        time_sizer.Add(self._hours, flag=wx.RIGHT, border=10)
+        time_sizer.Add(self._hours, flag=wx.RIGHT | wx.TOP | wx.BOTTOM, border=5)
 
         # Minutes
         # Translators: Label for minutes field in timer dialog.
@@ -63,10 +63,10 @@ class TimerDialog(wx.Dialog):
         )
         time_sizer.Add(
             minutes_label,
-            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM,
             border=5,
         )
-        time_sizer.Add(self._minutes, flag=wx.RIGHT, border=10)
+        time_sizer.Add(self._minutes, flag=wx.RIGHT | wx.TOP | wx.BOTTOM, border=5)
 
         # Seconds
         # Translators: Label for seconds field in timer dialog.
@@ -81,10 +81,10 @@ class TimerDialog(wx.Dialog):
         )
         time_sizer.Add(
             seconds_label,
-            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+            flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM,
             border=5,
         )
-        time_sizer.Add(self._seconds, flag=wx.RIGHT, border=5)
+        time_sizer.Add(self._seconds, flag=wx.RIGHT | wx.TOP | wx.BOTTOM, border=5)
 
         main_sizer.Add(
             time_sizer,
@@ -95,7 +95,7 @@ class TimerDialog(wx.Dialog):
         # ---- Action selector ----------------------------------------
         action_row = wx.BoxSizer(wx.HORIZONTAL)
         # Translators: Label for the action dropdown in the timer dialog.
-        action_label = wx.StaticText(panel, label=_("&Select action:"))
+        action_label = wx.StaticText(panel, label=_("Select &action:"))
         self._action_choice = wx.Choice(
             panel,
             choices=[
@@ -115,7 +115,10 @@ class TimerDialog(wx.Dialog):
             flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
             border=5,
         )
-        action_row.Add(self._action_choice, proportion=1)
+        action_row.Add(
+            self._action_choice,
+            flag=wx.ALIGN_CENTER_VERTICAL,
+        )
         main_sizer.Add(
             action_row,
             flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
@@ -125,7 +128,7 @@ class TimerDialog(wx.Dialog):
         # ---- Buttons ------------------------------------------------
         btn_sizer = wx.StdDialogButtonSizer()
         # Translators: Button to enable the sleep timer.
-        self._ok_btn = wx.Button(panel, wx.ID_OK, _("Enable Timer"))
+        self._ok_btn = wx.Button(panel, wx.ID_OK, _("&Enable Timer"))
         self._ok_btn.SetDefault()
         cancel_btn = wx.Button(panel, wx.ID_CANCEL)
         btn_sizer.AddButton(self._ok_btn)

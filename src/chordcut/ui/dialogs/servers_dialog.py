@@ -41,9 +41,9 @@ class ServersDialog(wx.Dialog):
         self._bind_events()
         self._load_servers()
 
-        self.SetMinSize((450, 300))
-        self.SetSize((500, 350))
-        self.CenterOnScreen()
+        self.SetMinSize(self.FromDIP(wx.Size(450, 300)))
+        self.SetSize(self.FromDIP(wx.Size(500, 350)))
+        self.CentreOnParent()
 
     def _create_controls(self) -> None:
         """Create the dialog controls."""
@@ -124,6 +124,14 @@ class ServersDialog(wx.Dialog):
             wx.EVT_KEY_DOWN,
             self._on_list_key,
         )
+        self._server_list.Bind(
+            wx.EVT_LISTBOX,
+            lambda e: self._update_button_state(),
+        )
+        self._server_list.Bind(
+            wx.EVT_LISTBOX_DCLICK,
+            self._on_edit,
+        )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
 
     def _on_key(self, event: wx.KeyEvent) -> None:
@@ -133,9 +141,14 @@ class ServersDialog(wx.Dialog):
         event.Skip()
 
     def _on_list_key(self, event: wx.KeyEvent) -> None:
-        """Handle Delete key in the list."""
-        if event.GetKeyCode() == wx.WXK_DELETE:
+        """Handle Delete and Enter keys in the list."""
+        code = event.GetKeyCode()
+        if code == wx.WXK_DELETE:
             self._on_delete(event)
+        elif code in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            # Enter edits the selected server rather than closing.
+            if self._server_list.GetSelection() != wx.NOT_FOUND:
+                self._on_edit(event)
         else:
             event.Skip()
 
@@ -143,13 +156,14 @@ class ServersDialog(wx.Dialog):
         """Refresh the server list from the database."""
         self._servers = self._db.get_all_servers()
         active_id = self._settings.active_server_id
-        strings = [
-            "{user} @ {url}".format(
-                user=s.username,
-                url=s.url,
-            )
-            for s in self._servers
-        ]
+        strings = []
+        for s in self._servers:
+            entry = "{user} @ {url}".format(user=s.username, url=s.url)
+            if s.id == active_id:
+                # Translators: Suffix marking the active server row.
+                # {server} = "user @ url".
+                entry = _("{server} (active)").format(server=entry)
+            strings.append(entry)
         self._server_list.Set(strings)
 
         # Select active server

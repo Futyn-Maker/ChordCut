@@ -19,7 +19,7 @@ class LoginDialog(wx.Dialog):
             # Translators: Title of the login dialog
             # for connecting to a Jellyfin server.
             title=_("Connect to Jellyfin Server"),
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+            style=wx.DEFAULT_DIALOG_STYLE,
         )
 
         self._server_url = ""
@@ -31,8 +31,8 @@ class LoginDialog(wx.Dialog):
         self._bind_events()
 
         # Set initial focus and size
-        self.SetMinSize((400, 200))
-        self.SetSize((450, 220))
+        self.SetMinSize(self.FromDIP(wx.Size(400, 200)))
+        self.SetSize(self.FromDIP(wx.Size(450, 220)))
         self.CenterOnScreen()
         self._url_text.SetFocus()
 
@@ -119,7 +119,7 @@ class LoginDialog(wx.Dialog):
         )
         grid.Add(self._password_text, flag=wx.EXPAND)
 
-        main_sizer.Add(grid, proportion=1, flag=wx.EXPAND | wx.ALL, border=15)
+        main_sizer.Add(grid, proportion=1, flag=wx.EXPAND | wx.ALL, border=10)
 
         # Button sizer
         btn_sizer = wx.StdDialogButtonSizer()
@@ -130,7 +130,7 @@ class LoginDialog(wx.Dialog):
         main_sizer.Add(
             btn_sizer,
             flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
-            border=15,
+            border=10,
         )
 
         self.SetSizer(main_sizer)

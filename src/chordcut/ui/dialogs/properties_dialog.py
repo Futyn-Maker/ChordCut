@@ -19,12 +19,21 @@ class PropertiesDialog(wx.Dialog):
             parent,
             title=title,
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-            size=(450, 350),
         )
+        self.SetMinSize(self.FromDIP(wx.Size(350, 250)))
+        self.SetSize(self.FromDIP(wx.Size(450, 350)))
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        # The preceding static text is what actually labels the list
+        # for screen readers (name= does not reach MSAA on a native
+        # LISTBOX).
+        list_label = wx.StaticText(
+            panel,
+            # Translators: Label for the list in the properties dialog.
+            label=_("&Properties:"),
+        )
         self._list = wx.ListBox(
             panel,
             style=wx.LB_SINGLE,
@@ -34,11 +43,13 @@ class PropertiesDialog(wx.Dialog):
         if properties:
             self._list.SetSelection(0)
 
+        sizer.Add(list_label, 0, wx.LEFT | wx.TOP, 10)
         sizer.Add(self._list, 1, wx.EXPAND | wx.ALL, 10)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # Translators: Button to copy the selected property value to the clipboard.
-        copy_btn = wx.Button(panel, wx.ID_ANY, _("&Copy"))
+        # Translators: Button to copy the selected property value to
+        # the clipboard. Mnemonic must not clash with "&Close".
+        copy_btn = wx.Button(panel, wx.ID_ANY, _("Cop&y"))
         close_btn = wx.Button(panel, wx.ID_CLOSE)
         btn_sizer.Add(copy_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)

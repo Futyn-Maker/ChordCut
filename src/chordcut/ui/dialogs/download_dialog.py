@@ -25,7 +25,6 @@ class DownloadDialog(wx.Dialog):
             parent,
             title=title,
             style=wx.DEFAULT_DIALOG_STYLE,
-            size=(400, 150),
         )
 
         panel = wx.Panel(self)
@@ -73,6 +72,7 @@ class DownloadDialog(wx.Dialog):
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.Bind(wx.EVT_CLOSE, self._on_close)
+        self.SetClientSize(self.FromDIP(wx.Size(400, 120)))
 
         self._start_download()
 
@@ -119,6 +119,7 @@ class DownloadDialog(wx.Dialog):
 
             dest = music_dir / (self._filename + ext)
             downloaded = 0
+            last_pct = -1
 
             with open(dest, "wb") as f:
                 while not self._cancelled:
@@ -131,10 +132,15 @@ class DownloadDialog(wx.Dialog):
                         pct = int(
                             downloaded * 100 / total,
                         )
-                        wx.CallAfter(
-                            self._update_progress,
-                            pct,
-                        )
+                        if pct != last_pct:
+                            last_pct = pct
+                            wx.CallAfter(
+                                self._update_progress,
+                                pct,
+                            )
+                    else:
+                        # Unknown length: keep the bar moving.
+                        wx.CallAfter(self._pulse)
 
             if self._cancelled:
                 dest.unlink(missing_ok=True)
@@ -148,8 +154,12 @@ class DownloadDialog(wx.Dialog):
         except Exception as e:
             wx.CallAfter(self._on_error, str(e))
 
+    def _pulse(self) -> None:
+        if self and self.IsShown():
+            self._gauge.Pulse()
+
     def _update_progress(self, pct: int) -> None:
-        if self.IsShown():
+        if self and self.IsShown():
             self._gauge.SetValue(min(pct, 100))
             self._label.SetLabel(
                 # Translators: Download progress with percent.
@@ -178,6 +188,7 @@ class DownloadDialog(wx.Dialog):
         event: wx.CommandEvent,
     ) -> None:
         self._cancelled = True
+        self._cancel_btn.Disable()
 
     def _on_key(self, event: wx.KeyEvent) -> None:
         if event.GetKeyCode() == wx.WXK_ESCAPE:
@@ -216,7 +227,6 @@ class BulkDownloadDialog(wx.Dialog):
             parent,
             title="",
             style=wx.DEFAULT_DIALOG_STYLE,
-            size=(400, 150),
         )
 
         self._items = items
@@ -270,6 +280,7 @@ class BulkDownloadDialog(wx.Dialog):
         )
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
         self.Bind(wx.EVT_CLOSE, self._on_close)
+        self.SetClientSize(self.FromDIP(wx.Size(400, 120)))
 
         self._thread = threading.Thread(
             target=self._run,
@@ -353,6 +364,7 @@ class BulkDownloadDialog(wx.Dialog):
         dest = self._download_dir / (filename + ext)
         self._current_dest = dest
         downloaded = 0
+        last_pct = -1
 
         with open(dest, "wb") as f:
             while not self._cancelled:
@@ -365,18 +377,27 @@ class BulkDownloadDialog(wx.Dialog):
                     pct = int(
                         downloaded * 100 / total_bytes,
                     )
-                    wx.CallAfter(
-                        self._update_progress,
-                        pct,
-                    )
+                    if pct != last_pct:
+                        last_pct = pct
+                        wx.CallAfter(
+                            self._update_progress,
+                            pct,
+                        )
+                else:
+                    # Unknown length: keep the bar moving.
+                    wx.CallAfter(self._pulse)
 
         if self._cancelled:
             dest.unlink(missing_ok=True)
         else:
             self.completed += 1
 
+    def _pulse(self) -> None:
+        if self and self.IsShown():
+            self._gauge.Pulse()
+
     def _update_progress(self, pct: int) -> None:
-        if self.IsShown():
+        if self and self.IsShown():
             self._gauge.SetValue(min(pct, 100))
             self._label.SetLabel(
                 # Translators: Download progress with
@@ -391,6 +412,7 @@ class BulkDownloadDialog(wx.Dialog):
         event: wx.CommandEvent,
     ) -> None:
         self._cancelled = True
+        self._cancel_btn.Disable()
 
     def _on_key(self, event: wx.KeyEvent) -> None:
         if event.GetKeyCode() == wx.WXK_ESCAPE:
