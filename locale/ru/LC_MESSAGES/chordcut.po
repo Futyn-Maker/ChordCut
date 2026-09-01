@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  ChordCut\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 20:39+0300\n"
+"POT-Creation-Date: 2026-09-01 21:04+0300\n"
 "PO-Revision-Date: 2026-03-26 16:20+0300\n"
 "Last-Translator: Andrey Yakuboy <andrey@yakuboy.me>\n"
 "Language: ru\n"
@@ -193,7 +193,7 @@ msgstr "Убрат&ь выбор\tПробел"
 #: src/chordcut/ui/library_list.py:26 src/chordcut/ui/library_list.py:47
 #: src/chordcut/ui/library_list.py:58 src/chordcut/ui/library_list.py:67
 #: src/chordcut/ui/main_window.py:1184 src/chordcut/ui/main_window.py:2273
-#: src/chordcut/ui/main_window.py:4257 src/chordcut/ui/main_window.py:4381
+#: src/chordcut/ui/main_window.py:4261 src/chordcut/ui/main_window.py:4385
 #: src/chordcut/ui/tray_icon.py:71
 msgid "Untitled"
 msgstr "Без названия"
@@ -244,8 +244,8 @@ msgstr "Альбомы"
 
 #. Translators: Initial status bar message.
 #. Translators: Ready status.
-#: src/chordcut/ui/main_window.py:195 src/chordcut/ui/main_window.py:4185
-#: src/chordcut/ui/main_window.py:4342
+#: src/chordcut/ui/main_window.py:195 src/chordcut/ui/main_window.py:4189
+#: src/chordcut/ui/main_window.py:4346
 msgid "Ready"
 msgstr "Готово"
 
@@ -762,7 +762,7 @@ msgid "Now playing: {title}"
 msgstr "Сейчас играет: {title}"
 
 #. Translators: Status bar when playing.
-#: src/chordcut/ui/main_window.py:2287 src/chordcut/ui/main_window.py:4383
+#: src/chordcut/ui/main_window.py:2287 src/chordcut/ui/main_window.py:4387
 #, python-brace-format
 msgid "Playing: {title}"
 msgstr "Воспроизведение: {title}"
@@ -796,7 +796,7 @@ msgid "Playing"
 msgstr "Воспроизведение"
 
 #. Translators: Paused status.
-#: src/chordcut/ui/main_window.py:3020 src/chordcut/ui/main_window.py:5199
+#: src/chordcut/ui/main_window.py:3020 src/chordcut/ui/main_window.py:5203
 msgid "Paused"
 msgstr "Пауза"
 
@@ -880,6 +880,7 @@ msgid ""
 "  Alt+Enter        - Properties\n"
 "  Ctrl+Alt+Enter   - View lyrics\n"
 "  Alt+Shift+Enter  - View synced lyrics\n"
+"  Ctrl+J           - Jump to current line (synced lyrics)\n"
 "  Ctrl+C           - Copy link\n"
 "  Ctrl+Shift+C     - Copy stream link\n"
 "  Ctrl+Shift+Enter - Download track\n"
@@ -898,85 +899,41 @@ msgid ""
 "  Alt+Up/Down    - Reorder tracks\n"
 "\n"
 "Other:\n"
+"  F9             - Lyrics panel\n"
+"  Shift+Escape   - Minimize to tray\n"
 "  F5             - Refresh library\n"
 "  F8             - Settings\n"
 "  F1             - Show this help\n"
-"  Alt+F4         - Minimize to tray (if enabled) / Exit"
-msgstr ""
-"Горячие клавиши:\n"
-"\n"
-"Навигация:\n"
-"  Tab            - Перемещение между элементами\n"
-"  Стрелки вверх/вниз        - Навигация по списку\n"
-"  Enter          - Воспроизвести / открыть элемент\n"
-"  Backspace      - Вернуться назад\n"
-"\n"
-"Воспроизведение:\n"
-"  Escape         - Пауза/Продолжить\n"
-"  Ctrl+Alt+Q     - Остановить\n"
-"  Shift+вправо    - Следующая композиция\n"
-"  Shift+влево     - Предыдущая композиция\n"
-"  Ctrl+Alt+X     - Начать сначала\n"
-"  Ctrl+Alt+R     - Повтор\n"
-"  Ctrl+Alt+S     - Перемешать\n"
-"  Ctrl+вверх        - Громче\n"
-"  Ctrl+вниз      - Тише\n"
-"  Ctrl+вправо     - Перемотка вперёд\n"
-"  Ctrl+влево      - Перемотка назад\n"
-"\n"
-"Информация:\n"
-"  Alt+Enter        - Свойства\n"
-"  Ctrl+Alt+Enter   - Показать текст\n"
-"  Alt+Shift+Enter  - Синхронизированный текст\n"
-"  Ctrl+C           - Копировать ссылку\n"
-"  Ctrl+Shift+C     - Копировать ссылку потока\n"
-"  Ctrl+Shift+Enter - Скачать композицию\n"
-"\n"
-"Выделение:\n"
-"  Пробел          - Добавить композицию в список выбранных\n"
-"  Пробел (в списке выбранных) - Убрать из списка выбранных\n"
-"  Enter (в списке выбранных) - Воспроизвести выбранное\n"
-"  Alt+вверх/вниз    - Изменить порядок\n"
-"  Delete (в списке выбранных)- Удалить из плей-листа\n"
-"\n"
-"Плей-листы:\n"
-"  Ctrl+N         - Новый плей-лист\n"
-"  F2             - Переименовать\n"
-"  Delete         - Удалить плей-лист / композицию\n"
-"  Alt+вверх/вниз    - Изменить порядок\n"
-"\n"
-"Прочее:\n"
-"  F5             - Обновить медиатеку\n"
-"  F8             - Настройки\n"
-"  F1             - Показать эту справку\n"
-"  Alt+F4         - Свернуть в трей (если включено) / Выход"
+"  Alt+F4         - Minimize to tray (default) / Exit"
+msgstr "Горячие клавиши:\n\nНавигация:\n  Tab            - Перемещение между элементами\n  Стрелки вверх/вниз        - Навигация по списку\n  Enter          - Воспроизвести / открыть элемент\n  Backspace      - Вернуться назад\n\nВоспроизведение:\n  Escape         - Пауза/Продолжить\n  Ctrl+Alt+Q     - Остановить\n  Shift+вправо    - Следующая композиция\n  Shift+влево     - Предыдущая композиция\n  Ctrl+Alt+X     - Начать сначала\n  Ctrl+Alt+R     - Повтор\n  Ctrl+Alt+S     - Перемешать\n  Ctrl+вверх        - Громче\n  Ctrl+вниз      - Тише\n  Ctrl+вправо     - Перемотка вперёд\n  Ctrl+влево      - Перемотка назад\n\nИнформация:\n  Alt+Enter        - Свойства\n  Ctrl+Alt+Enter   - Показать текст\n  Alt+Shift+Enter  - Синхронизированный текст\n  Ctrl+J           - Перейти к текущей строке (в синхронизированном тексте)\n  Ctrl+C           - Копировать ссылку\n  Ctrl+Shift+C     - Копировать ссылку потока\n  Ctrl+Shift+Enter - Скачать композицию\n\nВыделение:\n  Пробел          - Добавить композицию в список выбранных\n  Пробел (в списке выбранных) - Убрать из списка выбранных\n  Enter (в списке выбранных) - Воспроизвести выбранное\n  Alt+вверх/вниз    - Изменить порядок\n  Delete (в списке выбранных)- Удалить из плей-листа\n\nПлей-листы:\n  Ctrl+N         - Новый плей-лист\n  F2             - Переименовать\n  Delete         - Удалить плей-лист / композицию\n  Alt+вверх/вниз    - Изменить порядок\n\nПрочее:\n  F9             - Панель текста\n  Shift+Escape   - Свернуть в трей\n  F5             - Обновить медиатеку\n  F8             - Настройки\n  F1             - Показать эту справку\n  Alt+F4         - Свернуть в трей (по умолчанию) / Выход"
+
 
 #. Translators: Shortcuts dialog title.
-#: src/chordcut/ui/main_window.py:3469
+#: src/chordcut/ui/main_window.py:3473
 msgid "Keyboard Shortcuts"
 msgstr "Горячие клавиши"
 
 #. Translators: Shown when no update available.
-#: src/chordcut/ui/main_window.py:3527
+#: src/chordcut/ui/main_window.py:3531
 #, python-brace-format
 msgid "You are running the latest version ({version})."
 msgstr "У вас последняя версия ({version})."
 
 #. Translators: Title for the update check
 #. result dialog.
-#: src/chordcut/ui/main_window.py:3534
+#: src/chordcut/ui/main_window.py:3538
 msgid "Check for Updates"
 msgstr "Проверка обновлений"
 
 #. Translators: HTTP error detail in update check.
-#: src/chordcut/ui/main_window.py:3556
+#: src/chordcut/ui/main_window.py:3560
 #, python-brace-format
 msgid "The server returned HTTP {code}."
 msgstr "Сервер вернул HTTP {code}."
 
 #. Translators: Error message when update check fails.
 #. {detail} is the technical error description.
-#: src/chordcut/ui/main_window.py:3567
+#: src/chordcut/ui/main_window.py:3571
 #, python-brace-format
 msgid ""
 "Could not check for updates.\n"
@@ -989,60 +946,60 @@ msgstr ""
 
 #. Translators: Title for the update error dialog.
 #. Translators: Title for download error.
-#: src/chordcut/ui/main_window.py:3569 src/chordcut/ui/main_window.py:3742
-#: src/chordcut/ui/main_window.py:3756
+#: src/chordcut/ui/main_window.py:3573 src/chordcut/ui/main_window.py:3746
+#: src/chordcut/ui/main_window.py:3760
 msgid "Update Error"
 msgstr "Ошибка обновления"
 
 #. Translators: Title of the update available dialog.
-#: src/chordcut/ui/main_window.py:3579
+#: src/chordcut/ui/main_window.py:3583
 msgid "Update Available"
 msgstr "Доступно обновление"
 
 #. Translators: Heading shown when a new version is found.
-#: src/chordcut/ui/main_window.py:3590
+#: src/chordcut/ui/main_window.py:3594
 #, python-brace-format
 msgid "A new version of {app_name} is available!"
 msgstr "Доступна новая версия {app_name}!"
 
 #. Translators: Label for current version in update dialog.
-#: src/chordcut/ui/main_window.py:3604
+#: src/chordcut/ui/main_window.py:3608
 msgid "Current version:"
 msgstr "Текущая версия:"
 
 #. Translators: Label for new version in update dialog.
-#: src/chordcut/ui/main_window.py:3617
+#: src/chordcut/ui/main_window.py:3621
 msgid "New version:"
 msgstr "Новая версия:"
 
 #. Translators: Label above the changelog text.
-#: src/chordcut/ui/main_window.py:3638
+#: src/chordcut/ui/main_window.py:3642
 msgid "What's new:"
 msgstr "Что нового:"
 
 #. Translators: Accessible name for changelog field.
-#: src/chordcut/ui/main_window.py:3648
+#: src/chordcut/ui/main_window.py:3652
 msgid "Changelog"
 msgstr "Список изменений"
 
 #. Translators: Prompt asking user to confirm the update.
-#: src/chordcut/ui/main_window.py:3661
+#: src/chordcut/ui/main_window.py:3665
 msgid "Would you like to update now?"
 msgstr "Обновить сейчас?"
 
 #. Translators: Title of the download progress dialog.
-#: src/chordcut/ui/main_window.py:3707
+#: src/chordcut/ui/main_window.py:3711
 msgid "Updating"
 msgstr "Обновление"
 
 #. Translators: Message shown while downloading update.
-#: src/chordcut/ui/main_window.py:3709
+#: src/chordcut/ui/main_window.py:3713
 msgid "Downloading update..."
 msgstr "Загрузка обновления..."
 
 #. Translators: Error downloading update.
 #. {error} is the error description.
-#: src/chordcut/ui/main_window.py:3740
+#: src/chordcut/ui/main_window.py:3744
 #, python-brace-format
 msgid ""
 "Failed to download the update.\n"
@@ -1055,7 +1012,7 @@ msgstr ""
 
 #. Translators: Error applying update.
 #. {error} is the error description.
-#: src/chordcut/ui/main_window.py:3755
+#: src/chordcut/ui/main_window.py:3759
 #, python-brace-format
 msgid ""
 "Failed to apply the update.\n"
@@ -1067,18 +1024,18 @@ msgstr ""
 "{error}"
 
 #. Translators: Shown when documentation file is missing.
-#: src/chordcut/ui/main_window.py:3792
+#: src/chordcut/ui/main_window.py:3796
 msgid "Documentation file not found."
 msgstr "Файл справки не найден."
 
 #. Translators: Title of documentation error dialog.
-#: src/chordcut/ui/main_window.py:3794
+#: src/chordcut/ui/main_window.py:3798
 msgid "Documentation"
 msgstr "Справка"
 
 #. Translators: About dialog text.
 #. {app_name} = app name, {version} = version string.
-#: src/chordcut/ui/main_window.py:3804
+#: src/chordcut/ui/main_window.py:3808
 #, python-brace-format
 msgid ""
 "{app_name} v{version}\n"
@@ -1094,14 +1051,14 @@ msgstr ""
 "Разработан для пользователей клавиатуры и программ экранного доступа."
 
 #. Translators: About dialog title.
-#: src/chordcut/ui/main_window.py:3813
+#: src/chordcut/ui/main_window.py:3817
 #, python-brace-format
 msgid "About {app_name}"
 msgstr "О {app_name}"
 
 #. Translators: Link(s) copied notification.
 #. {n} = count.
-#: src/chordcut/ui/main_window.py:4045
+#: src/chordcut/ui/main_window.py:4049
 #, python-brace-format
 msgid "{n} link copied to clipboard"
 msgid_plural "{n} links copied to clipboard"
@@ -1111,7 +1068,7 @@ msgstr[2] "{n} ссылок скопировано в буфер обмена"
 
 #. Translators: Stream link(s) copied.
 #. {n} = count.
-#: src/chordcut/ui/main_window.py:4079
+#: src/chordcut/ui/main_window.py:4083
 #, python-brace-format
 msgid "{n} stream link copied to clipboard"
 msgid_plural "{n} stream links copied to clipboard"
@@ -1120,70 +1077,70 @@ msgstr[1] "{n} ссылки потоков скопированы в буфер 
 msgstr[2] "{n} ссылок потоков скопировано в буфер обмена"
 
 #. Translators: Artist properties dialog title.
-#: src/chordcut/ui/main_window.py:4114
+#: src/chordcut/ui/main_window.py:4118
 msgid "Artist Properties"
 msgstr "Свойства исполнителя"
 
 #. Translators: Album properties dialog title.
-#: src/chordcut/ui/main_window.py:4123
+#: src/chordcut/ui/main_window.py:4127
 msgid "Album Properties"
 msgstr "Свойства альбома"
 
 #. Translators: Playlist properties title.
-#: src/chordcut/ui/main_window.py:4134
+#: src/chordcut/ui/main_window.py:4138
 msgid "Playlist Properties"
 msgstr "Свойства плей-листа"
 
 #. Translators: Fetching details status.
-#: src/chordcut/ui/main_window.py:4151
+#: src/chordcut/ui/main_window.py:4155
 msgid "Fetching details..."
 msgstr "Загрузка сведений..."
 
 #. Translators: Track properties dialog title.
-#: src/chordcut/ui/main_window.py:4180
+#: src/chordcut/ui/main_window.py:4184
 msgid "Track Properties"
 msgstr "Свойства композиции"
 
 #. Translators: No lyrics available message.
-#: src/chordcut/ui/main_window.py:4202 src/chordcut/ui/main_window.py:4245
+#: src/chordcut/ui/main_window.py:4206 src/chordcut/ui/main_window.py:4249
 msgid "No lyrics available for this track."
 msgstr "Для этой композиции нет текста."
 
 #. Translators: Lyrics dialog title.
-#: src/chordcut/ui/main_window.py:4204 src/chordcut/ui/main_window.py:4247
+#: src/chordcut/ui/main_window.py:4208 src/chordcut/ui/main_window.py:4251
 msgid "Lyrics"
 msgstr "Текст"
 
 #. Translators: Fetching lyrics status.
-#: src/chordcut/ui/main_window.py:4218
+#: src/chordcut/ui/main_window.py:4222
 msgid "Fetching lyrics..."
 msgstr "Загрузка текста..."
 
 #. Translators: No synced lyrics message.
-#: src/chordcut/ui/main_window.py:4272
+#: src/chordcut/ui/main_window.py:4276
 msgid "Synced lyrics are not available for this track."
 msgstr "Для этой композиции нет синхронизированного текста."
 
 #. Translators: Synced lyrics title.
-#: src/chordcut/ui/main_window.py:4274
+#: src/chordcut/ui/main_window.py:4278
 msgid "Synced Lyrics"
 msgstr "Синхронизированный текст"
 
 #. Translators: Synced lyrics dialog title.
-#: src/chordcut/ui/main_window.py:4309 src/chordcut/ui/main_window.py:4324
+#: src/chordcut/ui/main_window.py:4313 src/chordcut/ui/main_window.py:4328
 #, python-brace-format
 msgid "Lyrics - {title}"
 msgstr "Текст — {title}"
 
 #. Translators: Download dialog title.
-#: src/chordcut/ui/main_window.py:4443
+#: src/chordcut/ui/main_window.py:4447
 #, python-brace-format
 msgid "Download: {title}"
 msgstr "Скачивание: {title}"
 
 #. Translators: Download complete notification.
 #. {n} = count.
-#: src/chordcut/ui/main_window.py:4455 src/chordcut/ui/main_window.py:4484
+#: src/chordcut/ui/main_window.py:4459 src/chordcut/ui/main_window.py:4488
 #, python-brace-format
 msgid "{n} track downloaded"
 msgid_plural "{n} tracks downloaded"
@@ -1192,85 +1149,85 @@ msgstr[1] "Скачано {n} композиции"
 msgstr[2] "Скачано {n} композиций"
 
 #. Translators: New playlist dialog prompt.
-#: src/chordcut/ui/main_window.py:4499
+#: src/chordcut/ui/main_window.py:4503
 msgid "Enter playlist name:"
 msgstr "Введите название плей-листа:"
 
 #. Translators: New playlist dialog title.
-#: src/chordcut/ui/main_window.py:4501
+#: src/chordcut/ui/main_window.py:4505
 msgid "New Playlist"
 msgstr "Новый плей-лист"
 
 #. Translators: Creating playlist status.
-#: src/chordcut/ui/main_window.py:4518
+#: src/chordcut/ui/main_window.py:4522
 msgid "Creating playlist..."
 msgstr "Создание плей-листа..."
 
 #. Translators: Create playlist failed.
-#: src/chordcut/ui/main_window.py:4544
+#: src/chordcut/ui/main_window.py:4548
 msgid "Failed to create playlist"
 msgstr "Не удалось создать плей-лист"
 
 #. Translators: Playlist created notification.
-#: src/chordcut/ui/main_window.py:4567
+#: src/chordcut/ui/main_window.py:4571
 #, python-brace-format
 msgid "Playlist \"{name}\" created"
 msgstr "Плей-лист «{name}» создан"
 
 #. Translators: Rename playlist dialog prompt.
-#: src/chordcut/ui/main_window.py:4584
+#: src/chordcut/ui/main_window.py:4588
 msgid "Enter new name:"
 msgstr "Введите новое название:"
 
 #. Translators: Rename playlist dialog title.
-#: src/chordcut/ui/main_window.py:4586
+#: src/chordcut/ui/main_window.py:4590
 msgid "Rename Playlist"
 msgstr "Переименовать плей-лист"
 
 #. Translators: Playlist renamed notification.
-#: src/chordcut/ui/main_window.py:4624
+#: src/chordcut/ui/main_window.py:4628
 #, python-brace-format
 msgid "Playlist renamed to \"{name}\""
 msgstr "Плей-лист переименован в «{name}»"
 
 #. Translators: Confirm delete playlist.
-#: src/chordcut/ui/main_window.py:4640
+#: src/chordcut/ui/main_window.py:4644
 #, python-brace-format
 msgid "Delete playlist \"{name}\"?"
 msgstr "Удалить плей-лист «{name}»?"
 
 #. Translators: Confirm delete dialog title.
-#: src/chordcut/ui/main_window.py:4644
+#: src/chordcut/ui/main_window.py:4648
 msgid "Delete Playlist"
 msgstr "Удалить плей-лист"
 
 #. Translators: Playlist deleted notification.
-#: src/chordcut/ui/main_window.py:4680
+#: src/chordcut/ui/main_window.py:4684
 #, python-brace-format
 msgid "Playlist \"{name}\" deleted"
 msgstr "Плей-лист «{name}» удалён"
 
 #. Translators: All selected tracks
 #. already in the playlist.
-#: src/chordcut/ui/main_window.py:4728
+#: src/chordcut/ui/main_window.py:4732
 #, python-brace-format
 msgid "All selected tracks are already in {name}"
 msgstr "Все выбранные композиции уже в {name}"
 
 #. Translators: Status when adding to playlist.
-#: src/chordcut/ui/main_window.py:4740
+#: src/chordcut/ui/main_window.py:4744
 #, python-brace-format
 msgid "Adding to {name}..."
 msgstr "Добавление в {name}..."
 
 #. Translators: Add to playlist failed.
-#: src/chordcut/ui/main_window.py:4775
+#: src/chordcut/ui/main_window.py:4779
 msgid "Failed to add to playlist"
 msgstr "Не удалось добавить в плей-лист"
 
 #. Translators: Track(s) added to playlist.
 #. {n} = count, {name} = playlist name.
-#: src/chordcut/ui/main_window.py:4791
+#: src/chordcut/ui/main_window.py:4795
 #, python-brace-format
 msgid "Added {n} track to {name}"
 msgid_plural "Added {n} tracks to {name}"
@@ -1279,14 +1236,14 @@ msgstr[1] "Добавлено {n} композиции в {name}"
 msgstr[2] "Добавлено {n} композиций в {name}"
 
 #. Translators: Confirm remove from playlist.
-#: src/chordcut/ui/main_window.py:4816
+#: src/chordcut/ui/main_window.py:4820
 #, python-brace-format
 msgid "Remove \"{name}\" from the playlist?"
 msgstr "Удалить «{name}» из плей-листа?"
 
 #. Translators: Confirm bulk remove from playlist.
 #. {n} = count.
-#: src/chordcut/ui/main_window.py:4822
+#: src/chordcut/ui/main_window.py:4826
 #, python-brace-format
 msgid "Remove {n} track from the playlist?"
 msgid_plural "Remove {n} tracks from the playlist?"
@@ -1295,27 +1252,27 @@ msgstr[1] "Удалить {n} композиции из плей-листа?"
 msgstr[2] "Удалить {n} композиций из плей-листа?"
 
 #. Translators: Confirm remove dialog title.
-#: src/chordcut/ui/main_window.py:4830
+#: src/chordcut/ui/main_window.py:4834
 msgid "Remove from Playlist"
 msgstr "Удалить из плей-листа"
 
 #. Translators: Artist not found status.
-#: src/chordcut/ui/main_window.py:5013
+#: src/chordcut/ui/main_window.py:5017
 msgid "Artist not found"
 msgstr "Исполнитель не найден"
 
 #. Translators: Album artist not found status.
-#: src/chordcut/ui/main_window.py:5035
+#: src/chordcut/ui/main_window.py:5039
 msgid "Album artist not found"
 msgstr "Исполнитель альбома не найден"
 
 #. Translators: Album not found status.
-#: src/chordcut/ui/main_window.py:5050 src/chordcut/ui/main_window.py:5063
+#: src/chordcut/ui/main_window.py:5054 src/chordcut/ui/main_window.py:5067
 msgid "Album not found"
 msgstr "Альбом не найден"
 
 #. Translators: Sleep timer countdown shown in the status bar.
-#: src/chordcut/ui/main_window.py:5113
+#: src/chordcut/ui/main_window.py:5117
 #, python-brace-format
 msgid "Timer: {h:02d}:{m:02d}:{s:02d}"
 msgstr "Таймер: {h:02d}:{m:02d}:{s:02d}"
