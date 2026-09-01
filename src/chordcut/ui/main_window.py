@@ -3436,6 +3436,8 @@ class MainWindow(wx.Frame):
             "  Alt+Enter        - Properties\n"
             "  Ctrl+Alt+Enter   - View lyrics\n"
             "  Alt+Shift+Enter  - View synced lyrics\n"
+            "  Ctrl+J           - Jump to current line "
+            "(synced lyrics)\n"
             "  Ctrl+C           - Copy link\n"
             "  Ctrl+Shift+C     - Copy stream link\n"
             "  Ctrl+Shift+Enter - Download track\n\n"
@@ -3457,11 +3459,13 @@ class MainWindow(wx.Frame):
             "remove track\n"
             "  Alt+Up/Down    - Reorder tracks\n\n"
             "Other:\n"
+            "  F9             - Lyrics panel\n"
+            "  Shift+Escape   - Minimize to tray\n"
             "  F5             - Refresh library\n"
             "  F8             - Settings\n"
             "  F1             - Show this help\n"
             "  Alt+F4         - Minimize to tray "
-            "(if enabled) / Exit"
+            "(default) / Exit"
         )
         wx.MessageBox(
             shortcuts,
