@@ -292,7 +292,7 @@ class MainWindow(wx.Frame):
             # Translators: Menu item to hide the window to the tray.
             _("&Minimize to Tray\tShift+Esc"),
             # Translators: Help text for Minimize to Tray.
-            _("Hide the window; playback continues in the tray"),
+            _("Hide the window; playback continues in the background"),
         )
         self._menu_exit = file_menu.Append(
             wx.ID_EXIT,
