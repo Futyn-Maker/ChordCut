@@ -58,6 +58,10 @@ The optional `LyricsPanel` (`ui/lyrics_panel.py`) sits to the right of the libra
 
 The library list marks the playing track (`set_playing_row`, accent text plus a left bar) without ever scrolling on its own; `SyncedLyricsDialog` uses the same mechanism with follow-scrolling, plus Ctrl+J / "Jump to current" to move the caret to the line at the playback position. `MainWindow._update_position` feeds both the panel and the open synced dialog.
 
+Columns marked `optional` in `ui/table_columns.py` (currently the tracks view's Album) are dropped when the list is too narrow to give every flexible column a readable width — e.g. with the lyrics panel open in a small window. Visual only; screen reader names never come from columns.
+
+Closing the window (X button, Alt+F4) with `Settings.close_to_tray` enabled — the default — **pauses playback** and hides to the tray: the closing gesture means "done listening". Explicit minimize (Shift+Esc, File → Minimize to Tray, the tray icon or its menu) hides the window and keeps playing. File → Exit and the tray menu's Exit always really exit (`_force_closing`).
+
 Library rows show cover art thumbnails (tracks and albums views) through `ArtworkProvider` (`ui/artwork_cache.py`): image tags are cached in SQLite (`primary_image_tag` / `album_primary_image_tag`, arriving in the default track DTO — no extra Fields needed), images load lazily on a dedicated 2-worker pool with a disk cache at `data/artcache/` (pruned to ~200 MB), a memory LRU, and a negative cache so items without art are never re-requested. Requests happen at paint time for visible rows only; delivery refreshes the view via `wx.CallAfter`. Thumbnails are visual-only (no screen reader impact); rows grow to 40 DIP when art is active.
 
 **Library loading has two modes:**

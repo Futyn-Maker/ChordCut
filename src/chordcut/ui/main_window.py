@@ -281,11 +281,19 @@ class MainWindow(wx.Frame):
         self._menu_timer = file_menu.AppendCheckItem(
             wx.ID_ANY,
             # Translators: Menu item to set up (or cancel) the sleep timer.
-            _("Sleep &Timer..."),
+            # Mnemonic must not clash with Settings.
+            _("Sleep T&imer..."),
             # Translators: Help text for Sleep Timer.
             _("Set a timer to close or shut down after a delay"),
         )
         file_menu.AppendSeparator()
+        self._menu_minimize_tray = file_menu.Append(
+            wx.ID_ANY,
+            # Translators: Menu item to hide the window to the tray.
+            _("&Minimize to Tray\tShift+Esc"),
+            # Translators: Help text for Minimize to Tray.
+            _("Hide the window; playback continues in the tray"),
+        )
         self._menu_exit = file_menu.Append(
             wx.ID_EXIT,
             # Translators: Menu item to exit.
@@ -763,6 +771,11 @@ class MainWindow(wx.Frame):
             wx.EVT_TIMER,
             self._on_countdown_tick,
             self._countdown_timer,
+        )
+        self.Bind(
+            wx.EVT_MENU,
+            lambda e: self._minimize_to_tray(),
+            self._menu_minimize_tray,
         )
         self.Bind(
             wx.EVT_MENU,
@@ -5176,6 +5189,14 @@ class MainWindow(wx.Frame):
     def _on_close(self, event: wx.CloseEvent):
         if not self._force_closing and self._settings.close_to_tray and event.CanVeto():
             event.Veto()
+            # A closing gesture (X button, Alt+F4) means "done
+            # listening": pause before hiding to the tray.  Explicit
+            # minimize (Shift+Esc, tray, File menu) keeps playing.
+            if self._player.is_playing:
+                self._player.pause()
+                self._transport.update_play_state(False)
+                # Translators: Paused status.
+                self._update_status(_("Paused"))
             self._minimize_to_tray()
             return
 

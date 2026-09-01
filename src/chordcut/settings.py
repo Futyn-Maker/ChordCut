@@ -32,7 +32,7 @@ _DEFAULTS: dict = {
     # Track list sort order.
     "track_sort": "date_desc",
     # Whether closing the window minimizes to tray instead of exiting.
-    "close_to_tray": False,
+    "close_to_tray": True,
     # Whether to check for updates on startup.
     "check_updates": True,
     # Last window rectangle [x, y, w, h]; None = default size, centered.
@@ -166,7 +166,7 @@ class Settings:
     @property
     def close_to_tray(self) -> bool:
         """Whether closing the window minimizes to tray."""
-        return bool(self._data.get("close_to_tray", False))
+        return bool(self._data.get("close_to_tray", True))
 
     @close_to_tray.setter
     def close_to_tray(self, value: bool) -> None:
