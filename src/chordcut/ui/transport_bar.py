@@ -32,12 +32,13 @@ class TransportBar(wx.Panel):
         on_prev: Callable[[], None],
         on_play_pause: Callable[[], None],
         on_next: Callable[[], None],
+        on_shuffle: Callable[[], None],
+        on_repeat: Callable[[], None],
         on_seek: Callable[[float], None],
         on_set_volume: Callable[[int], None],
         on_wheel_seek: Callable[[int], None],
         on_wheel_volume: Callable[[int], None],
-        on_lyrics: Callable[[], None],
-        on_synced_lyrics: Callable[[], None],
+        on_lyrics_panel: Callable[[], None],
         on_settings: Callable[[], None],
     ):
         super().__init__(parent)
@@ -62,12 +63,13 @@ class TransportBar(wx.Panel):
             on_prev=on_prev,
             on_play_pause=on_play_pause,
             on_next=on_next,
+            on_shuffle=on_shuffle,
+            on_repeat=on_repeat,
             on_seek=on_seek,
             on_set_volume=on_set_volume,
             on_wheel_seek=on_wheel_seek,
             on_wheel_volume=on_wheel_volume,
-            on_lyrics=on_lyrics,
-            on_synced_lyrics=on_synced_lyrics,
+            on_lyrics_panel=on_lyrics_panel,
             on_settings=on_settings,
         )
 
@@ -104,6 +106,15 @@ class TransportBar(wx.Panel):
     def set_volume(self, volume: int) -> None:
         self._canvas.set_volume(volume)
 
+    def set_shuffle(self, enabled: bool) -> None:
+        self._canvas.set_toggle("shuffle", enabled)
+
+    def set_repeat(self, enabled: bool) -> None:
+        self._canvas.set_toggle("repeat", enabled)
+
+    def set_lyrics_panel(self, enabled: bool) -> None:
+        self._canvas.set_toggle("lyrics", enabled)
+
 
 class _TransportCanvas(wx.Window):
     """Custom-drawn, mouse-only strip with all playback controls.
@@ -121,6 +132,7 @@ class _TransportCanvas(wx.Window):
         self._position = 0.0
         self._duration = 0.0
         self._volume = 0
+        self._toggles = {"shuffle": False, "repeat": False, "lyrics": False}
         self._hover: str | None = None
         self._pressed: str | None = None
         self._seek_dragging = False
@@ -173,6 +185,11 @@ class _TransportCanvas(wx.Window):
             self._volume = volume
             self.Refresh()
 
+    def set_toggle(self, name: str, enabled: bool) -> None:
+        if self._toggles.get(name) != enabled:
+            self._toggles[name] = enabled
+            self.Refresh()
+
     # ------------------------------------------------------------------
     # Geometry
 
@@ -194,10 +211,14 @@ class _TransportCanvas(wx.Window):
                 seek_h,
             ),
             "time_dur": wx.Rect(w - time_w, 0, time_w, seek_h),
-            "prev": wx.Rect(0, btn_y, btn, btn),
-            "play": wx.Rect(btn + d(6), btn_y, btn, btn),
-            "next": wx.Rect(2 * (btn + d(6)), btn_y, btn, btn),
         }
+
+        # Left cluster: shuffle | prev play next | repeat (the layout
+        # sighted users know from streaming players).
+        x = 0
+        for name in ("shuffle", "prev", "play", "next", "repeat"):
+            regions[name] = wx.Rect(x, btn_y, btn, btn)
+            x += btn + d(6)
 
         vol_w = d(110)
         x = w - vol_w
@@ -205,43 +226,48 @@ class _TransportCanvas(wx.Window):
         x -= d(24) + btn
         regions["settings"] = wx.Rect(x, btn_y, btn, btn)
         x -= btn + d(2)
-        regions["synced_lyrics"] = wx.Rect(x, btn_y, btn, btn)
-        x -= btn + d(2)
         regions["lyrics"] = wx.Rect(x, btn_y, btn, btn)
         return regions
 
     _BUTTONS = (
+        "shuffle",
         "prev",
         "play",
         "next",
+        "repeat",
         "lyrics",
-        "synced_lyrics",
         "settings",
     )
+    _TOGGLES = ("shuffle", "repeat", "lyrics")
 
     def _tooltip_for(self, region: str | None) -> str:
+        # Tooltips carry the matching keyboard shortcut, the way
+        # browsers and players like MusicBee do.
         tips = {
+            # Translators: Tooltip for the shuffle toggle. {hotkey} is
+            # the keyboard shortcut.
+            "shuffle": _("Shuffle — {hotkey}").format(hotkey="Ctrl+Alt+S"),
             # Translators: Tooltip for the previous track button.
-            "prev": _("Previous track"),
+            "prev": _("Previous track — {hotkey}").format(hotkey="Shift+Left"),
             "play": (
                 # Translators: Tooltip for the play/pause button.
-                _("Pause")
+                _("Pause — {hotkey}")
                 if self._playing
                 # Translators: Tooltip for the play/pause button.
-                else _("Play")
-            ),
+                else _("Play — {hotkey}")
+            ).format(hotkey="Escape"),
             # Translators: Tooltip for the next track button.
-            "next": _("Next track"),
+            "next": _("Next track — {hotkey}").format(hotkey="Shift+Right"),
+            # Translators: Tooltip for the repeat toggle.
+            "repeat": _("Repeat — {hotkey}").format(hotkey="Ctrl+Alt+R"),
             # Translators: Tooltip for the seek bar.
-            "seek": _("Seek"),
+            "seek": _("Seek — {hotkey}").format(hotkey="Ctrl+Left/Right"),
             # Translators: Tooltip for the volume bar.
-            "volume": _("Volume"),
-            # Translators: Tooltip for the lyrics button.
-            "lyrics": _("Lyrics"),
-            # Translators: Tooltip for the synced lyrics button.
-            "synced_lyrics": _("Synced lyrics"),
+            "volume": _("Volume — {hotkey}").format(hotkey="Ctrl+Up/Down"),
+            # Translators: Tooltip for the lyrics panel toggle.
+            "lyrics": _("Lyrics panel — {hotkey}").format(hotkey="F9"),
             # Translators: Tooltip for the settings button.
-            "settings": _("Settings"),
+            "settings": _("Settings — {hotkey}").format(hotkey="F8"),
         }
         return tips.get(region or "", "")
 
@@ -288,11 +314,12 @@ class _TransportCanvas(wx.Window):
             self.Refresh()
             if region == pressed:
                 handler_names = {
+                    "shuffle": "on_shuffle",
                     "prev": "on_prev",
                     "play": "on_play_pause",
                     "next": "on_next",
-                    "lyrics": "on_lyrics",
-                    "synced_lyrics": "on_synced_lyrics",
+                    "repeat": "on_repeat",
+                    "lyrics": "on_lyrics_panel",
                     "settings": "on_settings",
                 }
                 self._handlers[handler_names[pressed]]()
@@ -383,19 +410,31 @@ class _TransportCanvas(wx.Window):
             rect = regions[name]
             if rect.x < 0:
                 continue  # window too narrow
+            active = name in self._TOGGLES and self._toggles.get(name)
             if name == self._pressed:
                 glyph_color = accent_text
                 gc.SetBrush(wx.Brush(accent))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawEllipse(rect.x, rect.y, rect.width, rect.height)
             elif name == self._hover:
-                glyph_color = text
+                glyph_color = accent if active else text
                 gc.SetBrush(wx.Brush(self._blend(accent, bg, 0.18)))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawEllipse(rect.x, rect.y, rect.width, rect.height)
             else:
-                glyph_color = text
+                glyph_color = accent if active else text
             self._draw_glyph(gc, name, rect, glyph_color)
+            if active:
+                # Small dot under the glyph marks an engaged toggle.
+                r = self.FromDIP(2)
+                gc.SetBrush(wx.Brush(accent))
+                gc.SetPen(wx.TRANSPARENT_PEN)
+                gc.DrawEllipse(
+                    rect.x + rect.width / 2 - r,
+                    rect.y + rect.height - 2 * r - 1,
+                    2 * r,
+                    2 * r,
+                )
 
         # Volume
         self._draw_glyph(
@@ -512,29 +551,70 @@ class _TransportCanvas(wx.Window):
             path.CloseSubpath()
             gc.FillPath(path)
             gc.DrawRectangle(ox + s - bar_w, oy, bar_w, s)
+        elif kind == "shuffle":
+            # Two crossing paths, each ending in a horizontal segment
+            # with an arrowhead (the familiar streaming-player icon).
+            pen = wx.Pen(color, max(2, self.FromDIP(2)))
+            pen.SetCap(wx.CAP_ROUND)
+            gc.SetPen(pen)
+            for y_start, y_end in ((0.18, 0.82), (0.82, 0.18)):
+                gc.StrokeLine(
+                    ox,
+                    oy + s * y_start,
+                    ox + s * 0.2,
+                    oy + s * y_start,
+                )
+                gc.StrokeLine(
+                    ox + s * 0.2,
+                    oy + s * y_start,
+                    ox + s * 0.62,
+                    oy + s * y_end,
+                )
+                gc.StrokeLine(
+                    ox + s * 0.62,
+                    oy + s * y_end,
+                    ox + s * 0.74,
+                    oy + s * y_end,
+                )
+                head = gc.CreatePath()
+                head.MoveToPoint(ox + s, oy + s * y_end)
+                head.AddLineToPoint(ox + s * 0.70, oy + s * y_end - s * 0.16)
+                head.AddLineToPoint(ox + s * 0.70, oy + s * y_end + s * 0.16)
+                head.CloseSubpath()
+                gc.FillPath(head)
+        elif kind == "repeat":
+            # Circular arrow: open arc with a tangential arrowhead
+            # closing the gap.
+            pen = wx.Pen(color, max(2, self.FromDIP(2)))
+            pen.SetCap(wx.CAP_ROUND)
+            gc.SetPen(pen)
+            cx, cy, r = ox + s / 2, oy + s / 2, s * 0.40
+            # Small gap at the top, arrowhead sweeping into it.
+            end = math.radians(250)
+            path = gc.CreatePath()
+            path.AddArc(cx, cy, r, math.radians(290), end, True)
+            gc.StrokePath(path)
+            ex = cx + r * math.cos(end)
+            ey = cy + r * math.sin(end)
+            # Unit tangent (clockwise) and outward normal at the end.
+            tx, ty = -math.sin(end), math.cos(end)
+            nx, ny = math.cos(end), math.sin(end)
+            half, width = s * 0.18, s * 0.20
+            head = gc.CreatePath()
+            head.MoveToPoint(ex + tx * half, ey + ty * half)
+            head.AddLineToPoint(
+                ex - tx * half + nx * width, ey - ty * half + ny * width
+            )
+            head.AddLineToPoint(
+                ex - tx * half - nx * width, ey - ty * half - ny * width
+            )
+            head.CloseSubpath()
+            gc.FillPath(head)
         elif kind == "lyrics":
             # Text lines
             lh = max(2, s // 7)
             for i, width in enumerate((1.0, 1.0, 0.6)):
                 gc.DrawRectangle(ox, oy + i * (s // 3) + lh // 2, s * width, lh)
-        elif kind == "synced_lyrics":
-            # Text lines with a leading note head on the middle line
-            lh = max(2, s // 7)
-            note_r = s * 0.22
-            for i, width in enumerate((0.7, 0.7, 0.45)):
-                gc.DrawRectangle(
-                    ox + s * 0.3,
-                    oy + i * (s // 3) + lh // 2,
-                    s * width,
-                    lh,
-                )
-            gc.DrawEllipse(ox, oy + s - 2 * note_r, 2 * note_r, 2 * note_r)
-            gc.DrawRectangle(
-                ox + 2 * note_r - self.FromDIP(1),
-                oy,
-                max(1, self.FromDIP(1)),
-                s - note_r,
-            )
         elif kind == "settings":
             # Gear: outer circle with teeth + hole
             cx, cy = ox + s / 2, oy + s / 2

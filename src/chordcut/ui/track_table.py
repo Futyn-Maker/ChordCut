@@ -50,6 +50,10 @@ class TrackTableView(wx.Window):
         self._basket_ids: set[str] = set()
         self._empty_message = ""
         self._drag_enabled = False
+        self._custom_columns: list[ColumnSpec] | None = None
+        self._header_visible = True
+        self._playing_row = -1
+        self._last_user_activity = 0.0
         self._artwork = None  # ArtworkProvider, set by MainWindow
 
         self._typeahead = ""
@@ -100,10 +104,47 @@ class TrackTableView(wx.Window):
     def set_level_type(self, level_type: str) -> None:
         """Select the visual column model for the given level type."""
         self._level_type = level_type
-        self._columns = COLUMN_MODELS.get(level_type, COLUMN_MODELS["tracks"])
+        if self._custom_columns is None:
+            self._columns = COLUMN_MODELS.get(level_type, COLUMN_MODELS["tracks"])
         self._clamp_top()
         self._update_scrollbar()
         self.Refresh()
+
+    def set_columns(self, columns: "list[ColumnSpec] | None") -> None:
+        """Override the column model (None restores the level type's)."""
+        self._custom_columns = columns
+        if columns is not None:
+            self._columns = columns
+        else:
+            self._columns = COLUMN_MODELS.get(self._level_type, COLUMN_MODELS["tracks"])
+        self.Refresh()
+
+    def set_header_visible(self, visible: bool) -> None:
+        """Hide the header band (e.g. for single-column dialog lists)."""
+        self._header_visible = visible
+        self._clamp_top()
+        self._update_scrollbar()
+        self.Refresh()
+
+    def set_playing_row(self, row: int | None, follow: bool = True) -> None:
+        """Visually mark the row as currently playing (no SR impact).
+
+        With ``follow``, the view scrolls to keep the row centered —
+        but only while the user has been idle, so it never fights
+        manual scrolling or keyboard reading.
+        """
+        new = row if row is not None and 0 <= row < len(self._items) else -1
+        if new == self._playing_row:
+            return
+        old = self._playing_row
+        self._playing_row = new
+        self._refresh_row(old)
+        self._refresh_row(new)
+        if follow and new >= 0 and time.monotonic() - self._last_user_activity > 4.0:
+            self._top = new - self._visible_rows() // 2
+            self._clamp_top()
+            self._update_scrollbar()
+            self.Refresh()
 
     def set_artwork_provider(self, provider) -> None:
         """Enable cover art thumbnails (tracks and albums views)."""
@@ -140,6 +181,7 @@ class TrackTableView(wx.Window):
         had_items = len(self._items) > 0
 
         self._items = items
+        self._playing_row = -1
 
         if old_id and items:
             new_idx = self._find_by_id(old_id)
@@ -215,7 +257,7 @@ class TrackTableView(wx.Window):
 
     def hit_test_row(self, pt: wx.Point) -> int:
         """Row index at the given client point, or -1."""
-        y = pt.y - self._theme.header_height
+        y = pt.y - self._header_height()
         if y < 0:
             return -1
         row = self._top + y // self._row_height()
@@ -253,15 +295,18 @@ class TrackTableView(wx.Window):
             return max(self._theme.row_height, self.FromDIP(40))
         return self._theme.row_height
 
+    def _header_height(self) -> int:
+        return self._theme.header_height if self._header_visible else 0
+
     def _art_size(self) -> int:
         return self._row_height() - self.FromDIP(6)
 
     def _visible_rows(self) -> int:
-        h = self.GetClientSize().height - self._theme.header_height
+        h = self.GetClientSize().height - self._header_height()
         return max(1, h // self._row_height())
 
     def _row_rect(self, index: int) -> wx.Rect:
-        y = self._theme.header_height + (index - self._top) * self._row_height()
+        y = self._header_height() + (index - self._top) * self._row_height()
         return wx.Rect(0, y, self.GetClientSize().width, self._row_height())
 
     def _basket_gutter(self) -> int:
@@ -409,6 +454,7 @@ class TrackTableView(wx.Window):
         event.Skip()
 
     def _on_key_down(self, event: wx.KeyEvent) -> None:
+        self._last_user_activity = time.monotonic()
         key = event.GetKeyCode()
         if key == wx.WXK_ESCAPE and self._dragging:
             self.cancel_drag()
@@ -437,6 +483,7 @@ class TrackTableView(wx.Window):
             event.Skip()
 
     def _on_char(self, event: wx.KeyEvent) -> None:
+        self._last_user_activity = time.monotonic()
         code = event.GetUnicodeKey()
         if code == wx.WXK_NONE or code < 32:
             event.Skip()
@@ -473,6 +520,7 @@ class TrackTableView(wx.Window):
                 return
 
     def _on_left_down(self, event: wx.MouseEvent) -> None:
+        self._last_user_activity = time.monotonic()
         self.SetFocus()
         row = self.hit_test_row(event.GetPosition())
         if row < 0:
@@ -558,17 +606,15 @@ class TrackTableView(wx.Window):
         self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
 
     def _update_drop_gap(self, pos: wx.Point) -> None:
-        theme = self._theme
-        gap = self._top + round((pos.y - theme.header_height) / self._row_height())
+        gap = self._top + round((pos.y - self._header_height()) / self._row_height())
         gap = min(max(0, gap), len(self._items))
         if gap != self._drop_gap:
             self._drop_gap = gap
             self.Refresh()
 
     def _update_autoscroll(self, pos: wx.Point) -> None:
-        theme = self._theme
         height = self.GetClientSize().height
-        if pos.y < theme.header_height + self._row_height() // 2:
+        if pos.y < self._header_height() + self._row_height() // 2:
             direction = -1
         elif pos.y > height - self._row_height() // 2:
             direction = 1
@@ -627,6 +673,7 @@ class TrackTableView(wx.Window):
         self.cancel_drag()
 
     def _on_wheel(self, event: wx.MouseEvent) -> None:
+        self._last_user_activity = time.monotonic()
         lines = -event.GetWheelRotation() // event.GetWheelDelta() * 3
         if lines:
             self._top += lines
@@ -635,6 +682,7 @@ class TrackTableView(wx.Window):
             self.Refresh()
 
     def _on_scrollwin(self, event: wx.ScrollWinEvent) -> None:
+        self._last_user_activity = time.monotonic()
         evt_type = event.GetEventType()
         visible = self._visible_rows()
         if evt_type == wx.wxEVT_SCROLLWIN_LINEUP:
@@ -667,7 +715,8 @@ class TrackTableView(wx.Window):
         dc.Clear()
 
         cols = self._col_rects(size.width)
-        self._draw_header(dc, size, cols)
+        if self._header_visible:
+            self._draw_header(dc, size, cols)
 
         if not self._items:
             self._draw_empty_message(dc, size)
@@ -683,8 +732,8 @@ class TrackTableView(wx.Window):
 
     def _draw_insertion_line(self, dc: wx.DC, size: wx.Size) -> None:
         theme = self._theme
-        y = theme.header_height + (self._drop_gap - self._top) * self._row_height()
-        y = min(max(theme.header_height, y), size.height - 1)
+        y = self._header_height() + (self._drop_gap - self._top) * self._row_height()
+        y = min(max(self._header_height(), y), size.height - 1)
         dc.SetPen(wx.Pen(theme.accent, self.FromDIP(2)))
         dc.DrawLine(0, y, size.width, y)
 
@@ -785,6 +834,20 @@ class TrackTableView(wx.Window):
         dc.SetPen(wx.TRANSPARENT_PEN)
         dc.DrawRectangle(rect)
 
+        # Currently-playing marker: accent text + accent bar at the
+        # left edge (visual only; never exposed to screen readers).
+        if row == self._playing_row and row != self._sel:
+            if not theme.high_contrast:
+                fg = theme.accent
+                secondary = theme.accent
+            dc.SetPen(wx.Pen(theme.accent, self.FromDIP(3)))
+            dc.DrawLine(
+                rect.x + 1,
+                rect.y + 2,
+                rect.x + 1,
+                rect.y + rect.height - 2,
+            )
+
         gutter = self._basket_gutter()
         if gutter and item.get("Id") in self._basket_ids:
             dc.SetPen(wx.Pen(theme.accent, self.FromDIP(3)))
@@ -832,11 +895,11 @@ class TrackTableView(wx.Window):
         dc.SetFont(theme.font)
         dc.SetTextForeground(theme.secondary_text)
         tw, th = dc.GetTextExtent(self._empty_message)
-        y_area = size.height - theme.header_height
+        y_area = size.height - self._header_height()
         dc.DrawText(
             self._empty_message,
             max(0, (size.width - tw) // 2),
-            theme.header_height + max(0, (y_area - th) // 2),
+            self._header_height() + max(0, (y_area - th) // 2),
         )
 
     # ------------------------------------------------------------------

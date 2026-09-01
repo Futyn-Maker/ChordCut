@@ -107,6 +107,7 @@ data/*.sqlite3
 # Project-specific: runtime user data
 data/artcache/
 data/music/
+/music/
 settings.json
 
 # Project-specific: libmpv DLLs (large binaries)

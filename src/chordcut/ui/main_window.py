@@ -21,6 +21,7 @@ from chordcut.ui.library_list import (
     FORMATTERS,
     format_track,
 )
+from chordcut.ui.lyrics_panel import LyricsPanel
 from chordcut.ui.track_table import (
     EVT_ROW_CTRL_CLICK,
     EVT_ROW_MOVED,
@@ -120,6 +121,8 @@ class MainWindow(wx.Frame):
         self._lyrics_cache: dict[str, dict | str] = {}
         # True while synced lyrics dialog is open
         self._synced_lyrics_active: bool = False
+        # Open synced lyrics dialog (fed playback position) or None
+        self._synced_dlg = None
 
         # Navigation state
         self._nav_stack: list[_NavState] = []
@@ -193,6 +196,9 @@ class MainWindow(wx.Frame):
 
         # Restore saved volume and audio device
         self._apply_startup_settings()
+
+        # Restore the lyrics panel per settings
+        self._apply_lyrics_panel(self._settings.show_lyrics_panel, save=False)
 
         # Window icon (title bar + taskbar)
         from chordcut.utils.paths import get_icon_path
@@ -437,6 +443,18 @@ class MainWindow(wx.Frame):
             self._on_list_shuffle_toggle,
             self._menu_list_shuffle,
         )
+        self._menu_lyrics_panel = view_menu.AppendCheckItem(
+            wx.ID_ANY,
+            # Translators: Menu item toggling the visual lyrics panel.
+            _("Lyrics &Panel\tF9"),
+            # Translators: Help text for the lyrics panel toggle.
+            _("Show scrolling lyrics beside the library"),
+        )
+        self.Bind(
+            wx.EVT_MENU,
+            lambda e: self._apply_lyrics_panel(self._menu_lyrics_panel.IsChecked()),
+            self._menu_lyrics_panel,
+        )
         view_menu.AppendSeparator()
         self._libraries_menu = wx.Menu()
         view_menu.AppendSubMenu(
@@ -550,6 +568,13 @@ class MainWindow(wx.Frame):
         self._selection_list.Hide()
         self._selection_clear_btn.Hide()
 
+        # Visual lyrics panel beside the list (mouse-only, no tab stop)
+        self._lyrics_panel = LyricsPanel(
+            self._panel,
+            on_seek_to=self._on_lyrics_panel_seek,
+        )
+        self._lyrics_panel.Hide()
+
         # Audio device selector (tab order: last)
         self._device_label = wx.StaticText(
             self._panel,
@@ -577,12 +602,15 @@ class MainWindow(wx.Frame):
             on_prev=lambda: self._on_prev_track(None),
             on_play_pause=lambda: self._on_pause(None),
             on_next=lambda: self._on_next_track(None),
+            on_shuffle=lambda: self._apply_shuffle(not self._shuffle_enabled),
+            on_repeat=lambda: self._apply_repeat(not self._repeat_enabled),
             on_seek=self._transport_seek,
             on_set_volume=self._transport_set_volume,
             on_wheel_seek=self._transport_wheel_seek,
             on_wheel_volume=self._transport_wheel_volume,
-            on_lyrics=lambda: self._transport_lyrics(synced=False),
-            on_synced_lyrics=lambda: self._transport_lyrics(synced=True),
+            on_lyrics_panel=lambda: self._apply_lyrics_panel(
+                not self._settings.show_lyrics_panel
+            ),
             on_settings=lambda: self._on_settings(None),
         )
         self._art_bitmap = self._transport.art_bitmap
@@ -639,8 +667,16 @@ class MainWindow(wx.Frame):
             flag=wx.LEFT | wx.RIGHT,
             border=10,
         )
+        body_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        body_sizer.Add(self._list, proportion=1, flag=wx.EXPAND)
+        body_sizer.Add(
+            self._lyrics_panel,
+            proportion=0,
+            flag=wx.EXPAND | wx.LEFT,
+            border=5,
+        )
         main_sizer.Add(
-            self._list,
+            body_sizer,
             proportion=1,
             flag=(wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM),
             border=5,
@@ -1105,6 +1141,9 @@ class MainWindow(wx.Frame):
         self.SetStatusText(f"{pos} / {dur}", 1)
         self._transport.set_progress(position, self._player.duration)
         self._transport.update_play_state(self._player.is_playing)
+        self._lyrics_panel.set_position(position)
+        if self._synced_dlg is not None:
+            self._synced_dlg.update_position(position)
 
     def _update_duration(self, duration: float) -> None:
         pos = format_duration(self._player.position)
@@ -1802,6 +1841,7 @@ class MainWindow(wx.Frame):
             self._list.set_empty_message(msg)
         self._list.set_items(self._filtered_items)
         self._list.set_basket_ids(self._selected_track_ids)
+        self._update_playing_row()
         # Reordering by mouse is only meaningful when list order equals
         # playlist order: no search filter, no list shuffle.
         self._list.set_drag_enabled(
@@ -2236,6 +2276,8 @@ class MainWindow(wx.Frame):
         self._update_volume_display()
         self._update_title()
         self._update_album_art(track)
+        self._refresh_lyrics_panel()
+        self._update_playing_row()
 
     # ------------------------------------------------------------------
     # Album art
@@ -2346,6 +2388,8 @@ class MainWindow(wx.Frame):
 
         self._clear_queue()
         self._current_track = None
+        self._refresh_lyrics_panel()
+        self._update_playing_row()
         self._clear_album_art()
         self._transport.update_play_state(False)
         self._transport.set_progress(0, 0)
@@ -2965,6 +3009,8 @@ class MainWindow(wx.Frame):
     def _on_stop(self, event: wx.CommandEvent):
         self._player.stop()
         self._current_track = None
+        self._refresh_lyrics_panel()
+        self._update_playing_row()
         self._clear_queue()
         self._clear_album_art()
         self._transport.update_play_state(False)
@@ -3007,11 +3053,92 @@ class MainWindow(wx.Frame):
             self._player.volume_down(self._settings.volume_step)
         self._update_volume_display()
 
-    def _transport_lyrics(self, synced: bool) -> None:
-        """Show lyrics for the playing track (or the focused one)."""
-        item = self._current_track or self._focused_track_item()
-        if item:
-            self._show_lyrics(item, synced=synced)
+    def _update_playing_row(self) -> None:
+        """Mark the playing track in the library list (visual only).
+
+        Never scrolls: the user's position in the list is their own.
+        """
+        track = self._current_track
+        row = None
+        if track and self._current_level_type == "tracks":
+            track_id = track.get("Id", "")
+            for i, item in enumerate(self._filtered_items):
+                if item.get("Id") == track_id:
+                    row = i
+                    break
+        self._list.set_playing_row(row, follow=False)
+
+    # ------------------------------------------------------------------
+    # Lyrics panel
+    # ------------------------------------------------------------------
+
+    def _apply_lyrics_panel(self, visible: bool, save: bool = True) -> None:
+        """Show/hide the lyrics panel, syncing menu, bar, and setting."""
+        if save:
+            self._settings.show_lyrics_panel = visible
+            self._settings.save()
+        self._menu_lyrics_panel.Check(visible)
+        self._transport.set_lyrics_panel(visible)
+        self._lyrics_panel.Show(visible)
+        self._panel.Layout()
+        if visible:
+            self._refresh_lyrics_panel()
+
+    def _on_lyrics_panel_seek(self, ticks: int) -> None:
+        """Seek to a lyric line clicked in the panel."""
+        if self._player.is_loaded:
+            self._player.seek(ticks / 10_000_000, relative=False)
+
+    def _refresh_lyrics_panel(self) -> None:
+        """Load the playing track's lyrics into the panel."""
+        if not self._lyrics_panel.IsShown():
+            return
+        track = self._current_track
+        if not track:
+            self._lyrics_panel.show_message(
+                # Translators: Lyrics panel placeholder when nothing
+                # plays.
+                _("Nothing is playing")
+            )
+            return
+        track_id = track.get("Id", "")
+        cached = self._lyrics_cache.get(track_id)
+        if cached == "none":
+            self._lyrics_panel.show_message(
+                # Translators: Lyrics panel placeholder when the track
+                # has no lyrics.
+                _("No lyrics for this track")
+            )
+            return
+        if isinstance(cached, dict):
+            self._set_panel_lyrics(cached)
+            return
+
+        # Translators: Lyrics panel placeholder while lyrics load.
+        self._lyrics_panel.show_message(_("Loading lyrics…"))
+
+        def on_lyrics(result):
+            wx.CallAfter(self._on_panel_lyrics_received, track_id, result)
+
+        self._client.get_lyrics_async(track_id, on_lyrics)
+
+    def _on_panel_lyrics_received(self, track_id: str, result: dict | None) -> None:
+        if not result or not result.get("Lyrics"):
+            self._lyrics_cache[track_id] = "none"
+        else:
+            self._lyrics_cache[track_id] = result
+        # Only apply if this track is still the one playing.
+        current = self._current_track or {}
+        if current.get("Id", "") == track_id:
+            self._refresh_lyrics_panel()
+
+    def _set_panel_lyrics(self, result: dict) -> None:
+        lyrics = result.get("Lyrics", [])
+        has_timing = any(
+            cue.get("Start") is not None and cue["Start"] > 0 for cue in lyrics
+        )
+        self._lyrics_panel.set_lyrics(lyrics, synced=has_timing)
+        self._lyrics_panel.set_position(self._player.position)
 
     def _on_seek_forward(self, event: wx.CommandEvent):
         self._player.seek(self._settings.seek_step)
@@ -3039,18 +3166,24 @@ class MainWindow(wx.Frame):
         if self._current_track:
             self._play_track(self._current_track)
 
-    def _on_toggle_repeat(self, event: wx.CommandEvent):
-        self._repeat_enabled = self._menu_repeat.IsChecked()
-        if self._repeat_enabled:
+    def _apply_repeat(self, enabled: bool) -> None:
+        """Set repeat mode, syncing menu, transport bar, and status."""
+        self._repeat_enabled = enabled
+        self._menu_repeat.Check(enabled)
+        self._transport.set_repeat(enabled)
+        if enabled:
             # Translators: Repeat mode on notification.
             self._notify_toggle(_("Repeat on"))
         else:
             # Translators: Repeat mode off notification.
             self._notify_toggle(_("Repeat off"))
 
-    def _on_toggle_shuffle(self, event: wx.CommandEvent):
-        self._shuffle_enabled = self._menu_shuffle.IsChecked()
-        if self._shuffle_enabled:
+    def _apply_shuffle(self, enabled: bool) -> None:
+        """Set shuffle mode, syncing menu, transport bar, and queue."""
+        self._shuffle_enabled = enabled
+        self._menu_shuffle.Check(enabled)
+        self._transport.set_shuffle(enabled)
+        if enabled:
             if self._queue:
                 self._shuffle_queue_around_current()
             # Translators: Shuffle mode on notification.
@@ -3060,32 +3193,20 @@ class MainWindow(wx.Frame):
                 self._unshuffle_queue()
             # Translators: Shuffle mode off notification.
             self._notify_toggle(_("Shuffle off"))
+
+    def _on_toggle_repeat(self, event: wx.CommandEvent):
+        self._apply_repeat(self._menu_repeat.IsChecked())
+
+    def _on_toggle_shuffle(self, event: wx.CommandEvent):
+        self._apply_shuffle(self._menu_shuffle.IsChecked())
 
     def _tray_toggle_repeat(self) -> None:
         """Toggle repeat mode, called from the tray icon menu."""
-        self._repeat_enabled = not self._repeat_enabled
-        self._menu_repeat.Check(self._repeat_enabled)
-        if self._repeat_enabled:
-            # Translators: Repeat mode on notification.
-            self._notify_toggle(_("Repeat on"))
-        else:
-            # Translators: Repeat mode off notification.
-            self._notify_toggle(_("Repeat off"))
+        self._apply_repeat(not self._repeat_enabled)
 
     def _tray_toggle_shuffle(self) -> None:
         """Toggle shuffle mode, called from the tray icon menu."""
-        self._shuffle_enabled = not self._shuffle_enabled
-        self._menu_shuffle.Check(self._shuffle_enabled)
-        if self._shuffle_enabled:
-            if self._queue:
-                self._shuffle_queue_around_current()
-            # Translators: Shuffle mode on notification.
-            self._notify_toggle(_("Shuffle on"))
-        else:
-            if self._queue and self._original_queue:
-                self._unshuffle_queue()
-            # Translators: Shuffle mode off notification.
-            self._notify_toggle(_("Shuffle off"))
+        self._apply_shuffle(not self._shuffle_enabled)
 
     def _on_refresh(self, event: wx.CommandEvent):
         self.load_library()
@@ -3218,6 +3339,8 @@ class MainWindow(wx.Frame):
         # Stop playback
         self._player.stop()
         self._current_track = None
+        self._refresh_lyrics_panel()
+        self._update_playing_row()
         self._clear_album_art()
 
         # Clear queue
@@ -4193,9 +4316,14 @@ class MainWindow(wx.Frame):
 
         if synced:
             self._synced_lyrics_active = True
+            self._synced_dlg = dlg
+            # Highlight the line at the current position right away
+            # (also works while paused).
+            dlg.update_position(self._player.position)
         dlg.ShowModal()
         if synced:
             self._synced_lyrics_active = False
+            self._synced_dlg = None
         dlg.Destroy()
         # Translators: Ready status.
         self._update_status(_("Ready"))

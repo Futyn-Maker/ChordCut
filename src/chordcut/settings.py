@@ -220,6 +220,15 @@ class Settings:
         self._data["window_geometry"] = list(value) if value is not None else None
 
     @property
+    def show_lyrics_panel(self) -> bool:
+        """Whether the visual lyrics panel is shown in the main window."""
+        return bool(self._data.get("show_lyrics_panel", False))
+
+    @show_lyrics_panel.setter
+    def show_lyrics_panel(self, value: bool) -> None:
+        self._data["show_lyrics_panel"] = bool(value)
+
+    @property
     def window_maximized(self) -> bool:
         """Whether the window was maximized on last exit."""
         return bool(self._data.get("window_maximized", False))

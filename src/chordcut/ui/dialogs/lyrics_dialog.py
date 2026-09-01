@@ -1,11 +1,14 @@
 """Lyrics dialogs for ChordCut."""
 
+import bisect
 from collections.abc import Callable
 
 import wx
 
 from chordcut.i18n import _
 from chordcut.player.mpv_player import format_duration
+from chordcut.ui.table_columns import ColumnSpec
+from chordcut.ui.track_table import TrackTableView
 
 
 class PlainLyricsDialog(wx.Dialog):
@@ -118,31 +121,39 @@ class SyncedLyricsDialog(wx.Dialog):
         self._seek = seek_callback
         self._volume_up = volume_up_callback
         self._volume_down = volume_down_callback
+        # Cue start times in seconds, for position lookups.
+        self._starts = [(cue.get("Start", 0) or 0) / 10_000_000 for cue in lyrics]
+        self._position = 0.0
 
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._list = wx.ListBox(
-            panel,
-            style=wx.LB_SINGLE,
-            name=title,
-        )
-
-        # Format: "Text [MM:SS]"
-        lines = []
-        for cue in lyrics:
-            start = cue.get("Start", 0) or 0
-            text = cue.get("Text", "")
+        # Same one-line strings the native listbox used ("Text [MM:SS]")
+        # so screen reader announcements are unchanged; visually the
+        # currently sung line is highlighted as playback advances.
+        def line_of(item: dict) -> str:
+            start = item.get("Start", 0) or 0
             ts = format_duration(start / 10_000_000)
-            lines.append(
-                "{text} [{ts}]".format(
-                    text=text,
-                    ts=ts,
+            return "{text} [{ts}]".format(text=item.get("Text", ""), ts=ts)
+
+        self._list = TrackTableView(panel, name=title)
+        self._list.set_level_type("lyrics")
+        self._list.set_formatter(line_of)
+        self._list.set_columns(
+            [
+                ColumnSpec(
+                    "line",
+                    lambda: "",
+                    weight=1,
+                    fixed_dip=0,
+                    align=wx.ALIGN_LEFT,
+                    cell=line_of,
                 )
-            )
-        self._list.Set(lines)
-        if lines:
-            self._list.SetSelection(0)
+            ]
+        )
+        self._list.set_header_visible(False)
+        items = [{"Id": f"cue-{i}", **cue} for i, cue in enumerate(lyrics)]
+        self._list.set_items(items)
 
         sizer.Add(
             self._list,
@@ -152,6 +163,13 @@ class SyncedLyricsDialog(wx.Dialog):
         )
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        jump_btn = wx.Button(
+            panel,
+            wx.ID_ANY,
+            # Translators: Button that moves focus to the lyric line
+            # at the current playback position (hotkey Ctrl+J).
+            _("&Jump to current"),
+        )
         copy_all_btn = wx.Button(
             panel,
             wx.ID_ANY,
@@ -159,6 +177,7 @@ class SyncedLyricsDialog(wx.Dialog):
             _("Copy &All"),
         )
         close_btn = wx.Button(panel, wx.ID_CLOSE)
+        btn_sizer.Add(jump_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(copy_all_btn, 0, wx.RIGHT, 5)
         btn_sizer.Add(close_btn, 0)
         sizer.Add(
@@ -170,6 +189,10 @@ class SyncedLyricsDialog(wx.Dialog):
 
         panel.SetSizer(sizer)
 
+        jump_btn.Bind(
+            wx.EVT_BUTTON,
+            lambda e: self._jump_to_current(),
+        )
         copy_all_btn.Bind(
             wx.EVT_BUTTON,
             self._on_copy_all,
@@ -178,7 +201,35 @@ class SyncedLyricsDialog(wx.Dialog):
             wx.EVT_BUTTON,
             lambda e: self.Close(),
         )
+        # Double-click a line = seek to it (same as Enter).
+        self._list.Bind(wx.EVT_LISTBOX_DCLICK, self._on_line_activated)
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
+
+    # ------------------------------------------------------------------
+    # Playback position (pushed by MainWindow while the dialog is open)
+
+    def update_position(self, position: float) -> None:
+        """Highlight the line being sung at *position* (visual only)."""
+        self._position = position
+        if not self._starts:
+            return
+        idx = bisect.bisect_right(self._starts, position) - 1
+        self._list.set_playing_row(idx if idx >= 0 else None)
+
+    def _jump_to_current(self) -> None:
+        """Move focus/caret to the line at the playback position."""
+        if not self._starts:
+            return
+        idx = max(0, bisect.bisect_right(self._starts, self._position) - 1)
+        self._list.SetFocus()
+        self._list.SetSelection(idx)
+        self._list.ensure_visible(idx)
+
+    def _on_line_activated(self, event: wx.CommandEvent) -> None:
+        idx = self._list.GetSelection()
+        if idx != wx.NOT_FOUND:
+            cue = self._lyrics[idx]
+            self._play_from(cue.get("Start", 0) or 0)
 
     def _on_key(self, event: wx.KeyEvent) -> None:
         code = event.GetKeyCode()
@@ -204,6 +255,11 @@ class SyncedLyricsDialog(wx.Dialog):
                 cue = self._lyrics[idx]
                 start = cue.get("Start", 0) or 0
                 self._play_from(start)
+            return
+
+        # Ctrl+J = jump to the line at the playback position
+        if ctrl and code == ord("J"):
+            self._jump_to_current()
             return
 
         # Ctrl+C = copy selected line text
