@@ -1,3 +1,9 @@
 wxPython>=4.2.0
 python-mpv>=1.0.0
 jellyfin-apiclient-python>=1.9.0
+winrt-runtime>=3.2
+winrt-Windows.Foundation>=3.2
+winrt-Windows.Foundation.Collections>=3.2
+winrt-Windows.Media>=3.2
+winrt-Windows.Media.Interop>=3.2
+winrt-Windows.Storage.Streams>=3.2

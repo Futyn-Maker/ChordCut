@@ -184,6 +184,19 @@ class SettingsDialog(wx.Dialog):
             border=5,
         )
 
+        self._global_hotkeys = wx.CheckBox(
+            panel,
+            # Translators: Checkbox to enable system-wide hotkeys that
+            # work while another application is focused.
+            label=_("&Global hotkeys (control playback from any application)"),
+        )
+        self._global_hotkeys.SetValue(settings.global_hotkeys)
+        behavior_sizer.Add(
+            self._global_hotkeys,
+            flag=wx.ALL,
+            border=5,
+        )
+
         main_sizer.Add(
             behavior_sizer,
             flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
@@ -249,5 +262,6 @@ class SettingsDialog(wx.Dialog):
         self._settings.remember_device = self._remember_device.GetValue()
         self._settings.close_to_tray = self._close_to_tray.GetValue()
         self._settings.check_updates = self._check_updates.GetValue()
+        self._settings.global_hotkeys = self._global_hotkeys.GetValue()
         self._settings.save()
         self.EndModal(wx.ID_OK)

@@ -14,9 +14,11 @@ from chordcut.api import JellyfinClient
 from chordcut.db import Database, ServerCredentials
 from chordcut.i18n import _, ngettext
 from chordcut.player import Player
+from chordcut.player.media_controls import MediaControls
 from chordcut.player.mpv_player import format_duration
 from chordcut.settings import Settings
 from chordcut.ui.artwork_cache import ArtworkProvider
+from chordcut.ui.global_hotkeys import GlobalHotkeys
 from chordcut.ui.library_list import (
     FORMATTERS,
     format_track,
@@ -210,6 +212,32 @@ class MainWindow(wx.Frame):
         # System tray icon (always visible)
         self._tray_icon: TrayIcon | None = TrayIcon(self)
 
+        # System-wide hotkeys (Ctrl+Shift+Alt layer)
+        self._global_hotkeys = GlobalHotkeys(
+            self,
+            {
+                "play_pause": lambda: self._on_pause(None),
+                "previous": lambda: self._on_prev_track(None),
+                "next": lambda: self._on_next_track(None),
+                "seek_backward": lambda: self._on_seek_backward(None),
+                "seek_forward": lambda: self._on_seek_forward(None),
+                "volume_up": lambda: self._on_volume_up(None),
+                "volume_down": lambda: self._on_volume_down(None),
+                "repeat": lambda: self._apply_repeat(not self._repeat_enabled),
+                "shuffle": lambda: self._apply_shuffle(not self._shuffle_enabled),
+                "toggle_window": self._toggle_window_visibility,
+            },
+        )
+        self._apply_global_hotkeys()
+
+        # Windows media session: hardware media keys, Bluetooth headset
+        # buttons, and the system media flyout.  None when unavailable.
+        self._media_controls: MediaControls | None = MediaControls.create(
+            self.GetHandle()
+        )
+        if self._media_controls:
+            self._wire_media_controls()
+
         self.SetMinSize(self.FromDIP(wx.Size(640, 480)))
         self._restore_geometry()
 
@@ -290,7 +318,7 @@ class MainWindow(wx.Frame):
         self._menu_minimize_tray = file_menu.Append(
             wx.ID_ANY,
             # Translators: Menu item to hide the window to the tray.
-            _("&Minimize to Tray\tShift+Esc"),
+            _("&Minimize to Tray\tCtrl+Shift+Alt+C"),
             # Translators: Help text for Minimize to Tray.
             _("Hide the window; playback continues in the background"),
         )
@@ -1082,6 +1110,14 @@ class MainWindow(wx.Frame):
                     ord("N"),
                     self._menu_new_playlist.GetId(),
                 ),
+                # Local fallback for the global show/hide toggle so the
+                # combo still works in-app when global hotkeys are off
+                # or the registration was refused by the OS.
+                (
+                    wx.ACCEL_CTRL | wx.ACCEL_ALT | wx.ACCEL_SHIFT,
+                    ord("C"),
+                    self._menu_minimize_tray.GetId(),
+                ),
             ]
         )
         self.SetAcceleratorTable(accel)
@@ -1135,6 +1171,13 @@ class MainWindow(wx.Frame):
         self.Restore()
         self.Raise()
 
+    def _toggle_window_visibility(self) -> None:
+        """Global show/hide toggle: to the tray and back."""
+        if self.IsShown():
+            self._minimize_to_tray()
+        else:
+            self._restore_from_tray()
+
     def _force_close(self) -> None:
         """Close the application from the tray icon context menu."""
         self._force_closing = True
@@ -1143,6 +1186,77 @@ class MainWindow(wx.Frame):
             self._tray_icon.Destroy()
             self._tray_icon = None
         self.Close()
+
+    # ------------------------------------------------------------------
+    # Global hotkeys and system media controls
+    # ------------------------------------------------------------------
+
+    def _apply_global_hotkeys(self) -> None:
+        """Sync hotkey registration with the setting."""
+        if self._settings.global_hotkeys:
+            if not self._global_hotkeys.active:
+                self._global_hotkeys.register()
+        else:
+            self._global_hotkeys.unregister()
+
+    def _wire_media_controls(self) -> None:
+        """Connect SMTC events and push the initial mode state.
+
+        SMTC callbacks arrive on WinRT threads; every handler is
+        marshaled to the GUI thread with wx.CallAfter.
+        """
+        mc = self._media_controls
+        if mc is None:
+            return
+        mc.on_play = lambda: wx.CallAfter(self._smtc_play)
+        mc.on_pause = lambda: wx.CallAfter(self._smtc_pause)
+        mc.on_stop = lambda: wx.CallAfter(self._on_stop, None)
+        mc.on_next = lambda: wx.CallAfter(self._on_next_track, None)
+        mc.on_previous = lambda: wx.CallAfter(self._on_prev_track, None)
+        mc.on_fast_forward = lambda: wx.CallAfter(self._on_seek_forward, None)
+        mc.on_rewind = lambda: wx.CallAfter(self._on_seek_backward, None)
+        mc.on_shuffle_requested = lambda v: wx.CallAfter(self._apply_shuffle, v)
+        mc.on_repeat_requested = lambda v: wx.CallAfter(self._apply_repeat, v)
+        mc.on_position_requested = lambda s: wx.CallAfter(self._smtc_seek, s)
+        mc.update_shuffle(self._shuffle_enabled)
+        mc.update_repeat(self._repeat_enabled)
+
+    def _smtc_play(self) -> None:
+        """PLAY from the system: resume only when actually paused."""
+        if self._player.is_loaded and not self._player.is_playing:
+            self._on_pause(None)
+
+    def _smtc_pause(self) -> None:
+        """PAUSE from the system: pause only when actually playing."""
+        if self._player.is_playing:
+            self._on_pause(None)
+
+    def _smtc_seek(self, seconds: float) -> None:
+        """Seek requested from the system media flyout."""
+        if self._player.is_loaded:
+            self._player.seek(seconds, relative=False)
+
+    def _smtc_art_url(self, track: dict) -> str | None:
+        """Authenticated cover URL for the media flyout, or None."""
+        tag = track.get("PrimaryImageTag") or (track.get("ImageTags") or {}).get(
+            "Primary"
+        )
+        if tag:
+            item_id = track.get("Id", "")
+        elif track.get("AlbumPrimaryImageTag"):
+            item_id = track.get("AlbumId", "")
+        else:
+            return None
+        if not item_id:
+            return None
+        return (
+            self._client.get_image_url(
+                item_id,
+                max_size=300,
+                with_token=True,
+            )
+            or None
+        )
 
     # ------------------------------------------------------------------
     # Settings dialog
@@ -1160,6 +1274,7 @@ class MainWindow(wx.Frame):
         dlg = SettingsDialog(self, self._settings)
         dlg.ShowModal()
         dlg.Destroy()
+        self._apply_global_hotkeys()
 
     # ------------------------------------------------------------------
     # Status helpers
@@ -1177,6 +1292,15 @@ class MainWindow(wx.Frame):
         self._lyrics_panel.set_position(position)
         if self._synced_dlg is not None:
             self._synced_dlg.update_position(position)
+        if self._media_controls:
+            self._media_controls.update_playback(
+                self._player.is_playing,
+                loaded=self._player.is_loaded,
+            )
+            self._media_controls.update_timeline(
+                position,
+                self._player.duration,
+            )
 
     def _update_duration(self, duration: float) -> None:
         pos = format_duration(self._player.position)
@@ -2312,6 +2436,16 @@ class MainWindow(wx.Frame):
         self._refresh_lyrics_panel()
         self._update_playing_row()
 
+        if self._media_controls:
+            self._media_controls.update_playback(True)
+            self._media_controls.update_metadata(
+                title,
+                artist,
+                track.get("Album") or "",
+                self._smtc_art_url(track),
+            )
+            self._media_controls.update_timeline(0.0, 0.0, force=True)
+
     # ------------------------------------------------------------------
     # Album art
     # ------------------------------------------------------------------
@@ -2431,6 +2565,9 @@ class MainWindow(wx.Frame):
         # Translators: Playback finished status.
         self._update_status(_("Playback finished"))
         self._update_title()
+        if self._media_controls:
+            self._media_controls.update_playback(False, loaded=False)
+            self._media_controls.clear_metadata()
 
     # ------------------------------------------------------------------
     # Queue helpers
@@ -2562,16 +2699,6 @@ class MainWindow(wx.Frame):
         """
         code = event.GetKeyCode()
         focused = self.FindFocus()
-
-        # Shift+Escape: minimize to system tray
-        if (
-            code == wx.WXK_ESCAPE
-            and event.ShiftDown()
-            and not event.ControlDown()
-            and not event.AltDown()
-        ):
-            self._minimize_to_tray()
-            return
 
         if focused is self._list:
             if (
@@ -3044,6 +3171,11 @@ class MainWindow(wx.Frame):
     def _on_pause(self, event: wx.CommandEvent):
         self._player.toggle_pause()
         self._transport.update_play_state(self._player.is_playing)
+        if self._media_controls:
+            self._media_controls.update_playback(
+                self._player.is_playing,
+                loaded=self._player.is_loaded,
+            )
         if self._player.is_playing:
             # Translators: Playing status.
             self._update_status(_("Playing"))
@@ -3065,6 +3197,9 @@ class MainWindow(wx.Frame):
         # Translators: Stopped status.
         self._update_status(_("Stopped"))
         self._update_title()
+        if self._media_controls:
+            self._media_controls.update_playback(False, loaded=False)
+            self._media_controls.clear_metadata()
 
     def _on_volume_up(self, event: wx.CommandEvent):
         self._player.volume_up(self._settings.volume_step)
@@ -3216,6 +3351,8 @@ class MainWindow(wx.Frame):
         self._repeat_enabled = enabled
         self._menu_repeat.Check(enabled)
         self._transport.set_repeat(enabled)
+        if self._media_controls:
+            self._media_controls.update_repeat(enabled)
         if enabled:
             # Translators: Repeat mode on notification.
             self._notify_toggle(_("Repeat on"))
@@ -3228,6 +3365,8 @@ class MainWindow(wx.Frame):
         self._shuffle_enabled = enabled
         self._menu_shuffle.Check(enabled)
         self._transport.set_shuffle(enabled)
+        if self._media_controls:
+            self._media_controls.update_shuffle(enabled)
         if enabled:
             if self._queue:
                 self._shuffle_queue_around_current()
@@ -3492,13 +3631,39 @@ class MainWindow(wx.Frame):
             "  Alt+Up/Down    - Reorder tracks\n\n"
             "Other:\n"
             "  F9             - Lyrics panel\n"
-            "  Shift+Escape   - Minimize to tray\n"
+            "  Ctrl+Shift+Alt+C - Minimize to tray\n"
             "  F5             - Refresh library\n"
             "  F8             - Settings\n"
             "  F1             - Show this help\n"
             "  Alt+F4         - Minimize to tray "
-            "(default) / Exit"
+            "(default) / Exit\n\n"
+            "Global hotkeys (work from any application):\n"
+            "  Ctrl+Shift+Alt+Space - Play/Pause\n"
+            "  Ctrl+Shift+Alt+P     - Previous track\n"
+            "  Ctrl+Shift+Alt+N     - Next track\n"
+            "  Ctrl+Shift+Alt+Left  - Seek backward\n"
+            "  Ctrl+Shift+Alt+Right - Seek forward\n"
+            "  Ctrl+Shift+Alt+Up    - Volume up\n"
+            "  Ctrl+Shift+Alt+Down  - Volume down\n"
+            "  Ctrl+Shift+Alt+R     - Toggle repeat\n"
+            "  Ctrl+Shift+Alt+S     - Toggle shuffle\n"
+            "  Ctrl+Shift+Alt+C     - Show/hide window\n\n"
+            "Hardware media keys (play/pause, next, previous, stop) "
+            "and Bluetooth headset buttons work system-wide."
         )
+        if not self._settings.global_hotkeys:
+            # Translators: Appended to the shortcuts help when the
+            # user turned global hotkeys off.
+            note = _("Global hotkeys are disabled in Settings.")
+            shortcuts += "\n\n" + note
+        elif self._global_hotkeys.failed:
+            # Translators: Appended to the shortcuts help when some
+            # global hotkeys could not be registered.
+            # {keys} = comma-separated key combinations.
+            note = _(
+                "Unavailable global hotkeys (in use by another program): {keys}"
+            ).format(keys=", ".join(self._global_hotkeys.failed))
+            shortcuts += "\n\n" + note
         wx.MessageBox(
             shortcuts,
             # Translators: Shortcuts dialog title.
@@ -5238,6 +5403,11 @@ class MainWindow(wx.Frame):
 
         self._search_timer.Stop()
         self._countdown_timer.Stop()
+
+        self._global_hotkeys.unregister()
+        if self._media_controls:
+            self._media_controls.shutdown()
+            self._media_controls = None
 
         # Remove the tray icon before the window is destroyed.
         if self._tray_icon:

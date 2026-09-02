@@ -932,11 +932,18 @@ class JellyfinClient:
         item_id: str,
         max_size: int = 200,
         quality: int = 80,
+        with_token: bool = False,
     ) -> str:
-        """Build URL for an item's primary image."""
+        """Build URL for an item's primary image.
+
+        With ``with_token`` the access token is embedded as an
+        ``api_key`` query parameter, for consumers that fetch the URL
+        themselves and cannot send an Authorization header (e.g. the
+        Windows media flyout).
+        """
         if not self._server_url:
             return ""
-        return (
+        url = (
             "{base}/Items/{id}/Images/Primary?maxWidth={sz}&maxHeight={sz}&quality={q}"
         ).format(
             base=self._server_url,
@@ -944,6 +951,9 @@ class JellyfinClient:
             sz=max_size,
             q=quality,
         )
+        if with_token and self._access_token:
+            url += f"&api_key={self._access_token}"
+        return url
 
     def fetch_image(
         self,

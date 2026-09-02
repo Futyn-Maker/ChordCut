@@ -32,6 +32,8 @@ ChordCut is a portable music client for [Jellyfin](https://jellyfin.org/) media 
 - Copy a Jellyfin web link for any item or a direct stream link for tracks.
 - Sleep timer with three actions: close the program, shut down, or put the computer to sleep.
 - System tray icon with basic playback controls — minimize and keep listening in the background.
+- Global hotkeys that work from any application — play/pause, previous/next track, seeking, volume, repeat, shuffle, and showing or hiding the window.
+- Hardware media keys and Bluetooth headset buttons are supported through the standard Windows media session, with the playing track's title, artist, and cover art shown in the system media flyout.
 - Connect to multiple Jellyfin servers and switch between them.
 - Full keyboard operability and screen reader support (NVDA, JAWS); the interface follows the Windows theme, including high-contrast modes.
 - Configurable volume and seek steps, output device selection; window size and position, volume, and device are remembered across restarts.
@@ -65,9 +67,9 @@ Switch sections with the section selector. To open an item — an artist's album
 
 ### Playing Music
 
-Double-click a track (or press Enter) to start playback; this also creates a queue from all currently visible tracks. Skip between tracks with the previous/next buttons on the playback bar or Shift+Left / Shift+Right. Pause and resume with the play/pause button or Escape.
+Double-click a track (or press Enter) to start playback; this also creates a queue from all currently visible tracks. Skip between tracks with the previous/next buttons on the playback bar, Shift+Left / Shift+Right, or the previous/next media keys on your keyboard. Pause and resume with the play/pause button, Escape, or the play/pause media key.
 
-Toggle repeat with the repeat button, Playback > Repeat, or Ctrl+Alt+R (loops the current track; next/previous still works). Toggle shuffle with the shuffle button, Playback > Shuffle, or Ctrl+Alt+S (reorders the queue; disabling it restores the original order). Stop playback entirely with Playback > Stop or Ctrl+Alt+Q — this also destroys the queue.
+Toggle repeat with the repeat button, Playback > Repeat, or Ctrl+Alt+R (loops the current track; next/previous still works). Toggle shuffle with the shuffle button, Playback > Shuffle, or Ctrl+Alt+S (reorders the queue; disabling it restores the original order). Stop playback entirely with Playback > Stop, Ctrl+Alt+Q, or the stop media key — this also destroys the queue.
 
 ### Volume and Seeking
 
@@ -138,9 +140,17 @@ Right-click an item — or press the Applications key or Shift+F10 — to open t
 
 Open via File > Sleep Timer. Set hours, minutes, and seconds, choose an action (close the program, shut down, or sleep), and press Enable Timer. The countdown appears in the status bar. Choose the menu item again to cancel the timer.
 
+### Background Listening
+
+ChordCut is built to keep playing while you work in other applications. Two mechanisms make this convenient:
+
+**Global hotkeys.** A set of system-wide shortcuts on the Ctrl+Shift+Alt layer works no matter which application is focused — even while ChordCut is hidden in the tray. The full list is in the [Keyboard Shortcuts](#keyboard-shortcuts) table below; left and right modifier keys both work. The combinations were chosen to avoid conflicts: screen reader commands (NVDA and JAWS table navigation lives on Ctrl+Alt), AltGr-based typing layouts, and common application shortcuts all stay untouched. If another program already owns one of the combinations, ChordCut simply skips it and lists it as unavailable in the built-in shortcuts help (F1) — it never takes a hotkey away from a running program. Global hotkeys can be turned off entirely in Settings.
+
+**Media keys.** The keyboard's hardware media keys (play/pause, next, previous, stop) and Bluetooth headset buttons control ChordCut through the standard Windows media session. Windows itself decides which running player receives them — normally the one that played most recently — so ChordCut never competes with other applications for these keys. The system media flyout displays the playing track's title, artist, album, and cover art; its buttons, seek bar, and shuffle and repeat toggles control ChordCut directly.
+
 ### System Tray
 
-To hide ChordCut to the notification area and keep the music playing, choose File > Minimize to Tray, press Shift+Escape, or click the tray icon. By default the close button and Alt+F4 also hide the window to the tray instead of exiting (this can be turned off in Settings); use File > Exit or the tray menu's Exit to quit. Click the tray icon or choose Restore from its context menu to bring the window back. The tray icon's tooltip names the playing track, and its context menu provides basic playback controls: pause/resume, next/previous track, volume, seeking, repeat, and shuffle.
+To hide ChordCut to the notification area and keep the music playing, choose File > Minimize to Tray, press Ctrl+Shift+Alt+C, or click the tray icon. By default the close button and Alt+F4 also hide the window to the tray instead of exiting (this can be turned off in Settings); use File > Exit or the tray menu's Exit to quit. Click the tray icon, press Ctrl+Shift+Alt+C again (it works globally as a show/hide toggle), or choose Restore from the icon's context menu to bring the window back. The tray icon's tooltip names the playing track, and its context menu provides basic playback controls: pause/resume, next/previous track, volume, seeking, repeat, and shuffle.
 
 ### Multiple Servers
 
@@ -156,6 +166,7 @@ Press F8, go to File > Settings, or click the gear button on the playback bar to
 - **Remember volume level on exit** — restore the last volume on next launch.
 - **Remember output device on exit** — restore the last output device on next launch.
 - **Close button minimizes to tray** — when checked (default), the close button and Alt+F4 hide the window to the notification area instead of exiting. Use File > Exit or the tray menu to quit.
+- **Global hotkeys** — when checked (default), the system-wide shortcuts are active from any application. See [Background Listening](#background-listening).
 - **Check for updates on startup** — when checked (default), ChordCut silently checks for a newer version when launched. If an update is found, a dialog offers to download and install it. You can also check manually at any time via Help > Check for Updates.
 
 ## Keyboard Shortcuts
@@ -166,7 +177,7 @@ Press F8, go to File > Settings, or click the gear button on the playback bar to
 | Enter                      | Play track / drill into item                                      |
 | Backspace                  | Go back one level                                                 |
 | Escape                     | Pause / Resume                                                    |
-| Shift+Escape               | Minimize to system tray                                           |
+| Ctrl+Shift+Alt+C           | Minimize to system tray                                           |
 | Ctrl+Alt+Q                 | Stop playback and destroy queue                                   |
 | Shift+Right                | Next track                                                        |
 | Shift+Left                 | Previous track                                                    |
@@ -199,6 +210,25 @@ Press F8, go to File > Settings, or click the gear button on the playback bar to
 | F8                         | Settings                                                          |
 | F1                         | Keyboard shortcuts reference                                      |
 | Alt+F4                     | Minimize to tray (default) / Exit                                 |
+
+### Global Hotkeys
+
+These work from any application, even while ChordCut is minimized or hidden in the tray:
+
+| Key                  | Action                 |
+| -------------------- | ---------------------- |
+| Ctrl+Shift+Alt+Space | Play / Pause           |
+| Ctrl+Shift+Alt+P     | Previous track         |
+| Ctrl+Shift+Alt+N     | Next track             |
+| Ctrl+Shift+Alt+Left  | Seek backward          |
+| Ctrl+Shift+Alt+Right | Seek forward           |
+| Ctrl+Shift+Alt+Up    | Volume up              |
+| Ctrl+Shift+Alt+Down  | Volume down            |
+| Ctrl+Shift+Alt+R     | Toggle repeat          |
+| Ctrl+Shift+Alt+S     | Toggle shuffle         |
+| Ctrl+Shift+Alt+C     | Show / hide the window |
+
+Hardware media keys (play/pause, next, previous, stop) and Bluetooth headset buttons also work system-wide.
 
 ## Building from Source
 

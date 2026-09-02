@@ -91,6 +91,15 @@ a = Analysis(
         'wx._html',
         'mpv',
         'jellyfin_apiclient_python',
+        # pywinrt modules are imported lazily inside functions, so
+        # PyInstaller's static analysis misses them.
+        'winrt.runtime',
+        'winrt.system',
+        'winrt.windows.foundation',
+        'winrt.windows.foundation.collections',
+        'winrt.windows.media',
+        'winrt.windows.media.interop',
+        'winrt.windows.storage.streams',
     ],
     hookspath=[],
     hooksconfig={},

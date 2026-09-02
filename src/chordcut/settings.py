@@ -35,6 +35,10 @@ _DEFAULTS: dict = {
     "close_to_tray": True,
     # Whether to check for updates on startup.
     "check_updates": True,
+    # Whether system-wide hotkeys are registered.
+    "global_hotkeys": True,
+    # Whether the visual lyrics panel is shown.
+    "show_lyrics_panel": False,
     # Last window rectangle [x, y, w, h]; None = default size, centered.
     "window_geometry": None,
     # Whether the window was maximized on last exit.
@@ -200,6 +204,15 @@ class Settings:
     @check_updates.setter
     def check_updates(self, value: bool) -> None:
         self._data["check_updates"] = bool(value)
+
+    @property
+    def global_hotkeys(self) -> bool:
+        """Whether system-wide hotkeys are registered."""
+        return bool(self._data.get("global_hotkeys", True))
+
+    @global_hotkeys.setter
+    def global_hotkeys(self, value: bool) -> None:
+        self._data["global_hotkeys"] = bool(value)
 
     @property
     def window_geometry(self) -> tuple[int, int, int, int] | None:
