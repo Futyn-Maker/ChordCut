@@ -3,7 +3,7 @@
 import wx
 import wx.adv
 
-from chordcut.i18n import _
+from chordcut.i18n import _, pgettext
 from chordcut.utils.paths import get_icon_path
 
 
@@ -95,8 +95,17 @@ class TrayIcon(wx.adv.TaskBarIcon):
         item_toggle = menu.Append(wx.ID_ANY, toggle_label)
         menu.AppendSeparator()
 
-        # Pause / Resume (label reflects current state)
-        if player.is_playing:
+        # Play / Pause / Resume (label reflects current state).
+        # Only one of the three is ever shown, so their mnemonics may
+        # overlap each other but not the other tray items.
+        if win._current_track is None:
+            # Translators: Tray context menu: nothing is loaded; start
+            # playing the focused library track.  Translated apart
+            # from the Playback menu's "&Play" because the mnemonic
+            # must not clash with the other tray items (Restore,
+            # Repeat, Previous/Next, Volume, Seek, Shuffle, Exit).
+            pause_label = pgettext("tray", "&Play")
+        elif player.is_playing:
             # Translators: Tray context menu: pause playback.
             pause_label = _("&Pause")
         else:
@@ -178,7 +187,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
         )
         menu.Bind(
             wx.EVT_MENU,
-            lambda _e: win._on_pause(None),
+            lambda _e: win._play_pause(),
             item_pause,
         )
         menu.Bind(

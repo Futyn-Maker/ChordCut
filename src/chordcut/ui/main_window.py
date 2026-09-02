@@ -216,7 +216,7 @@ class MainWindow(wx.Frame):
         self._global_hotkeys = GlobalHotkeys(
             self,
             {
-                "play_pause": lambda: self._on_pause(None),
+                "play_pause": self._play_pause,
                 "previous": lambda: self._on_prev_track(None),
                 "next": lambda: self._on_next_track(None),
                 "seek_backward": lambda: self._on_seek_backward(None),
@@ -639,7 +639,7 @@ class MainWindow(wx.Frame):
             self._panel,
             self._ART_SIZE,
             on_prev=lambda: self._on_prev_track(None),
-            on_play_pause=lambda: self._on_pause(None),
+            on_play_pause=self._play_pause,
             on_next=lambda: self._on_next_track(None),
             on_shuffle=lambda: self._apply_shuffle(not self._shuffle_enabled),
             on_repeat=lambda: self._apply_repeat(not self._repeat_enabled),
@@ -1221,9 +1221,40 @@ class MainWindow(wx.Frame):
         mc.update_shuffle(self._shuffle_enabled)
         mc.update_repeat(self._repeat_enabled)
 
+    def _play_pause(self) -> None:
+        """Play/pause for controls that carry no track of their own.
+
+        Used by the transport button, the global hotkey, the tray menu
+        and the media Play key.  With a track loaded it toggles pause;
+        with nothing loaded it starts the focused library track, so a
+        bare media key can begin listening even from the tray.
+        """
+        if self._current_track is None:
+            self._play_focused_track()
+        else:
+            self._on_pause(None)
+
+    def _play_focused_track(self) -> None:
+        """Start the track under the caret of the active list, if any.
+
+        The selection list wins when it holds the focus.  The window
+        may be hidden or inactive (nothing focused), so the control
+        that had the focus last is consulted in that case.
+        """
+        focused = self.FindFocus() or self._last_focused_window
+        if focused is self._selection_list and self._selection_list.IsShown():
+            self._play_from_selection()
+            return
+        if self._current_level_type == "tracks":
+            item = self._list.get_selected_item()
+            if item:
+                self._play_track_from_list(item)
+
     def _smtc_play(self) -> None:
-        """PLAY from the system: resume only when actually paused."""
-        if self._player.is_loaded and not self._player.is_playing:
+        """PLAY from the system: start the focused track, or resume."""
+        if self._current_track is None:
+            self._play_focused_track()
+        elif not self._player.is_playing:
             self._on_pause(None)
 
     def _smtc_pause(self) -> None:
@@ -3169,6 +3200,8 @@ class MainWindow(wx.Frame):
             self._player.resume()
 
     def _on_pause(self, event: wx.CommandEvent):
+        if self._current_track is None:
+            return  # nothing to pause or resume
         self._player.toggle_pause()
         self._transport.update_play_state(self._player.is_playing)
         if self._media_controls:

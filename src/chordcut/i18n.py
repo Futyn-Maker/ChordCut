@@ -1,7 +1,8 @@
 """Internationalization support for ChordCut.
 
-All user-facing strings must be wrapped with _() or ngettext() from this module
-and preceded by a ``# Translators:`` comment explaining the context.
+All user-facing strings must be wrapped with _(), ngettext() or pgettext()
+from this module and preceded by a ``# Translators:`` comment explaining
+the context.
 
 To generate a .pot translation template (requires ``pip install babel``)::
 
@@ -119,3 +120,6 @@ _translation = _init_translation()
 
 _ = _translation.gettext
 ngettext = _translation.ngettext
+# For a string that must translate differently in one place (e.g. a
+# menu mnemonic that would clash there); Babel extracts the context.
+pgettext = _translation.pgettext

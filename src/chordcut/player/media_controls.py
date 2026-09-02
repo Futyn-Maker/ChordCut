@@ -59,7 +59,14 @@ class MediaControls:
         smtc.is_previous_enabled = True
         smtc.is_fast_forward_enabled = True
         smtc.is_rewind_enabled = True
-        smtc.playback_status = wm.MediaPlaybackStatus.CLOSED
+        # Publish a complete (empty) music card before enabling, so the
+        # system never sees a half-initialized session: a stopped
+        # player with nothing loaded, ready to accept Play.
+        du = smtc.display_updater
+        du.type = wm.MediaPlaybackType.MUSIC
+        du.update()
+        smtc.playback_status = wm.MediaPlaybackStatus.STOPPED
+        self._last_status = wm.MediaPlaybackStatus.STOPPED
         smtc.is_enabled = True
 
         self._tokens.append(
@@ -275,6 +282,16 @@ class MediaControls:
             except Exception:
                 pass
         self._tokens.clear()
+        # Tell the system the session is gone for good (not merely
+        # stopped) and wipe the card, so nothing stale outlives the
+        # process.
+        try:
+            self._smtc.playback_status = self._wm.MediaPlaybackStatus.CLOSED
+            du = self._smtc.display_updater
+            du.clear_all()
+            du.update()
+        except Exception:
+            pass
         try:
             self._smtc.is_enabled = False
         except Exception:

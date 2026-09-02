@@ -1497,6 +1497,16 @@ msgstr "&Свернуть в трей"
 msgid "Rest&ore"
 msgstr "&Развернуть"
 
+#. Translators: Tray context menu: nothing is loaded; start
+#. playing the focused library track.  Translated apart
+#. from the Playback menu's "&Play" because the mnemonic
+#. must not clash with the other tray items (Restore,
+#. Repeat, Previous/Next, Volume, Seek, Shuffle, Exit).
+#: src/chordcut/ui/tray_icon.py:107
+msgctxt "tray"
+msgid "&Play"
+msgstr "Воспро&извести"
+
 #. Translators: Tray context menu: pause playback.
 #: src/chordcut/ui/tray_icon.py:101
 msgid "&Pause"

@@ -69,9 +69,13 @@ class Player:
 
     @property
     def is_playing(self) -> bool:
-        """Check if audio is currently playing (not paused)."""
+        """Check if a track is loaded and not paused.
+
+        MPV's ``pause`` flag is False on an idle player, so without
+        the loaded check an empty player would report "playing".
+        """
         try:
-            return not self._mpv.pause
+            return self.is_loaded and not self._mpv.pause
         except Exception:
             return False
 

@@ -17,6 +17,27 @@ from chordcut.utils.paths import get_locale_dir
 # Named Windows Event used to signal the first instance to activate.
 _ACTIVATE_EVENT_NAME = "Global\\ChordCut_ActivateWindow"
 
+# Explicit identity for the Windows shell.  Without it the process is
+# identified by its executable name ("python.exe" from source,
+# "ChordCut.exe" frozen), and the media session - and the Quick
+# Settings media card bound to it - is filed under that name as an
+# unregistered app, which the shell resolves unreliably (mpv hit the
+# same wall: mpv-player/mpv#14338).  Must be set before any window
+# exists.
+_APP_USER_MODEL_ID = "ChordCut"
+
+
+def _set_app_user_model_id() -> None:
+    """Give the process a stable AppUserModelID (best effort)."""
+    try:
+        shell32 = ctypes.WinDLL("shell32")
+        func = shell32.SetCurrentProcessExplicitAppUserModelID
+        func.argtypes = [ctypes.c_wchar_p]
+        func.restype = ctypes.HRESULT
+        func(_APP_USER_MODEL_ID)
+    except Exception:
+        pass
+
 
 class ChordCutApp(wx.App):
     """Main wxPython application class."""
@@ -32,6 +53,9 @@ class ChordCutApp(wx.App):
         # Win32 HANDLE to the named activation event (first instance only).
         self._activate_event: int = 0
         self._wx_locale: wx.Locale | None = None
+
+        # Before wx creates its first (hidden) top-level window.
+        _set_app_user_model_id()
 
         super().__init__(redirect=False)
 

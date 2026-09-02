@@ -67,7 +67,7 @@ Switch sections with the section selector. To open an item — an artist's album
 
 ### Playing Music
 
-Double-click a track (or press Enter) to start playback; this also creates a queue from all currently visible tracks. Skip between tracks with the previous/next buttons on the playback bar, Shift+Left / Shift+Right, or the previous/next media keys on your keyboard. Pause and resume with the play/pause button, Escape, or the play/pause media key.
+Double-click a track, press Enter, or press the play/pause media key (when nothing is playing) to start playback; this also creates a queue from all currently visible tracks. Skip between tracks with the previous/next buttons on the playback bar, Shift+Left / Shift+Right, or the previous/next media keys on your keyboard. Pause and resume with the play/pause button, Escape, or the play/pause media key.
 
 Toggle repeat with the repeat button, Playback > Repeat, or Ctrl+Alt+R (loops the current track; next/previous still works). Toggle shuffle with the shuffle button, Playback > Shuffle, or Ctrl+Alt+S (reorders the queue; disabling it restores the original order). Stop playback entirely with Playback > Stop, Ctrl+Alt+Q, or the stop media key — this also destroys the queue.
 
