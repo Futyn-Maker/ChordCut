@@ -14,6 +14,7 @@ set on this class are invoked as-is; the caller must marshal them to
 the GUI thread (e.g. with ``wx.CallAfter``).
 """
 
+import atexit
 import datetime
 import logging
 import time
@@ -34,6 +35,7 @@ class MediaControls:
         self._smtc = smtc
         self._wm = wm  # winrt.windows.media module
         self._tokens: list[tuple[str, object]] = []
+        self._closed = False
 
         # Optional callbacks, all invoked on WinRT threads.
         self.on_play: Callable[[], None] | None = None
@@ -93,6 +95,14 @@ class MediaControls:
                 smtc.add_playback_position_change_requested(self._on_position),
             )
         )
+
+        # Last-resort teardown.  A session the system is never told about
+        # closing outlives the process: the shell keeps showing that dead
+        # card and routes its buttons nowhere, and a later run of the same
+        # app - same identity - can be shadowed by the corpse.  Only a
+        # shell restart clears it, so every ordinary exit must close the
+        # session even when the window's close handler did not run.
+        atexit.register(self.shutdown)
 
     # ------------------------------------------------------------------
     # Construction
@@ -263,7 +273,14 @@ class MediaControls:
             _log.debug("SMTC timeline push failed", exc_info=True)
 
     def shutdown(self) -> None:
-        """Detach event handlers and disable the session."""
+        """Close the session and detach handlers; safe to call twice."""
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            atexit.unregister(self.shutdown)
+        except Exception:
+            pass
         removers = {
             "button_pressed": self._smtc.remove_button_pressed,
             "shuffle_enabled_change_requested": (

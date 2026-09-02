@@ -13,6 +13,13 @@ class Player:
         self._mpv = mpv.MPV(
             video=False,  # Audio only
             ytdl=False,  # Don't use youtube-dl
+            # libmpv has its own Windows media session (it creates an
+            # "mpv-smtc" window and publishes metadata itself).  Its
+            # built-in libmpv profile turns this off, but the option
+            # defaults to on elsewhere in mpv, so pin it: ChordCut
+            # publishes one session of its own, and a second one from
+            # the same process would compete with it.
+            media_controls=False,
         )
 
         # Callbacks

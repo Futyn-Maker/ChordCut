@@ -33,6 +33,7 @@ from chordcut.ui.track_table import (
 from chordcut.ui.transport_bar import TransportBar
 from chordcut.ui.tray_icon import TrayIcon
 from chordcut.utils.text import normalize_search
+from chordcut.utils.win_appid import set_window_app_id
 
 # Section identifiers (order matches the wx.Choice control)
 SECTIONS = (
@@ -229,6 +230,16 @@ class MainWindow(wx.Frame):
             },
         )
         self._apply_global_hotkeys()
+
+        # Give the window the application's shell identity before the
+        # media session binds to it.  A portable app has no registered
+        # shell entry, so a window property store is the only place the
+        # system can read a name and icon for the session it hosts.
+        set_window_app_id(
+            self.GetHandle(),
+            display_name=__app_name__,
+            icon_path=f"{_ico_path},0" if _ico_path else None,
+        )
 
         # Windows media session: hardware media keys, Bluetooth headset
         # buttons, and the system media flyout.  None when unavailable.
