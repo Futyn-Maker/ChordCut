@@ -1,62 +1,364 @@
-/* Stylesheet for ChordCut HTML documentation (embedded by pandoc at build time). */
+/* Stylesheet for the ChordCut HTML documentation, embedded by pandoc at build
+ * time (see build/build.bat, build/docs.html and build/docs.lua).
+ *
+ * Written against WCAG 2.2 level AAA:
+ * - every text/background pair is at least 7:1 (light and dark scheme alike);
+ *   borders, focus rings and other non-text cues are at least 3:1;
+ * - links are underlined, so color is never the only distinction;
+ * - focus is shown by a 3px ring offset from the element (2.4.13);
+ * - body text lives in a column of at most ~80 characters, line spacing is 1.5,
+ *   paragraph spacing is 1.5 times the line spacing, nothing is justified,
+ *   and everything scales with the user's font size (1.4.8);
+ * - navigation links and the download button are at least 44x44 CSS pixels
+ *   (2.5.5); inline links in running text are exempt;
+ * - Windows high-contrast themes replace the palette automatically
+ *   (forced-colors), nothing opts out of that.
+ * Contrast ratios were checked with the WCAG relative-luminance formula; keep
+ * them at 7:1 or better if you change a color. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1b1b1b;
+  --link: #0b4d9a;
+  --visited: #5a2d91;
+  --surface: #f3f5f7;
+  --code-bg: #eef0f2;
+  --border: #767676;
+  --rule: #c8ccd0;
+  --focus: #0b4d9a;
+  --button-bg: #0b4d9a;
+  --button-fg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --fg: #ededed;
+    --link: #9ccbff;
+    --visited: #d0b3ff;
+    --surface: #1c1c1c;
+    --code-bg: #242424;
+    --border: #8a8a8a;
+    --rule: #3a3a3a;
+    --focus: #9ccbff;
+    --button-bg: #9ccbff;
+    --button-fg: #121212;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
-    max-width: 48em;
-    margin: 2em auto;
-    padding: 0 1em;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #24292e;
-    background: #fff;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
+  text-align: start;
 }
-h1, h2, h3, h4, h5, h6 {
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    font-weight: 600;
-    line-height: 1.25;
+
+.wrap {
+  box-sizing: border-box;
+  max-width: 40em;
+  margin: 0 auto;
+  padding: 0 1.25em;
 }
-h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-h3 { font-size: 1.25em; }
-a { color: #0366d6; }
-a:hover, a:focus { color: #024ea1; }
-code {
-    padding: 0.2em 0.4em;
-    background: #f6f8fa;
-    border-radius: 3px;
-    font-size: 85%;
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+/* Skip link: visually hidden until it receives keyboard focus. */
+.skip-link {
+  position: absolute;
+  top: -100em;
+  left: 1em;
+  z-index: 1;
+  padding: 0.75em 1em;
+  background: var(--bg);
+  color: var(--link);
 }
-pre {
-    padding: 1em;
-    background: #f6f8fa;
-    border-radius: 6px;
-    overflow: auto;
-    line-height: 1.45;
+
+.skip-link:focus {
+  top: 1em;
 }
-pre code { padding: 0; background: none; font-size: 85%; }
+
+/* Banner: title, download button and table of contents. */
+.banner {
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  padding: 1.5em 0;
+}
+
+.banner h1 {
+  margin: 0 0 0.5em;
+  font-size: 2em;
+  line-height: 1.25;
+}
+
+.banner .download {
+  margin: 0 0 1.5em;
+}
+
+.download-link {
+  display: inline-block;
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.6em 1.25em;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: 2px solid var(--button-bg);
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.download-link:visited {
+  color: var(--button-fg);
+}
+
+.download-link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.banner nav h2 {
+  margin: 0 0 0.25em;
+  font-size: 1.25em;
+  border: none;
+  padding: 0;
+}
+
+.banner nav ul {
+  margin: 0;
+  padding-inline-start: 1.25em;
+}
+
+.banner nav li {
+  margin: 0;
+}
+
+.banner nav a {
+  display: inline-block;
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.6em 0.25em;
+}
+
+/* Headings and text. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 1.5em;
+  margin: 2em 0 0.75em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid var(--rule);
+}
+
+h3 {
+  font-size: 1.25em;
+  margin: 1.75em 0 0.6em;
+}
+
+p,
+ul,
+ol,
+pre,
+table,
 blockquote {
-    margin: 0;
-    padding: 0 1em;
-    color: #57606a;
-    border-left: 0.25em solid #dfe2e5;
+  margin: 0 0 2.25em;
 }
-table { border-collapse: collapse; width: 100%; }
-th, td { padding: 0.5em 1em; border: 1px solid #dfe2e5; }
-th { background: #f6f8fa; font-weight: 600; }
+
+ul,
+ol {
+  padding-inline-start: 2em;
+}
+
+li + li {
+  margin-top: 0.35em;
+}
+
+li > ul,
+li > ol,
+li > p {
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+
+a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+}
+
+a:visited {
+  color: var(--visited);
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+code,
+kbd,
+pre {
+  font-family:
+    ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.95em;
+}
+
+code {
+  padding: 0.1em 0.3em;
+  background: var(--code-bg);
+  border-radius: 3px;
+}
+
+pre {
+  padding: 1em;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  /* Wrap long commands instead of scrolling: a scrollable block would need
+   * keyboard focus (axe scrollable-region-focusable) and two-way scrolling
+   * fails reflow (1.4.10). */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  font-size: 1em;
+}
+
 kbd {
-    display: inline-block;
-    padding: 3px 5px;
-    font: 11px "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    line-height: 10px;
-    color: #444d56;
-    vertical-align: middle;
-    background-color: #fafbfc;
-    border: solid 1px #c6cbd1;
-    border-bottom-color: #959da5;
-    border-radius: 3px;
-    box-shadow: inset 0 -1px 0 #959da5;
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
 }
-ul, ol { padding-left: 2em; }
-li + li { margin-top: 0.25em; }
-hr { border: none; border-top: 1px solid #eaecef; margin: 1.5em 0; }
+
+blockquote {
+  padding: 0 1em;
+  border-inline-start: 0.25em solid var(--border);
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Table captions repeat the heading right above the table (build/docs.lua),
+ * so they are kept for screen readers only. Delete this rule to show them. */
+caption,
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Copy button on code blocks, added by the script in build/docs.html. */
+.code-block {
+  position: relative;
+  margin: 0 0 2.25em;
+}
+
+.code-block pre {
+  margin: 0;
+  padding-inline-end: 7em;
+}
+
+.copy-button {
+  position: absolute;
+  top: 0.5em;
+  inset-inline-end: 0.5em;
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5em 1em;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: 2px solid var(--button-bg);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+th,
+td {
+  padding: 0.6em 0.8em;
+  border: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+th {
+  background: var(--code-bg);
+  font-weight: 600;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 2.25em 0;
+}
+
+@media print {
+  .skip-link {
+    display: none;
+  }
+
+  .banner {
+    background: none;
+  }
+}

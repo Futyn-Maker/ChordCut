@@ -128,6 +128,16 @@ Checks for new releases via the GitHub API (`GET /repos/{owner}/{repo}/releases/
 
 **Update flow:** download ZIP to temp dir → extract → write a batch script (`chordcut_update.bat`) → launch it detached → close the app. The batch script waits for the process to exit, removes `_internal/` (which includes locale files and must be fully replaced), copies new files via `xcopy` (preserving `data/`, `settings.json`, `music/`), starts the new executable, and self-deletes.
 
+## HTML Documentation
+
+`build\build.bat` turns every `README*.md` into a self-contained `readme_<lang>.html` with pandoc, driven by three files in `build/`:
+
+- `docs.html` — template: skip link, a `header` banner holding the page's only H1, the download button and the table-of-contents `nav`, then `main`, plus the inline script that adds a copy button to every code block (buttons exist only when scripting runs, so there are no dead controls without it).
+- `docs.css` — stylesheet written to WCAG 2.2 AAA: light and dark palettes at 7:1 or better, non-text cues at 3:1, underlined links, 3px focus rings, 44px targets for navigation and buttons, wrapped (never scrolling) code blocks, ~80-character column. Keep any new color at 7:1 against everything it sits on.
+- `docs.lua` — filter: lifts the README's leading download link and first H1 into the banner, unwraps pandoc's implicit figures so screenshots are plain images described only by their alt text, gives table header cells `scope="col"` and gives every caption-less table a `<caption>` repeating the heading above it (visually hidden by the stylesheet, so pressing T in a screen reader announces the table's name).
+
+The READMEs must keep that shape: the download link paragraph first, then the H1. The labels the page adds itself (title suffix, "Contents", skip link, "Copy"/"Copied") are the `strings` table at the top of `docs.lua`, keyed by language code with an English fallback — add a language there together with its `README_<lang>.md`. Pandoc's `--embed-resources` pass adds a redundant `role="img" aria-label` next to every `alt`; it is harmless and cannot be switched off.
+
 ## Versioning
 
 Semantic date-based: `v{YYYY.MM.DD}[.N]`. Version string lives in `src/chordcut/__init__.py`. CI workflow (`.github/workflows/release.yml`) auto-bumps it on release.
@@ -187,6 +197,7 @@ All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals)
    pybabel compile -d locale -D chordcut
    ```
 5. **Register the LCID mapping** (optional, for auto-detection on Windows): add the language's Windows LCID hex code to the `lcid_map` dict in `src/chordcut/i18n.py:_get_system_language()`. This enables automatic language selection for Windows users. If the LCID is not in the hardcoded map, it falls back to `locale.windows_locale` lookup, which covers most languages.
+6. **Translate the documentation** (optional): add `README_xx.md` (same shape as `README.md`: download link first, then the H1) and an `xx` entry to the `strings` table in `build/docs.lua`. The build turns it into `readme_xx.html`, which Help → Documentation opens for that language (see [HTML Documentation](#html-documentation)).
 
 ### Updating an existing translation after source strings change
 

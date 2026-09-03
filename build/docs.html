@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="$lang$" $if(dir)$ dir="$dir$" $endif$>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>$pagetitle$</title>
+    $for(css)$
+    <link rel="stylesheet" href="$css$" />
+    $endfor$ $for(header-includes)$ $header-includes$ $endfor$
+  </head>
+  <body data-copy-label="$copy-label$" data-copied-label="$copied-label$">
+    <a class="skip-link" href="#main">$skip-label$</a>
+    <header class="banner">
+      <div class="wrap">
+        <h1>$title$</h1>
+        $if(download-url)$
+        <p class="download">
+          <a class="download-link" href="$download-url$">$download-text$</a>
+        </p>
+        $endif$ $if(toc)$
+        <nav aria-labelledby="toc-title">
+          <h2 id="toc-title">$toc-title$</h2>
+          $table-of-contents$
+        </nav>
+        $endif$
+      </div>
+    </header>
+    <main id="main" class="wrap">$body$</main>
+    <script>
+      // Adds a localized "Copy" button to every code block. Runs only when
+      // scripting is available, so the page has no dead buttons without it.
+      (function () {
+        var labels = document.body.dataset;
+        var live = document.createElement("div");
+        live.className = "visually-hidden";
+        live.setAttribute("aria-live", "polite");
+        document.body.appendChild(live);
+
+        function fallbackCopy(text) {
+          var area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.className = "visually-hidden";
+          document.body.appendChild(area);
+          area.select();
+          try {
+            document.execCommand("copy");
+          } catch (e) {
+            // Nothing else to try; the user can still select the text.
+          }
+          document.body.removeChild(area);
+        }
+
+        function copyText(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).catch(function () {
+              fallbackCopy(text);
+            });
+          }
+          fallbackCopy(text);
+          return Promise.resolve();
+        }
+
+        document.querySelectorAll("pre > code").forEach(function (code) {
+          var pre = code.parentNode;
+          var block = document.createElement("div");
+          block.className = "code-block";
+          pre.parentNode.insertBefore(block, pre);
+          block.appendChild(pre);
+
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "copy-button";
+          button.textContent = labels.copyLabel;
+          button.addEventListener("click", function () {
+            copyText(code.textContent).then(function () {
+              button.textContent = labels.copiedLabel;
+              live.textContent = labels.copiedLabel;
+              setTimeout(function () {
+                button.textContent = labels.copyLabel;
+                live.textContent = "";
+              }, 2000);
+            });
+          });
+          block.appendChild(button);
+        });
+      })();
+    </script>
+  </body>
+</html>

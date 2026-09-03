@@ -156,7 +156,9 @@ if not errorlevel 1 (
         if "!DOCLANG!"=="" set "DOCLANG=en"
         if "!DOCLANG:~0,1!"=="_" set "DOCLANG=!DOCLANG:~1!"
         echo   Converting %%f to readme_!DOCLANG!.html...
-        pandoc --standalone --embed-resources --css=build/docs.css --metadata title="ChordCut" --metadata lang=!DOCLANG! -o "dist\ChordCut\readme_!DOCLANG!.html" "%%f"
+        REM Template, stylesheet and filter live in build\ (docs.html, docs.css, docs.lua).
+        REM The filter takes the title and download link from the README itself.
+        pandoc --standalone --embed-resources --template=build/docs.html --css=build/docs.css --lua-filter=build/docs.lua --toc --toc-depth=3 --metadata lang=!DOCLANG! -o "dist\ChordCut\readme_!DOCLANG!.html" "%%f"
         if not errorlevel 1 set DOCS_AVAILABLE=1
     )
 ) else (

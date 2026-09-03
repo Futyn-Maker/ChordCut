@@ -296,6 +296,10 @@ pybabel update -i locale/chordcut.pot -d locale -D chordcut
 
 Then re-translate any new or changed strings and recompile.
 
+### Translating the documentation
+
+Each release ships this documentation as `readme_<lang>.html`, generated from `README_<lang>.md` (`README.md` for English). To translate it, add a `README_xx.md` next to the existing ones, keeping the first two lines in the same shape: the download link, then the top-level heading. The few labels the page adds around the text — the window title suffix, the "Contents" heading, the skip link, and the "Copy" button on code blocks — live in the `strings` table at the top of `build/docs.lua`; add an entry for your language code there. Languages without an entry get the English labels.
+
 ## Credits
 
 - ChordCut was inspired by [VKBoss+](https://vkboss.ru), an accessible VK music client. Many interface decisions and the overall UX approach were borrowed from that project. Thank you guys for the best music client for VK, which I still use to this day! :)
