@@ -94,7 +94,7 @@ If your server has multiple music libraries (e.g. "Music" and "Soundtracks"), us
 - **Delete**: select a playlist and press Delete, or use the context menu. Confirm in the dialog.
 - **Add a track**: open the context menu on any track, choose Add to Playlist, and pick a playlist from the submenu. The track is added to the top.
 - **Remove a track**: inside a playlist, select a track and press Delete, or use the context menu.
-- **Reorder tracks**: inside a playlist, drag a track to its new position with the mouse, press Alt+Up / Alt+Down, or use the context menu. (Dragging is available while the list is unfiltered and not shuffled, so that list positions match playlist positions.)
+- **Reorder tracks**: inside a playlist, drag a track to its new position with the mouse, press Alt+Up / Alt+Down to move it one step, Alt+Home / Alt+End to move it to the top or bottom, or use the context menu. (Dragging is available while the list is unfiltered and not shuffled, so that list positions match playlist positions.)
 
 ### Multi-Track Selection
 
@@ -104,7 +104,7 @@ You can select multiple tracks from any track list to build a custom playback qu
 - **Selected tracks area**: once at least one track is selected, a new area appears between the main list and the output device selector. It shows the number of selected tracks and contains its own list. A "Clear selection" button removes all selected tracks.
 - **Remove a track from the selection**: press Space (or Ctrl+click) on a track inside the selected tracks list. If the last track is removed, the area disappears.
 - **Play from selection**: double-click a track in the selected tracks list, or press Enter on it, to start playback using the selection as the queue.
-- **Reorder**: inside the selected tracks list, drag a track to its new position with the mouse, press Alt+Up / Alt+Down, or use the context menu to change the playback order.
+- **Reorder**: inside the selected tracks list, drag a track to its new position with the mouse, press Alt+Up / Alt+Down to move it one step, Alt+Home / Alt+End to move it to the top or bottom, or use the context menu to change the playback order.
 - **Bulk actions**: when the focus is inside the selected tracks list, hotkeys and the context menu apply to all selected tracks:
   - Ctrl+Shift+Enter — download all selected tracks one by one.
   - Ctrl+C — copy Jellyfin web links for all selected tracks (one per line).
@@ -171,45 +171,48 @@ Press F8, go to File > Settings, or click the gear button on the playback bar to
 
 ## Keyboard Shortcuts
 
-| Key                        | Action                                                            |
-| -------------------------- | ----------------------------------------------------------------- |
-| Tab                        | Cycle between section selector, search, list, and device selector |
-| Enter                      | Play track / drill into item                                      |
-| Backspace                  | Go back one level                                                 |
-| Escape                     | Pause / Resume                                                    |
-| Ctrl+Shift+Alt+C           | Minimize to system tray                                           |
-| Ctrl+Alt+Q                 | Stop playback and destroy queue                                   |
-| Shift+Right                | Next track                                                        |
-| Shift+Left                 | Previous track                                                    |
-| Ctrl+Alt+X                 | Restart current track                                             |
-| Ctrl+Alt+R                 | Toggle repeat                                                     |
-| Ctrl+Alt+S                 | Toggle shuffle                                                    |
-| Ctrl+Up                    | Volume up                                                         |
-| Ctrl+Down                  | Volume down                                                       |
-| Ctrl+Right                 | Seek forward                                                      |
-| Ctrl+Left                  | Seek backward                                                     |
-| F9                         | Show or hide the lyrics panel                                     |
-| Ctrl+N                     | Create new playlist                                               |
-| F2                         | Rename playlist                                                   |
-| Delete                     | Delete playlist / Remove track from playlist                      |
-| Alt+Up                     | Move track up in playlist                                         |
-| Alt+Down                   | Move track down in playlist                                       |
-| Space                      | Add track to selection (track lists only)                         |
-| Space (in selection)       | Remove track from selection                                       |
-| Enter (in selection)       | Play from selection queue                                         |
-| Alt+Up/Down (in selection) | Reorder tracks in selection                                       |
-| Delete (in selection)      | Remove selected tracks from playlist                              |
-| Alt+Enter                  | Properties                                                        |
-| Ctrl+Alt+Enter             | View lyrics (tracks only)                                         |
-| Alt+Shift+Enter            | View synced lyrics (tracks only)                                  |
-| Ctrl+J (synced lyrics)     | Jump to the line at the playback position                         |
-| Ctrl+C                     | Copy Jellyfin link                                                |
-| Ctrl+Shift+C               | Copy stream link (tracks only)                                    |
-| Ctrl+Shift+Enter           | Download track                                                    |
-| F5                         | Refresh library                                                   |
-| F8                         | Settings                                                          |
-| F1                         | Keyboard shortcuts reference                                      |
-| Alt+F4                     | Minimize to tray (default) / Exit                                 |
+| Key                         | Action                                                            |
+| --------------------------- | ----------------------------------------------------------------- |
+| Tab                         | Cycle between section selector, search, list, and device selector |
+| Enter                       | Play track / drill into item                                      |
+| Backspace                   | Go back one level                                                 |
+| Escape                      | Pause / Resume                                                    |
+| Ctrl+Shift+Alt+C            | Minimize to system tray                                           |
+| Ctrl+Alt+Q                  | Stop playback and destroy queue                                   |
+| Shift+Right                 | Next track                                                        |
+| Shift+Left                  | Previous track                                                    |
+| Ctrl+Alt+X                  | Restart current track                                             |
+| Ctrl+Alt+R                  | Toggle repeat                                                     |
+| Ctrl+Alt+S                  | Toggle shuffle                                                    |
+| Ctrl+Up                     | Volume up                                                         |
+| Ctrl+Down                   | Volume down                                                       |
+| Ctrl+Right                  | Seek forward                                                      |
+| Ctrl+Left                   | Seek backward                                                     |
+| F9                          | Show or hide the lyrics panel                                     |
+| Ctrl+N                      | Create new playlist                                               |
+| F2                          | Rename playlist                                                   |
+| Delete                      | Delete playlist / Remove track from playlist                      |
+| Alt+Up                      | Move track up in playlist                                         |
+| Alt+Down                    | Move track down in playlist                                       |
+| Alt+Home                    | Move track to the top of the playlist                             |
+| Alt+End                     | Move track to the bottom of the playlist                          |
+| Space                       | Add track to selection (track lists only)                         |
+| Space (in selection)        | Remove track from selection                                       |
+| Enter (in selection)        | Play from selection queue                                         |
+| Alt+Up/Down (in selection)  | Reorder tracks in selection                                       |
+| Alt+Home/End (in selection) | Move track to the top / bottom of the selection                   |
+| Delete (in selection)       | Remove selected tracks from playlist                              |
+| Alt+Enter                   | Properties                                                        |
+| Ctrl+Alt+Enter              | View lyrics (tracks only)                                         |
+| Alt+Shift+Enter             | View synced lyrics (tracks only)                                  |
+| Ctrl+J (synced lyrics)      | Jump to the line at the playback position                         |
+| Ctrl+C                      | Copy Jellyfin link                                                |
+| Ctrl+Shift+C                | Copy stream link (tracks only)                                    |
+| Ctrl+Shift+Enter            | Download track                                                    |
+| F5                          | Refresh library                                                   |
+| F8                          | Settings                                                          |
+| F1                          | Keyboard shortcuts reference                                      |
+| Alt+F4                      | Minimize to tray (default) / Exit                                 |
 
 ### Global Hotkeys
 

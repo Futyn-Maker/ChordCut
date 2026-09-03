@@ -20,6 +20,8 @@ ID_PROPERTIES = wx.NewIdRef()
 ID_REMOVE_FROM_PLAYLIST = wx.NewIdRef()
 ID_MOVE_UP = wx.NewIdRef()
 ID_MOVE_DOWN = wx.NewIdRef()
+ID_MOVE_TOP = wx.NewIdRef()
+ID_MOVE_BOTTOM = wx.NewIdRef()
 ID_RENAME_PLAYLIST = wx.NewIdRef()
 ID_DELETE_PLAYLIST = wx.NewIdRef()
 
@@ -32,6 +34,54 @@ ID_SEL_COPY_STREAM_LINKS = wx.NewIdRef()
 ID_SEL_REMOVE_FROM_PLAYLIST = wx.NewIdRef()
 ID_SEL_MOVE_UP = wx.NewIdRef()
 ID_SEL_MOVE_DOWN = wx.NewIdRef()
+ID_SEL_MOVE_TOP = wx.NewIdRef()
+ID_SEL_MOVE_BOTTOM = wx.NewIdRef()
+
+
+def _append_move_items(
+    menu: wx.Menu,
+    ids: tuple[int, int, int, int],
+    item_index: int,
+    total_items: int,
+    locked: bool = False,
+) -> None:
+    """Append Move Up / Down / to Top / to Bottom items to *menu*.
+
+    *ids* are the menu IDs in that order.  Items that cannot
+    move the row anywhere (first row up, last row down) are
+    greyed out, as are all of them when *locked*.
+    """
+    id_up, id_down, id_top, id_bottom = ids
+    mi_up = menu.Append(
+        id_up,
+        # Translators: Context menu: move track up
+        # in playlist / selection.
+        _("Move &Up\tAlt+Up"),
+    )
+    mi_down = menu.Append(
+        id_down,
+        # Translators: Context menu: move track down
+        # in playlist / selection.
+        _("Move Dow&n\tAlt+Down"),
+    )
+    mi_top = menu.Append(
+        id_top,
+        # Translators: Context menu: move track to the
+        # first position in playlist / selection.
+        _("Move to &Top\tAlt+Home"),
+    )
+    mi_bottom = menu.Append(
+        id_bottom,
+        # Translators: Context menu: move track to the
+        # last position in playlist / selection.
+        _("Move to B&ottom\tAlt+End"),
+    )
+    at_top = locked or item_index <= 0
+    at_bottom = locked or item_index >= total_items - 1
+    mi_up.Enable(not at_top)
+    mi_top.Enable(not at_top)
+    mi_down.Enable(not at_bottom)
+    mi_bottom.Enable(not at_bottom)
 
 
 def _append_playlist_submenu(
@@ -128,22 +178,13 @@ def build_context_menu(
                 _("&Remove from Playlist\tDelete"),
             )
             menu.AppendSeparator()
-            mi_up = menu.Append(
-                ID_MOVE_UP,
-                # Translators: Context menu: move track up
-                # in playlist.
-                _("Move &Up\tAlt+Up"),
+            _append_move_items(
+                menu,
+                (ID_MOVE_UP, ID_MOVE_DOWN, ID_MOVE_TOP, ID_MOVE_BOTTOM),
+                item_index,
+                total_items,
+                locked=moves_locked,
             )
-            mi_down = menu.Append(
-                ID_MOVE_DOWN,
-                # Translators: Context menu: move track down
-                # in playlist.
-                _("Move Dow&n\tAlt+Down"),
-            )
-            if moves_locked or item_index <= 0:
-                mi_up.Enable(False)
-            if moves_locked or item_index >= total_items - 1:
-                mi_down.Enable(False)
 
         menu.AppendSeparator()
         menu.Append(
@@ -278,20 +319,17 @@ def build_selection_context_menu(
     )
     menu.AppendSeparator()
 
-    mi_up = menu.Append(
-        ID_SEL_MOVE_UP,
-        # Translators: Selection context menu: move up.
-        _("Move &Up\tAlt+Up"),
+    _append_move_items(
+        menu,
+        (
+            ID_SEL_MOVE_UP,
+            ID_SEL_MOVE_DOWN,
+            ID_SEL_MOVE_TOP,
+            ID_SEL_MOVE_BOTTOM,
+        ),
+        item_index,
+        total_items,
     )
-    mi_down = menu.Append(
-        ID_SEL_MOVE_DOWN,
-        # Translators: Selection context menu: move down.
-        _("Move Dow&n\tAlt+Down"),
-    )
-    if item_index <= 0:
-        mi_up.Enable(False)
-    if item_index >= total_items - 1:
-        mi_down.Enable(False)
 
     menu.AppendSeparator()
     menu.Append(

@@ -44,6 +44,11 @@ SECTIONS = (
     "albums",
 )
 
+# Alt+<key> reorder shortcuts, shared by the playlist and selection lists.
+_MOVE_TOP_KEYS = (wx.WXK_HOME, wx.WXK_NUMPAD_HOME)
+_MOVE_BOTTOM_KEYS = (wx.WXK_END, wx.WXK_NUMPAD_END)
+_MOVE_KEYS = (wx.WXK_UP, wx.WXK_DOWN, *_MOVE_TOP_KEYS, *_MOVE_BOTTOM_KEYS)
+
 
 def _section_display_names() -> list[str]:
     """Translated display names for the section selector."""
@@ -2794,26 +2799,14 @@ class MainWindow(wx.Frame):
                     if item:
                         self._rename_playlist(item)
                     return
-            # Alt+Up/Down: reorder in playlist
+            # Alt+Up/Down and Alt+Home/End: reorder in playlist
             # (blocked while list shuffle is active)
             if event.AltDown() and not event.ControlDown() and not event.ShiftDown():
-                if code == wx.WXK_UP:
+                if code in _MOVE_KEYS:
                     if self._current_playlist_id() and not self._list_shuffle_active:
                         item = self._list.get_selected_item()
                         if item:
-                            self._move_playlist_item(
-                                item,
-                                -1,
-                            )
-                        return
-                elif code == wx.WXK_DOWN:
-                    if self._current_playlist_id() and not self._list_shuffle_active:
-                        item = self._list.get_selected_item()
-                        if item:
-                            self._move_playlist_item(
-                                item,
-                                1,
-                            )
+                            self._move_playlist_item_by_key(item, code)
                         return
 
         # --- Selection list key handling ---
@@ -2844,13 +2837,10 @@ class MainWindow(wx.Frame):
                 if self._can_bulk_remove_from_playlist():
                     self._sel_remove_from_playlist()
                 return
-            # Alt+Up/Down: reorder in selection
+            # Alt+Up/Down and Alt+Home/End: reorder in selection
             if event.AltDown() and not event.ControlDown() and not event.ShiftDown():
-                if code == wx.WXK_UP:
-                    self._move_selection_item(-1)
-                    return
-                elif code == wx.WXK_DOWN:
-                    self._move_selection_item(1)
+                if code in _MOVE_KEYS:
+                    self._move_selection_item_by_key(code)
                     return
             # Ctrl+Shift+Enter: bulk download
             if (
@@ -3046,6 +3036,15 @@ class MainWindow(wx.Frame):
         )
         self._play_track(item)
 
+    def _move_selection_item_by_key(self, code: int) -> None:
+        """Dispatch an Alt+arrow / Alt+Home / Alt+End reorder key."""
+        if code in _MOVE_TOP_KEYS:
+            self._move_selection_item_to_edge(top=True)
+        elif code in _MOVE_BOTTOM_KEYS:
+            self._move_selection_item_to_edge(top=False)
+        else:
+            self._move_selection_item(-1 if code == wx.WXK_UP else 1)
+
     def _move_selection_item(
         self,
         direction: int,
@@ -3069,6 +3068,20 @@ class MainWindow(wx.Frame):
         self._selection_list.set_items(
             self._selected_tracks,
         )
+        self._selection_list.SetSelection(new_idx)
+
+    def _move_selection_item_to_edge(self, top: bool) -> None:
+        """Move the focused selection track to the first/last position."""
+        sel = self._selection_list.GetSelection()
+        n = len(self._selected_tracks)
+        if sel < 0 or n == 0:
+            return
+        new_idx = 0 if top else n - 1
+        if new_idx == sel:
+            return
+        track = self._selected_tracks.pop(sel)
+        self._selected_tracks.insert(new_idx, track)
+        self._selection_list.set_items(self._selected_tracks)
         self._selection_list.SetSelection(new_idx)
 
     def _on_selection_row_moved(self, event: wx.CommandEvent) -> None:
@@ -3098,7 +3111,9 @@ class MainWindow(wx.Frame):
             ID_SEL_COPY_LINKS,
             ID_SEL_COPY_STREAM_LINKS,
             ID_SEL_DOWNLOAD_ALL,
+            ID_SEL_MOVE_BOTTOM,
             ID_SEL_MOVE_DOWN,
+            ID_SEL_MOVE_TOP,
             ID_SEL_MOVE_UP,
             ID_SEL_PLAY,
             ID_SEL_REMOVE,
@@ -3152,6 +3167,10 @@ class MainWindow(wx.Frame):
             ID_SEL_REMOVE_FROM_PLAYLIST: lambda e: self._sel_remove_from_playlist(),
             ID_SEL_MOVE_UP: lambda e: self._move_selection_item(-1),
             ID_SEL_MOVE_DOWN: lambda e: self._move_selection_item(1),
+            ID_SEL_MOVE_TOP: lambda e: self._move_selection_item_to_edge(top=True),
+            ID_SEL_MOVE_BOTTOM: lambda e: self._move_selection_item_to_edge(
+                top=False,
+            ),
             ID_VIEW_LYRICS: lambda e: self._show_lyrics(item, synced=False),
             ID_SYNCED_LYRICS: lambda e: self._show_lyrics(item, synced=True),
             ID_PROPERTIES: lambda e: self._show_properties(item),
@@ -3665,6 +3684,8 @@ class MainWindow(wx.Frame):
             "selection\n"
             "  Alt+Up/Down    - Reorder in "
             "selection\n"
+            "  Alt+Home/End   - Move to top/bottom of "
+            "selection\n"
             "  Delete (in sel)- Remove from "
             "playlist\n\n"
             "Playlists:\n"
@@ -3672,7 +3693,8 @@ class MainWindow(wx.Frame):
             "  F2             - Rename playlist\n"
             "  Delete         - Delete playlist / "
             "remove track\n"
-            "  Alt+Up/Down    - Reorder tracks\n\n"
+            "  Alt+Up/Down    - Reorder tracks\n"
+            "  Alt+Home/End   - Move track to top/bottom\n\n"
             "Other:\n"
             "  F9             - Lyrics panel\n"
             "  Ctrl+Shift+Alt+C - Minimize to tray\n"
@@ -4103,7 +4125,9 @@ class MainWindow(wx.Frame):
             ID_GO_TO_ALBUM,
             ID_GO_TO_ALBUM_ARTIST,
             ID_GO_TO_ARTIST,
+            ID_MOVE_BOTTOM,
             ID_MOVE_DOWN,
+            ID_MOVE_TOP,
             ID_MOVE_UP,
             ID_OPEN,
             ID_PLAY,
@@ -4163,6 +4187,11 @@ class MainWindow(wx.Frame):
             ID_REMOVE_FROM_PLAYLIST: lambda e: self._remove_from_playlist([item]),
             ID_MOVE_UP: lambda e: self._move_playlist_item(item, -1),
             ID_MOVE_DOWN: lambda e: self._move_playlist_item(item, 1),
+            ID_MOVE_TOP: lambda e: self._move_playlist_item_to_edge(item, top=True),
+            ID_MOVE_BOTTOM: lambda e: self._move_playlist_item_to_edge(
+                item,
+                top=False,
+            ),
             ID_RENAME_PLAYLIST: lambda e: self._rename_playlist(item),
             ID_DELETE_PLAYLIST: lambda e: self._delete_playlist(item),
         }
@@ -5149,26 +5178,7 @@ class MainWindow(wx.Frame):
 
         item = items.pop(from_idx)
         items.insert(to_idx, item)
-
-        self._list.set_items(self._filtered_items)
-        self._list.set_selection_by_id(item.get("Id", ""))
-
-        pid = item.get(
-            "PlaylistItemId",
-            item.get("Id", ""),
-        )
-        self._db.move_playlist_track(
-            server.id,
-            pl_id,
-            pid,
-            from_idx,
-            to_idx,
-        )
-        self._client.move_playlist_item_async(
-            pl_id,
-            pid,
-            to_idx,
-        )
+        self._commit_playlist_move(server.id, pl_id, item, from_idx, to_idx)
 
     def _move_playlist_item(
         self,
@@ -5217,25 +5227,85 @@ class MainWindow(wx.Frame):
                         self._filtered_items[fi_old],
                     )
 
-        # Refresh list; set_items preserves focus by Id, so the moved
-        # item is already selected at its new index.
+        self._commit_playlist_move(server.id, pl_id, item, old_idx, new_idx)
+
+    def _move_playlist_item_by_key(self, item: dict, code: int) -> None:
+        """Dispatch an Alt+arrow / Alt+Home / Alt+End reorder key."""
+        if code in _MOVE_TOP_KEYS:
+            self._move_playlist_item_to_edge(item, top=True)
+        elif code in _MOVE_BOTTOM_KEYS:
+            self._move_playlist_item_to_edge(item, top=False)
+        else:
+            self._move_playlist_item(item, -1 if code == wx.WXK_UP else 1)
+
+    def _move_playlist_item_to_edge(self, item: dict, top: bool) -> None:
+        """Move a track to the first/last playlist position.
+
+        A single ``Move`` request, whatever the distance.
+        """
+        pl_id = self._current_playlist_id()
+        if not pl_id:
+            return
+
+        server = self._current_server
+        if not server or not server.id:
+            return
+
+        try:
+            old_idx = self._all_items.index(item)
+        except ValueError:
+            return
+        new_idx = 0 if top else len(self._all_items) - 1
+        if new_idx == old_idx:
+            return
+
+        self._all_items.pop(old_idx)
+        self._all_items.insert(new_idx, item)
+
+        # A filtered view keeps playlist order, so the track that is
+        # now first/last in the playlist is first/last there as well.
+        if self._filtered_items is not self._all_items:
+            try:
+                self._filtered_items.remove(item)
+            except ValueError:
+                pass
+            else:
+                if top:
+                    self._filtered_items.insert(0, item)
+                else:
+                    self._filtered_items.append(item)
+
+        self._commit_playlist_move(server.id, pl_id, item, old_idx, new_idx)
+
+    def _commit_playlist_move(
+        self,
+        server_id: int,
+        pl_id: str,
+        item: dict,
+        old_idx: int,
+        new_idx: int,
+    ) -> None:
+        """Refresh the list, the cache and the server after a move.
+
+        ``_all_items`` (and ``_filtered_items``) must already hold
+        the new order; *old_idx* / *new_idx* are playlist positions.
+        """
+        # set_items preserves focus by Id, so the moved item is
+        # already selected at its new index.
         self._list.set_items(self._filtered_items)
         self._list.set_selection_by_id(item.get("Id", ""))
 
-        # Update DB
         pid = item.get(
             "PlaylistItemId",
             item.get("Id", ""),
         )
         self._db.move_playlist_track(
-            server.id,
+            server_id,
             pl_id,
             pid,
             old_idx,
             new_idx,
         )
-
-        # Fire async server request
         self._client.move_playlist_item_async(
             pl_id,
             pid,
