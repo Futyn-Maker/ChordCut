@@ -527,9 +527,14 @@ class Database:
                     continue
                 conn.execute(
                     "INSERT OR IGNORE INTO playlists"
-                    " (id, server_id, name)"
-                    " VALUES (?, ?, ?)",
-                    (pl_id, server_id, pl.get("Name", "")),
+                    " (id, server_id, name, date_created)"
+                    " VALUES (?, ?, ?, ?)",
+                    (
+                        pl_id,
+                        server_id,
+                        pl.get("Name", ""),
+                        pl.get("DateCreated"),
+                    ),
                 )
 
                 items = playlist_tracks.get(pl_id, [])
@@ -591,7 +596,11 @@ class Database:
 
     @staticmethod
     def _playlist_to_dict(row: sqlite3.Row) -> dict:
-        return {"Id": row["id"], "Name": row["name"]}
+        return {
+            "Id": row["id"],
+            "Name": row["name"],
+            "DateCreated": row["date_created"] or "",
+        }
 
     # --- Query helpers ---
 
@@ -751,14 +760,29 @@ class Database:
             ).fetchall()
             return [self._album_to_dict(r) for r in rows]
 
-    def get_all_playlists(self, server_id: int) -> list[dict]:
-        """Get all cached playlists sorted by name."""
+    _PLAYLIST_SORT_SQL: ClassVar[dict[str, str]] = {
+        "alpha_asc": "name COLLATE NOCASE",
+        "alpha_desc": "name COLLATE NOCASE DESC",
+        "date_desc": "date_created DESC, name COLLATE NOCASE",
+        "date_asc": "date_created ASC, name COLLATE NOCASE",
+    }
+
+    def get_all_playlists(
+        self,
+        server_id: int,
+        sort: str = "alpha_asc",
+    ) -> list[dict]:
+        """Get all cached playlists in the given sort order."""
+        order = self._PLAYLIST_SORT_SQL.get(
+            sort,
+            self._PLAYLIST_SORT_SQL["alpha_asc"],
+        )
         with self.connection() as conn:
             rows = conn.execute(
-                """
+                f"""
                 SELECT * FROM playlists
                 WHERE server_id = ?
-                ORDER BY name COLLATE NOCASE
+                ORDER BY {order}
                 """,
                 (server_id,),
             ).fetchall()
@@ -1042,14 +1066,15 @@ class Database:
         server_id: int,
         playlist_id: str,
         name: str,
+        date_created: str | None = None,
     ) -> None:
         """Insert a new playlist into the cache."""
         with self.connection() as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO playlists"
-                " (id, server_id, name)"
-                " VALUES (?, ?, ?)",
-                (playlist_id, server_id, name),
+                " (id, server_id, name, date_created)"
+                " VALUES (?, ?, ?, ?)",
+                (playlist_id, server_id, name, date_created),
             )
 
     def rename_playlist(

@@ -21,7 +21,7 @@ import sqlite3
 from collections.abc import Callable
 
 # Increment when the schema changes and add a migration below.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # Ordered list of (target_version, migration_callable).
 MIGRATIONS: list[tuple[int, Callable[[sqlite3.Connection], None]]] = []
@@ -40,3 +40,13 @@ def _migrate_to_2(conn: sqlite3.Connection) -> None:
 
 
 MIGRATIONS.append((2, _migrate_to_2))
+
+
+def _migrate_to_3(conn: sqlite3.Connection) -> None:
+    """Add the creation date column to playlists (date sorting)."""
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(playlists)")}
+    if "date_created" not in cols:
+        conn.execute("ALTER TABLE playlists ADD COLUMN date_created TEXT")
+
+
+MIGRATIONS.append((3, _migrate_to_3))

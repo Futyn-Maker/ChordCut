@@ -250,6 +250,7 @@ class JellyfinClient:
                 params={
                     "IncludeItemTypes": "Playlist",
                     "Recursive": True,
+                    "Fields": "DateCreated",
                     "SortBy": "SortName",
                     "SortOrder": "Ascending",
                 }

@@ -4,7 +4,9 @@ import logging
 import random
 import subprocess
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import wx
 import wx.adv
@@ -452,31 +454,26 @@ class MainWindow(wx.Frame):
         )
         view_menu.AppendSeparator()
         self._sort_menu = wx.Menu()
-        self._sort_menu_ids: dict[int, str] = {}
-        sort_items = [
-            # Translators: Sort option: alphabetical A-Z.
-            ("alpha_asc", _("Alphabetical A–Z")),  # noqa: RUF001
-            # Translators: Sort option: alphabetical Z-A.
-            ("alpha_desc", _("Alphabetical Z–A")),  # noqa: RUF001
-            # Translators: Sort option: newest first.
-            ("date_desc", _("By date added (newest first)")),
-            # Translators: Sort option: oldest first.
-            ("date_asc", _("By date added (oldest first)")),
-        ]
-        current_sort = self._settings.track_sort
-        for sort_key, label in sort_items:
-            item = self._sort_menu.AppendRadioItem(
-                wx.ID_ANY,
-                label,
-            )
-            self._sort_menu_ids[item.GetId()] = sort_key
-            if sort_key == current_sort:
-                item.Check(True)
-            self.Bind(
-                wx.EVT_MENU,
-                self._on_sort_change,
-                item,
-            )
+        self._track_sort_menu_ids: dict[int, str] = {}
+        self._playlist_sort_menu_ids: dict[int, str] = {}
+        self._sort_menu.AppendSubMenu(
+            self._build_sort_submenu(
+                self._settings.track_sort,
+                self._track_sort_menu_ids,
+                self._on_track_sort_change,
+            ),
+            # Translators: Sorting submenu for the tracks list.
+            _("&Tracks"),
+        )
+        self._sort_menu.AppendSubMenu(
+            self._build_sort_submenu(
+                self._settings.playlist_sort,
+                self._playlist_sort_menu_ids,
+                self._on_playlist_sort_change,
+            ),
+            # Translators: Sorting submenu for the playlists list.
+            _("&Playlists"),
+        )
         view_menu.AppendSubMenu(
             self._sort_menu,
             # Translators: Sorting submenu label.
@@ -1796,7 +1793,10 @@ class MainWindow(wx.Frame):
             lib_ids,
         )
         self._lib_albums = self._db.get_all_albums(server_id, lib_ids)
-        self._lib_playlists = self._db.get_all_playlists(server_id)
+        self._lib_playlists = self._db.get_all_playlists(
+            server_id,
+            sort=self._settings.playlist_sort,
+        )
 
     def _on_library_loaded(
         self,
@@ -2177,12 +2177,42 @@ class MainWindow(wx.Frame):
     # Sorting
     # ------------------------------------------------------------------
 
-    def _on_sort_change(
+    def _build_sort_submenu(
+        self,
+        current_sort: str,
+        menu_ids: dict[int, str],
+        handler: Callable[[wx.CommandEvent], None],
+    ) -> wx.Menu:
+        """Build a radio submenu with the shared sort options.
+
+        Fills ``menu_ids`` with item id → sort key so the
+        handler can tell which option was picked.
+        """
+        menu = wx.Menu()
+        sort_items = [
+            # Translators: Sort option: alphabetical A-Z.
+            ("alpha_asc", _("Alphabetical A–Z")),  # noqa: RUF001
+            # Translators: Sort option: alphabetical Z-A.
+            ("alpha_desc", _("Alphabetical Z–A")),  # noqa: RUF001
+            # Translators: Sort option: newest first.
+            ("date_desc", _("By date added (newest first)")),
+            # Translators: Sort option: oldest first.
+            ("date_asc", _("By date added (oldest first)")),
+        ]
+        for sort_key, label in sort_items:
+            item = menu.AppendRadioItem(wx.ID_ANY, label)
+            menu_ids[item.GetId()] = sort_key
+            if sort_key == current_sort:
+                item.Check(True)
+            self.Bind(wx.EVT_MENU, handler, item)
+        return menu
+
+    def _on_track_sort_change(
         self,
         event: wx.CommandEvent,
     ) -> None:
-        """Handle a sort radio-item selection."""
-        sort_key = self._sort_menu_ids.get(
+        """Handle a tracks sort radio-item selection."""
+        sort_key = self._track_sort_menu_ids.get(
             event.GetId(),
         )
         if not sort_key:
@@ -2208,6 +2238,38 @@ class MainWindow(wx.Frame):
             self._display_level(
                 self._lib_tracks,
                 "tracks",
+                None,
+            )
+
+    def _on_playlist_sort_change(
+        self,
+        event: wx.CommandEvent,
+    ) -> None:
+        """Handle a playlists sort radio-item selection."""
+        sort_key = self._playlist_sort_menu_ids.get(
+            event.GetId(),
+        )
+        if not sort_key:
+            return
+
+        self._settings.playlist_sort = sort_key
+        self._settings.save()
+
+        server = self._current_server
+        if not server or not server.id:
+            return
+
+        self._lib_playlists = self._db.get_all_playlists(
+            server.id,
+            sort=self._settings.playlist_sort,
+        )
+
+        # Refresh display if viewing top-level Playlists
+        idx = self._section_choice.GetSelection()
+        if SECTIONS[idx] == "playlists" and not self._nav_stack:
+            self._display_level(
+                self._lib_playlists,
+                "playlists",
                 None,
             )
 
@@ -4823,9 +4885,16 @@ class MainWindow(wx.Frame):
             server_id,
             playlist_id,
             name,
+            # The server stamps DateCreated with "now"; mirror
+            # that locally so date sorting places the new
+            # playlist correctly until the next refresh.
+            datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.0000000Z"),
         )
         # Reload playlists into memory
-        self._lib_playlists = self._db.get_all_playlists(server_id)
+        self._lib_playlists = self._db.get_all_playlists(
+            server_id,
+            sort=self._settings.playlist_sort,
+        )
 
         # Refresh view if on playlists section
         idx = self._section_choice.GetSelection()
@@ -4880,7 +4949,10 @@ class MainWindow(wx.Frame):
             new_name,
         )
         item["Name"] = new_name
-        self._lib_playlists = self._db.get_all_playlists(srv_id)
+        self._lib_playlists = self._db.get_all_playlists(
+            srv_id,
+            sort=self._settings.playlist_sort,
+        )
 
         # Refresh list
         self._list.set_items(self._filtered_items)
@@ -4944,7 +5016,10 @@ class MainWindow(wx.Frame):
 
         # Update DB and in-memory
         self._db.delete_playlist(srv_id, pl_id)
-        self._lib_playlists = self._db.get_all_playlists(srv_id)
+        self._lib_playlists = self._db.get_all_playlists(
+            srv_id,
+            sort=self._settings.playlist_sort,
+        )
 
         # Fire async server request
         self._client.delete_playlist_async(pl_id)

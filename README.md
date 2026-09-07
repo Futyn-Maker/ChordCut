@@ -23,7 +23,7 @@ ChordCut is a portable music client for [Jellyfin](https://jellyfin.org/) media 
 - Lyrics panel beside the library: synced lyrics scroll karaoke-style with the music; click a line to jump to it.
 - Plain and synced (timed) lyrics dialogs; in synced lyrics the current line is highlighted as the track plays.
 - Real-time search that filters the current section as you type.
-- Sort tracks alphabetically or by date added; filter by music library if your server has more than one.
+- Sort tracks and playlists alphabetically or by date added; filter by music library if your server has more than one.
 - Playback queue with next/previous track, repeat, and shuffle.
 - Create, rename, and delete playlists; add or remove tracks; reorder tracks by drag and drop, keyboard, or the context menu.
 - Select multiple tracks to build a custom playback queue, bulk-add to playlists, bulk-download, and more.
@@ -81,7 +81,7 @@ From the keyboard, Ctrl+Up / Ctrl+Down adjusts volume and Ctrl+Right / Ctrl+Left
 
 Type in the search field to filter the current section. The search matches by name for artists and playlists, by name and artist for albums, and by name, artist, and album artist for tracks.
 
-Change the sort order of the Tracks section via View > Sorting: alphabetical A–Z or Z–A, or by date added newest or oldest first. Other sections have fixed sort orders (albums by track number, playlists by position, artists alphabetically).
+Change the sort order of the Tracks and Playlists sections via View > Sorting, which has a separate submenu for each: alphabetical A–Z or Z–A, or by date added newest or oldest first. By default tracks are sorted newest first and playlists oldest first. Other sections have fixed sort orders (albums by track number, tracks within a playlist by position, artists alphabetically).
 
 ### Library Filtering
 

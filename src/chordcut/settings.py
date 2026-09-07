@@ -31,6 +31,8 @@ _DEFAULTS: dict = {
     "device": "auto",
     # Track list sort order.
     "track_sort": "date_desc",
+    # Playlist list sort order.
+    "playlist_sort": "date_asc",
     # Whether closing the window minimizes to tray instead of exiting.
     "close_to_tray": True,
     # Whether to check for updates on startup.
@@ -176,7 +178,7 @@ class Settings:
     def close_to_tray(self, value: bool) -> None:
         self._data["close_to_tray"] = bool(value)
 
-    _VALID_TRACK_SORTS: ClassVar[set[str]] = {
+    _VALID_SORTS: ClassVar[set[str]] = {
         "alpha_asc",
         "alpha_desc",
         "date_desc",
@@ -187,14 +189,27 @@ class Settings:
     def track_sort(self) -> str:
         """Track list sort order."""
         val = self._data.get("track_sort", "date_desc")
-        if val in self._VALID_TRACK_SORTS:
+        if val in self._VALID_SORTS:
             return val
         return "date_desc"
 
     @track_sort.setter
     def track_sort(self, value: str) -> None:
-        if value in self._VALID_TRACK_SORTS:
+        if value in self._VALID_SORTS:
             self._data["track_sort"] = value
+
+    @property
+    def playlist_sort(self) -> str:
+        """Playlist list sort order."""
+        val = self._data.get("playlist_sort", "date_asc")
+        if val in self._VALID_SORTS:
+            return val
+        return "date_asc"
+
+    @playlist_sort.setter
+    def playlist_sort(self, value: str) -> None:
+        if value in self._VALID_SORTS:
+            self._data["playlist_sort"] = value
 
     @property
     def check_updates(self) -> bool:

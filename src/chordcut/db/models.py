@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     id TEXT NOT NULL,
     server_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    date_created TEXT,
     PRIMARY KEY (id, server_id),
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
