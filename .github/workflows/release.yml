@@ -22,11 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      # uv provides the Python pinned in .python-version and the project
+      # environment (.venv) that every later step, including build.bat, uses.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
         with:
-          python-version: "3.13"
-          cache: "pip"
+          enable-cache: false
 
       - name: Calculate version
         id: version
@@ -67,8 +68,7 @@ jobs:
       - name: Generate translation template (.pot)
         shell: bash
         run: |
-          pip install babel
-          pybabel extract \
+          uv run pybabel extract \
             --add-comments=Translators \
             --charset=UTF-8 \
             --project=ChordCut \

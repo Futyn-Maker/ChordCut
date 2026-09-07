@@ -1,36 +1,58 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "chordcut"
 dynamic = ["version"]
-description = "Accessible Jellyfin music client for the blind"
+description = "Accessible Jellyfin music client for Windows"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     {name = "Andrey Yakuboy"},
     {name = "ChordCut Contributors"}
 ]
-keywords = ["jellyfin", "music", "accessibility", "blind", "screen-reader"]
+keywords = ["jellyfin", "music", "player", "accessibility", "screen-reader"]
 classifiers = [
-"Environment :: Win32 (MS Windows)",
+    "Environment :: Win32 (MS Windows)",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Multimedia :: Sound/Audio :: Players",
 ]
+# The only list of runtime dependencies; build.bat, uv and pip all read it.
 dependencies = [
     "wxPython>=4.2.0",
     "python-mpv>=1.0.0",
     "jellyfin-apiclient-python>=1.9.0",
+    # Windows media session (pywinrt); see player/media_controls.py.
+    "winrt-runtime>=3.2",
+    "winrt-Windows.Foundation>=3.2",
+    "winrt-Windows.Foundation.Collections>=3.2",
+    "winrt-Windows.Media>=3.2",
+    "winrt-Windows.Media.Interop>=3.2",
+    "winrt-Windows.Storage.Streams>=3.2",
 ]
 
 [project.scripts]
 chordcut = "chordcut.__main__:main"
+
+[dependency-groups]
+# Tools for building the portable app and maintaining translations.
+# uv installs this group by default (uv sync / uv run); build.bat asks pip
+# for it when uv is not available.
+dev = [
+    "pyinstaller>=6.0",
+    "babel>=2.14",
+]
+
+[tool.uv]
+# The app is Windows-only (the winrt packages have no other wheels), so
+# resolve for that platform alone.
+environments = ["sys_platform == 'win32'"]
 
 [tool.setuptools.dynamic]
 version = {attr = "chordcut.__version__"}

@@ -6,28 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ChordCut is a portable Jellyfin music client for Windows with a visual multi-column interface and first-class accessibility: full NVDA/JAWS screen reader support and complete keyboard operability, equally usable by sighted, low-vision, and blind users. It uses MPV for native audio playback without server-side transcoding.
 
-**Stack:** Python 3.12+, wxPython (GUI), python-mpv (audio), jellyfin-apiclient-python (API), SQLite (cache), pywinrt/`winrt-*` (Windows media session), PyInstaller (packaging).
+**Stack:** Python 3.12+, wxPython (GUI), python-mpv (audio), jellyfin-apiclient-python (API), SQLite (cache), pywinrt/`winrt-*` (Windows media session), PyInstaller (packaging), uv (project environment).
 
 ## Development Commands
 
 ```bash
-# Run the app (from repo root)
-python run.py
+# Run the app (from repo root; creates .venv on first use)
+uv run chordcut
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Build Windows executable (Windows only, runs from build/build.bat)
-# Requires: Python 3.12+, PyInstaller, Babel, libmpv DLL in resources/libmpv/
+# Build Windows executable (Windows only)
+# Sets up .venv itself (uv, or venv + pip without uv); needs the libmpv DLL
+# in resources/libmpv/ (offers to download it) and pandoc for the HTML docs
 build\build.bat
 
 # Compile translations (.po → .mo)
-pybabel compile -d locale -D chordcut
+uv run pybabel compile -d locale -D chordcut
 
 # Generate translation template
-pybabel extract --add-comments=Translators --charset=UTF-8 \
+uv run pybabel extract --add-comments=Translators --charset=UTF-8 \
   --project=ChordCut -o locale/chordcut.pot src/chordcut/
 ```
+
+Dependencies are declared once, in `pyproject.toml`: the app's own under `[project]`, and PyInstaller and Babel in the `dev` dependency group, which `uv sync` / `uv run` install by default. `.python-version` pins the interpreter uv uses locally and in CI; `requires-python` is the supported floor. Any other tool runs the same way, e.g. `uv run python run.py`.
 
 There are no automated tests. The app is tested manually on Windows with a real Jellyfin server. Building and running requires Windows.
 
@@ -170,7 +170,7 @@ The release is built by a GitHub Actions workflow (`.github/workflows/release.ym
    gh release list --limit=1
    ```
 
-The workflow: calculates a `v{YYYY.MM.DD}[.N]` tag, bumps `__version__` in `src/chordcut/__init__.py`, downloads libmpv, regenerates the `.pot` translation template, then delegates the actual build to `build\build.bat` (which installs dependencies, compiles translations, runs PyInstaller, copies wx translations, and generates HTML documentation from `README*.md` via pandoc). After the build, the workflow packages the output as `ChordCut-Windows.zip`, commits the version bump, tags, pushes, and creates a GitHub Release with the ZIP and `.pot` template attached.
+The workflow: installs uv, calculates a `v{YYYY.MM.DD}[.N]` tag, bumps `__version__` in `src/chordcut/__init__.py`, downloads libmpv, regenerates the `.pot` translation template, then delegates the actual build to `build\build.bat` (which sets up the project environment, compiles translations, runs PyInstaller, copies wx translations, and generates HTML documentation from `README*.md` via pandoc). After the build, the workflow packages the output as `ChordCut-Windows.zip`, commits the version bump, tags, pushes, and creates a GitHub Release with the ZIP and `.pot` template attached.
 
 **After the release**, pull the version bump commit locally:
 
@@ -184,19 +184,19 @@ All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals)
 
 ### Adding a new translation language
 
-1. **Generate/update the `.pot` template** from current source (requires `pip install babel`):
+1. **Generate/update the `.pot` template** from current source:
    ```bash
-   pybabel extract --add-comments=Translators --charset=UTF-8 \
+   uv run pybabel extract --add-comments=Translators --charset=UTF-8 \
      --project=ChordCut -o locale/chordcut.pot src/chordcut/
    ```
 2. **Create the language directory and initial `.po` file** (e.g., for French `fr`):
    ```bash
-   pybabel init -i locale/chordcut.pot -d locale -D chordcut -l fr
+   uv run pybabel init -i locale/chordcut.pot -d locale -D chordcut -l fr
    ```
 3. **Translate** the `msgstr` entries in `locale/fr/LC_MESSAGES/chordcut.po`. Each entry has a `msgid` (English source) and `msgstr` (translation to fill in). Context is provided by `# Translators:` comments extracted from source.
 4. **Compile** the `.po` to binary `.mo`:
    ```bash
-   pybabel compile -d locale -D chordcut
+   uv run pybabel compile -d locale -D chordcut
    ```
 5. **Register the LCID mapping** (optional, for auto-detection on Windows): add the language's Windows LCID hex code to the `lcid_map` dict in `src/chordcut/i18n.py:_get_system_language()`. This enables automatic language selection for Windows users. If the LCID is not in the hardcoded map, it falls back to `locale.windows_locale` lookup, which covers most languages.
 6. **Translate the documentation** (optional): add `README_xx.md` (same shape as `README.md`: download link first, then the H1) and an `xx` entry to the `strings` table in `build/docs.lua`. The build turns it into `readme_xx.html`, which Help → Documentation opens for that language (see [HTML Documentation](#html-documentation)).
@@ -206,7 +206,7 @@ All user-facing strings must be wrapped with `_()` (or `ngettext()` for plurals)
 1. **Regenerate the `.pot` template** (same command as step 1 above).
 2. **Merge new strings** into the existing `.po` file:
    ```bash
-   pybabel update -i locale/chordcut.pot -d locale -D chordcut
+   uv run pybabel update -i locale/chordcut.pot -d locale -D chordcut
    ```
    This preserves existing translations and marks new/changed strings as untranslated (fuzzy).
 3. **Translate** any new or fuzzy entries in the `.po` file.

@@ -12,37 +12,80 @@ echo.
 REM Change to project root directory
 cd /d "%~dp0.."
 
-REM Check Python
-echo Checking Python installation...
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: Python not found in PATH
-    echo Please install Python 3.12+ from https://python.org
-    echo Make sure to check "Add Python to PATH" during installation
-    if !INTERACTIVE!==1 pause
-    exit /b 1
+REM Let Windows PowerShell rebuild its default module path. When this script is
+REM launched from PowerShell 7 the inherited path lists PowerShell 7's modules
+REM first, and the powershell.exe calls below (uv installer, libmpv download)
+REM fail to load their own Security module.
+set "PSModulePath="
+
+REM ---------------------------------------------------------------------------
+REM Project environment
+REM
+REM Everything runs inside the project's virtual environment (.venv). The
+REM dependencies are declared in pyproject.toml only: the app's own under
+REM [project], and the build tools (PyInstaller, Babel) in the "dev" group.
+REM
+REM   1. An existing .venv is reused and brought up to date.
+REM   2. Otherwise it is created with uv when available, else with the venv
+REM      module of a Python 3.12+ found on PATH.
+REM   3. With neither, uv is installed; it fetches a suitable Python itself
+REM      (the version pinned in .python-version).
+REM ---------------------------------------------------------------------------
+echo Preparing the project environment...
+call :find_uv
+
+if exist ".venv\Scripts\python.exe" (
+    echo Using the existing virtual environment in .venv
+) else if defined UV (
+    echo Creating the virtual environment with uv...
+) else (
+    call :find_python
+    if defined PYTHON (
+        echo Creating the virtual environment with "!PYTHON! -m venv"...
+        call !PYTHON! -m venv .venv
+        if errorlevel 1 (
+            echo ERROR: Failed to create the virtual environment.
+            if !INTERACTIVE!==1 pause
+            exit /b 1
+        )
+    ) else (
+        call :install_uv
+        if not defined UV (
+            if !INTERACTIVE!==1 pause
+            exit /b 1
+        )
+    )
 )
 
+if defined UV (
+    echo Syncing dependencies with uv...
+    "!UV!" sync
+    if errorlevel 1 (
+        echo ERROR: uv could not set up the environment. Fix the error above,
+        echo or delete the .venv folder and run this script again.
+        if !INTERACTIVE!==1 pause
+        exit /b 1
+    )
+) else (
+    echo Installing dependencies with pip...
+    REM A uv-created environment ships without pip; ensurepip adds it. Dependency
+    REM groups need pip 25.1 or newer, hence the upgrade.
+    ".venv\Scripts\python.exe" -m ensurepip --upgrade >nul 2>&1
+    ".venv\Scripts\python.exe" -m pip install --upgrade pip >nul 2>&1
+    if errorlevel 1 echo   WARNING: Could not upgrade pip; version 25.1+ is needed for dependency groups.
+    ".venv\Scripts\python.exe" -m pip install -e . --group dev
+    if errorlevel 1 (
+        echo ERROR: Failed to install the dependencies from pyproject.toml. Fix the
+        echo error above, or delete the .venv folder and run this script again.
+        if !INTERACTIVE!==1 pause
+        exit /b 1
+    )
+)
+
+REM From here on python, pyinstaller and pybabel are the environment's own.
+call ".venv\Scripts\activate.bat"
 for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set PYVER=%%v
-echo Found Python %PYVER%
-echo.
-
-REM Check/install dependencies
-echo Installing/updating dependencies...
-pip install --upgrade pip >nul 2>&1
-pip install --upgrade -r requirements.txt
-if errorlevel 1 (
-    echo ERROR: Failed to install dependencies from requirements.txt
-    if !INTERACTIVE!==1 pause
-    exit /b 1
-)
-pip install --upgrade pyinstaller babel
-if errorlevel 1 (
-    echo ERROR: Failed to install pyinstaller/babel
-    if !INTERACTIVE!==1 pause
-    exit /b 1
-)
-echo Dependencies installed successfully.
+echo Environment ready: Python %PYVER% in .venv
 echo.
 
 REM Check for libmpv
@@ -77,7 +120,7 @@ if %LIBMPV_FOUND%==0 (
     ) else (
         echo.
         echo Skipping libmpv download.
-        echo The build will continue, but the app won't work without libmpv!
+        echo The build will continue, but the app won't work without libmpv^^!
         echo.
         pause
     )
@@ -87,9 +130,9 @@ echo.
 REM Compile translations (.po to .mo)
 echo Compiling translations...
 if exist "locale" (
-    python -c "from babel.messages.frontend import main; main()" compile -d locale -D chordcut 2>nul
+    pybabel compile -d locale -D chordcut 2>nul
     if errorlevel 1 (
-        echo   WARNING: Failed to compile translations - babel not installed or error
+        echo   WARNING: Failed to compile translations.
     )
 ) else (
     echo   No locale folder found, skipping translations.
@@ -172,7 +215,7 @@ if !DOCS_AVAILABLE!==0 (
 
 echo.
 echo ============================================
-echo    Build Complete!
+echo    Build Complete^^!
 echo ============================================
 echo.
 echo Output folder: dist\ChordCut\
@@ -183,4 +226,57 @@ echo.
 
 if !INTERACTIVE!==1 pause
 
+exit /b 0
+
+REM ---------------------------------------------------------------------------
+REM Subroutines
+REM ---------------------------------------------------------------------------
+
+:find_uv
+REM Sets UV to the uv executable: from PATH, or from the installer's target
+REM directory (UV_UNMANAGED_INSTALL or UV_INSTALL_DIR when set, otherwise
+REM %USERPROFILE%\.local\bin), where a freshly installed uv sits before PATH
+REM is refreshed.
+set "UV="
+for /f "delims=" %%p in ('where uv 2^>nul') do if not defined UV set "UV=%%p"
+if not defined UV if defined UV_UNMANAGED_INSTALL if exist "%UV_UNMANAGED_INSTALL%\uv.exe" set "UV=%UV_UNMANAGED_INSTALL%\uv.exe"
+if not defined UV if defined UV_INSTALL_DIR if exist "%UV_INSTALL_DIR%\uv.exe" set "UV=%UV_INSTALL_DIR%\uv.exe"
+if not defined UV if exist "%USERPROFILE%\.local\bin\uv.exe" set "UV=%USERPROFILE%\.local\bin\uv.exe"
+exit /b 0
+
+:find_python
+REM Sets PYTHON to a Python 3.12+ command (the floor is requires-python in
+REM pyproject.toml): "python" from PATH, else the py launcher's newest 3.x.
+REM "call" keeps control here even when python is a .bat shim (pyenv-win).
+set "PYTHON="
+call python -c "import sys; sys.exit(sys.version_info < (3, 12))" >nul 2>&1 && set "PYTHON=python"
+if not defined PYTHON (
+    call py -3 -c "import sys; sys.exit(sys.version_info < (3, 12))" >nul 2>&1 && set "PYTHON=py -3"
+)
+exit /b 0
+
+:install_uv
+echo Neither uv nor Python 3.12+ was found.
+if !INTERACTIVE!==1 (
+    set /p INSTALL_UV="Install uv now? It also downloads the Python this project needs. (Y/N): "
+    if /i not "!INSTALL_UV!"=="Y" (
+        echo.
+        echo Install uv from https://docs.astral.sh/uv/ or Python 3.12+ from https://python.org
+        echo and run this script again.
+        exit /b 1
+    )
+)
+echo Installing uv...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex"
+if errorlevel 1 (
+    echo ERROR: The uv installer failed. Install uv from https://docs.astral.sh/uv/
+    echo or Python 3.12+ from https://python.org and run this script again.
+    exit /b 1
+)
+call :find_uv
+if not defined UV (
+    echo ERROR: uv was installed but could not be located. Open a new terminal
+    echo and run this script again.
+    exit /b 1
+)
 exit /b 0

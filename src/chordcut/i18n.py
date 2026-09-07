@@ -4,9 +4,9 @@ All user-facing strings must be wrapped with _(), ngettext() or pgettext()
 from this module and preceded by a ``# Translators:`` comment explaining
 the context.
 
-To generate a .pot translation template (requires ``pip install babel``)::
+To generate a .pot translation template::
 
-    pybabel extract --add-comments=Translators --charset=UTF-8 \\
+    uv run pybabel extract --add-comments=Translators --charset=UTF-8 \\
         --project=ChordCut -o locale/chordcut.pot src/chordcut/
 """
 

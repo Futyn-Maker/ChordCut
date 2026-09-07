@@ -1,4 +1,4 @@
-"""ChordCut - Accessible Jellyfin music client for the blind."""
+"""ChordCut - Accessible Jellyfin music client for Windows."""
 
 __version__ = "2026.03.27"
 __app_name__ = "ChordCut"
@@ -8,6 +8,6 @@ __author__ = (
     if len(__authors__) > 1
     else __authors__[0]
 )
-__description__ = "Accessible Jellyfin music client for the blind"
+__description__ = "Accessible Jellyfin music client for Windows"
 # GitHub repository used for update checks (owner/repo).
 __repo__ = "Futyn-Maker/ChordCut"

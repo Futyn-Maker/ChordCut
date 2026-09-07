@@ -239,7 +239,7 @@ ChordCut must be built on Windows (PyInstaller cannot cross-compile).
 
 ### Prerequisites
 
-- Python 3.12 or later. Make sure "Add Python to PATH" is checked during installation.
+- [uv](https://docs.astral.sh/uv/) or Python 3.12 or later. The build script works with either and offers to install uv if it finds neither.
 - Git (to clone the repository).
 
 ### Steps
@@ -256,9 +256,19 @@ ChordCut must be built on Windows (PyInstaller cannot cross-compile).
    build\build.bat
    ```
 
-The script will install all dependencies, download libmpv if it is not already present (or you can place `mpv-2.dll` / `libmpv-2.dll` into `resources\libmpv\` manually beforehand), compile translations, and build the application.
+The script sets up a virtual environment in `.venv` with all dependencies, downloads libmpv if it is not already present (or you can place `mpv-2.dll` / `libmpv-2.dll` into `resources\libmpv\` manually beforehand), compiles translations, and builds the application.
 
 The output is a portable folder at `dist\ChordCut\`. Run `dist\ChordCut\ChordCut.exe` to launch.
+
+### Running from Source
+
+With uv installed and the libmpv DLL in `resources\libmpv\` (the build script downloads it, or run `build\download_libmpv.ps1`), start the app from the repository root with:
+
+```
+uv run chordcut
+```
+
+The first run creates the environment; later runs start right away.
 
 ## Translation
 
@@ -266,16 +276,16 @@ ChordCut uses gettext for internationalization. The application detects the syst
 
 ### Translating into a new language
 
-1. Download the `chordcut.pot` template from the [latest GitHub release](https://github.com/Futyn-Maker/chordcut/releases/latest), or generate it from source (requires `pip install babel`):
+1. Download the `chordcut.pot` template from the [latest GitHub release](https://github.com/Futyn-Maker/chordcut/releases/latest), or generate it from source. The commands below run in the project's environment through uv, which installs Babel on first use (outside the repository, `pip install babel` and drop the `uv run` prefix):
 
    ```
-   pybabel extract --add-comments=Translators --charset=UTF-8 --project=ChordCut -o locale/chordcut.pot src/chordcut/
+   uv run pybabel extract --add-comments=Translators --charset=UTF-8 --project=ChordCut -o locale/chordcut.pot src/chordcut/
    ```
 
 2. Create a new `.po` file for your language (replace `xx` with the language code, e.g. `de`, `fr`, `es`):
 
    ```
-   pybabel init -i locale/chordcut.pot -d locale -D chordcut -l xx
+   uv run pybabel init -i locale/chordcut.pot -d locale -D chordcut -l xx
    ```
 
 3. Open the `.po` file in any text editor or a tool like [Poedit](https://poedit.net/) and translate the strings.
@@ -283,7 +293,7 @@ ChordCut uses gettext for internationalization. The application detects the syst
 4. Compile the translation:
 
    ```
-   pybabel compile -d locale -D chordcut
+   uv run pybabel compile -d locale -D chordcut
    ```
 
 5. Place the compiled `chordcut.mo` file into `locale/xx/LC_MESSAGES/` next to the ChordCut executable.
@@ -291,7 +301,7 @@ ChordCut uses gettext for internationalization. The application detects the syst
 To update an existing translation after the template changes:
 
 ```
-pybabel update -i locale/chordcut.pot -d locale -D chordcut
+uv run pybabel update -i locale/chordcut.pot -d locale -D chordcut
 ```
 
 Then re-translate any new or changed strings and recompile.
