@@ -1,6 +1,6 @@
 """ChordCut - Accessible Jellyfin music client for Windows."""
 
-__version__ = "2026.03.27"
+__version__ = "2026.09.07"
 __app_name__ = "ChordCut"
 __authors__ = ["Andrey Yakuboy", "ChordCut contributors"]
 __author__ = (
